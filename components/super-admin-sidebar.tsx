@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Building2, CreditCard, BarChart3, Settings, User, LogOut } from "lucide-react"
+import { Home, Building2, CreditCard, BarChart3, Settings, User, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 const navigation = [
+  { name: "Dashboard", href: "/super-admin/dashboard", icon: Home },
   { name: "Tenant Management", href: "/super-admin/tenants", icon: Building2 },
   { name: "Billing & Subscriptions", href: "/super-admin/billing", icon: CreditCard },
   { name: "Platform Analytics", href: "/super-admin/analytics", icon: BarChart3 },

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Users, FileText, Apple, TrendingUp, Settings, User, LogOut } from "lucide-react"
+import { Home, Users, FileText, Apple, TrendingUp, HelpCircle, Settings, User, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -17,6 +17,7 @@ import {
 const navigation = [
   { name: "Dashboard", href: "/trainer/dashboard", icon: Home },
   { name: "Clients", href: "/trainer/clients", icon: Users },
+  { name: "Questions", href: "/trainer/questions", icon: HelpCircle },
   { name: "Progress Templates", href: "/trainer/progress-templates", icon: FileText },
   { name: "Meal Plans", href: "/trainer/meal-plans", icon: Apple },
   { name: "Profile", href: "/trainer/profile", icon: TrendingUp },
