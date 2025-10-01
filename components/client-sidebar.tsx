@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Target, Activity, Calendar, TrendingUp, Settings, User, LogOut } from "lucide-react"
+import { Home, Target, Activity, Calendar, TrendingUp, MessageSquare, Settings, User, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -19,7 +19,8 @@ const navigation = [
   { name: "My Goals", href: "/client/goals", icon: Target },
   { name: "Activity", href: "/client/activity", icon: Activity },
   { name: "Calendar", href: "/client/calendar", icon: Calendar },
-  { name: "Progress", href: "/client/profile", icon: TrendingUp },
+  { name: "Progress", href: "/client/progress-tracking", icon: TrendingUp },
+  { name: "Messages", href: "/client/messages", icon: MessageSquare },
 ]
 
 export function ClientSidebar() {
