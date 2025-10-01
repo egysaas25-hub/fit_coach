@@ -7,7 +7,7 @@ import { Calendar, Dumbbell, Apple, TrendingUp } from "lucide-react"
 export default function ClientDashboardPage() {
   return (
     <div className="flex min-h-screen bg-background">
-      <ClientSidebar />
+      
       <main className="flex-1 p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-balance mb-2">Welcome back, Anna!</h1>

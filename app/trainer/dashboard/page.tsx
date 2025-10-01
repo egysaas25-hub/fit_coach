@@ -8,7 +8,7 @@ import { Users, TrendingUp, Calendar, DollarSign, ArrowUpRight } from "lucide-re
 export default function TrainerDashboardPage() {
   return (
     <div className="flex min-h-screen bg-background">
-      <TrainerSidebar />
+      
       <main className="flex-1 p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-balance mb-2">Trainer Dashboard</h1>

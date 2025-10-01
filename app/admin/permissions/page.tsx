@@ -21,7 +21,7 @@ export default function PermissionManagementPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <AdminSidebar />
+      
       <main className="flex-1 p-8">
         <div className="mb-8 flex items-center justify-between">
           <div>

@@ -8,7 +8,7 @@ import { Mail, Phone, Calendar, Ruler, Weight, Target } from "lucide-react"
 export default function ClientProfilePage() {
   return (
     <div className="flex min-h-screen bg-background">
-      <ClientSidebar />
+      
       <main className="flex-1 p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-balance mb-2">My Profile</h1>

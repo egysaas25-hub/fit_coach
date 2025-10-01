@@ -22,7 +22,7 @@ export default function ErrorQueuePage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <AdminSidebar />
+      
       <main className="flex-1 p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-balance mb-2">Error & Draft Queue</h1>

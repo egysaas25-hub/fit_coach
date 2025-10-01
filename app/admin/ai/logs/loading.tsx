@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 export default function AILogsLoading() {
   return (
     <div className="flex h-screen bg-background">
-      <AdminSidebar />
+      
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="border-b bg-card px-6 py-4">

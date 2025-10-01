@@ -132,7 +132,7 @@ export default function AILogsPage() {
 
   return (
     <div className="flex h-screen bg-background">
-      <AdminSidebar />
+      
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="border-b bg-card px-6 py-4">

@@ -46,7 +46,7 @@ export default function ProgressTemplatesPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <TrainerSidebar />
+      
       <main className="flex-1 p-8">
         <div className="mb-8 flex items-center justify-between">
           <div>

@@ -18,7 +18,7 @@ export default function WorkoutLogPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <ClientSidebar />
+      
       <main className="flex-1 p-8">
         <div className="mb-8 flex items-center justify-between">
           <div>

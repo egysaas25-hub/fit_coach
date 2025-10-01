@@ -22,7 +22,7 @@ export default function MeasurementsPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <ClientSidebar />
+      
       <main className="flex-1 p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-balance mb-2">Body Measurements</h1>

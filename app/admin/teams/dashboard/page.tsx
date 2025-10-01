@@ -13,7 +13,7 @@ export default function TeamDashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <AdminSidebar />
+      
       <main className="flex-1 p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-balance mb-2">Per Team Dashboard</h1>
