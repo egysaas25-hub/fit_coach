@@ -1,4 +1,3 @@
-import { SuperAdminSidebar } from "@/components/super-admin-sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +9,6 @@ import { Save } from "lucide-react"
 export default function SystemConfigurationPage() {
   return (
     <div className="flex min-h-screen bg-background">
-      <SuperAdminSidebar />
       <main className="flex-1 p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-balance mb-2">System Configuration</h1>

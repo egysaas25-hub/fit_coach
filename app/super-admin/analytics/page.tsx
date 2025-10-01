@@ -1,11 +1,9 @@
-import { SuperAdminSidebar } from "@/components/super-admin-sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building2, DollarSign, TrendingUp, Users } from "lucide-react"
 
 export default function PlatformAnalyticsPage() {
   return (
     <div className="flex min-h-screen bg-background">
-      <SuperAdminSidebar />
       <main className="flex-1 p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-balance mb-2">Platform Analytics</h1>

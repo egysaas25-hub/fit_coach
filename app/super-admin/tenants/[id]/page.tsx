@@ -1,4 +1,3 @@
-import { SuperAdminSidebar } from "@/components/super-admin-sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -15,7 +14,6 @@ export default function TenantDetailsPage({ params }: { params: { id: string } }
 
   return (
     <div className="flex min-h-screen bg-background">
-      <SuperAdminSidebar />
       <main className="flex-1 p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-balance mb-2">FitLife Gym</h1>
