@@ -18,6 +18,12 @@ import {
   LogOut,
   Sparkles,
   ScrollText,
+  MessageSquare,
+  CreditCard,
+  Bell,
+  HelpCircle,
+  Zap,
+  ShoppingCart,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -29,20 +35,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 const navigation = [
-  { name: "Reports & Analytics", href: "/admin/reports", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { name: "Reports & Analytics", href: "/admin/reports", icon: BarChart3 },
   { name: "User Management", href: "/admin/users", icon: Users },
+  { name: "Customers", href: "/admin/customers", icon: ShoppingCart },
+  { name: "Conversations", href: "/admin/conversations", icon: MessageSquare },
+  { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
   { name: "Role Management", href: "/admin/roles", icon: Shield },
   { name: "Permissions", href: "/admin/permissions", icon: Key },
-  { name: "System Monitor", href: "/admin/system", icon: Activity },
   { name: "Referrals", href: "/admin/referrals", icon: UserPlus },
-  { name: "Global Analytics", href: "/admin/analytics/global", icon: BarChart3 },
   { name: "Team Dashboard", href: "/admin/teams/dashboard", icon: Users2 },
+  { name: "Global Analytics", href: "/admin/analytics/global", icon: BarChart3 },
+  { name: "System Monitor", href: "/admin/system", icon: Activity },
   { name: "Audit Log", href: "/admin/audit", icon: FileText },
   { name: "Error Queue", href: "/admin/errors", icon: AlertCircle },
+  { name: "Message Templates", href: "/admin/message-templates", icon: MessageSquare },
+  { name: "Notifications", href: "/admin/notifications", icon: Bell },
+  { name: "Integrations", href: "/admin/integrations", icon: Zap },
+  { name: "Support", href: "/admin/support", icon: HelpCircle },
   { name: "AI Templates", href: "/admin/ai/templates", icon: Sparkles },
   { name: "AI Logs", href: "/admin/ai/logs", icon: ScrollText },
+  { name: "Settings", href: "/admin/settings", icon: Settings },
 ]
 
 export function AdminSidebar() {
@@ -57,28 +73,30 @@ export function AdminSidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 flex flex-col gap-1 p-4 overflow-y-auto">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href
-          const Icon = item.icon
+      <ScrollArea className="flex-1">
+        <nav className="flex flex-col gap-1 p-4">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+            const Icon = item.icon
 
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              {item.name}
-            </Link>
-          )
-        })}
-      </nav>
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                )}
+              >
+                <Icon className="h-5 w-5 flex-shrink-0" />
+                <span className="truncate">{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
+      </ScrollArea>
 
       <div className="p-4 border-t border-border">
         <DropdownMenu>

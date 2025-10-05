@@ -2,7 +2,25 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Building2, CreditCard, BarChart3, Settings, User, LogOut } from "lucide-react"
+import {
+  Home,
+  Building2,
+  CreditCard,
+  BarChart3,
+  Settings,
+  User,
+  LogOut,
+  Database,
+  Zap,
+  FileCode,
+  Globe,
+  BookOpen,
+  Languages,
+  Gauge,
+  Wrench,
+  Webhook,
+  HardDrive,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -13,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 const navigation = [
   { name: "Dashboard", href: "/super-admin/dashboard", icon: Home },
@@ -20,6 +39,18 @@ const navigation = [
   { name: "Billing & Subscriptions", href: "/super-admin/billing", icon: CreditCard },
   { name: "Platform Analytics", href: "/super-admin/analytics", icon: BarChart3 },
   { name: "System Configuration", href: "/super-admin/config", icon: Settings },
+  { name: "ETL Pipeline", href: "/super-admin/etl", icon: Database },
+  { name: "Integrations", href: "/super-admin/integrations", icon: Zap },
+  { name: "Webhooks", href: "/super-admin/webhooks", icon: Webhook },
+  { name: "API Documentation", href: "/super-admin/api/docs", icon: FileCode },
+  { name: "Embeddings", href: "/super-admin/embeddings", icon: Globe },
+  { name: "Dictionary", href: "/super-admin/dictionary", icon: BookOpen },
+  { name: "Translations", href: "/super-admin/translations", icon: Languages },
+  { name: "Rate Limits", href: "/super-admin/rate-limits", icon: Gauge },
+  { name: "Tools", href: "/super-admin/tools", icon: Wrench },
+  { name: "Dispatch", href: "/super-admin/dispatch", icon: Zap },
+  { name: "Backup & Restore", href: "/super-admin/backup", icon: HardDrive },
+  { name: "Settings", href: "/super-admin/settings", icon: Settings },
 ]
 
 export function SuperAdminSidebar() {
@@ -34,28 +65,30 @@ export function SuperAdminSidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 flex flex-col gap-1 p-4">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
-          const Icon = item.icon
+      <ScrollArea className="flex-1">
+        <nav className="flex flex-col gap-1 p-4">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+            const Icon = item.icon
 
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              {item.name}
-            </Link>
-          )
-        })}
-      </nav>
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                )}
+              >
+                <Icon className="h-5 w-5 flex-shrink-0" />
+                <span className="truncate">{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
+      </ScrollArea>
 
       <div className="p-4 border-t border-border">
         <DropdownMenu>
