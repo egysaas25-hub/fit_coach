@@ -1,0 +1,909 @@
+{
+"tenants": [
+{
+"id": 1,
+"name": "Test Tenant",
+"slug": "test-tenant",
+"country": "Egypt",
+"timezone": "Africa/Cairo",
+"currency_id": 1,
+"default_language": "en",
+"created_at": "2025-10-01T00:00:00Z"
+},
+{
+"id": 2,
+"name": "Demo Tenant",
+"slug": "demo-tenant",
+"country": "Saudi Arabia",
+"timezone": "Asia/Riyadh",
+"currency_id": 2,
+"default_language": "ar",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"tenant_branding": [
+{
+"id": 1,
+"tenant_id": 1,
+"logo_url": "https://example.com/logo.png",
+"primary_color": "#00FF00",
+"whatsapp_number": "+20123456789",
+"template_config": {"key": "value"},
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"customers": [
+{
+"id": 1,
+"tenant_id": 1,
+"phone_e164": "+20123456789",
+"phone_e164_encrypted": "encrypted_data",
+"wa_contact_id": "contact1",
+"first_name": "John",
+"last_name": "Doe",
+"gender": "male",
+"age": 30,
+"height_cm": 180,
+"start_weight_kg": 80.5,
+"country": "Egypt",
+"city": "Cairo",
+"region": "MENA",
+"timezone": "Africa/Cairo",
+"source": "landing",
+"status": "active",
+"goal": "Lose weight",
+"language": "en",
+"preferred_currency_id": 1,
+"consent_at": "2025-10-01T00:00:00Z",
+"created_at": "2025-10-01T00:00:00Z",
+"updated_at": "2025-10-01T00:00:00Z"
+}
+],
+"customer_health_conditions": [
+{
+"id": 1,
+"customer_id": 1,
+"condition_text": "None",
+"severity": "low",
+"diagnosed_at": "2024-01-01",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"customer_profiles": [
+{
+"id": 1,
+"customer_id": 1,
+"notes": "Active user",
+"lifestyle": {"smoker": false},
+"medical_json": {"allergies": []},
+"created_at": "2025-10-01T00:00:00Z",
+"updated_at": "2025-10-01T00:00:00Z"
+}
+],
+"team_members": [
+{
+"id": 1,
+"tenant_id": 1,
+"full_name": "Jane Trainer",
+"email": "jane@example.com",
+"role": "coach",
+"wa_user_id": "wa1",
+"max_caseload": 20,
+"active": true,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"subscriptions": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"plan_code": "basic",
+"price_cents": 1000,
+"currency_id": 1,
+"amount_usd": 10.0,
+"fx_rate": 0.1,
+"status": "active",
+"start_at": "2025-10-01T00:00:00Z",
+"renew_at": "2025-11-01T00:00:00Z",
+"cancel_at": null,
+"sales_owner_id": 1,
+"coach_owner_id": 1,
+"rotation_priority": 0,
+"created_at": "2025-10-01T00:00:00Z",
+"updated_at": "2025-10-01T00:00:00Z"
+}
+],
+"interactions": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"channel": "wa",
+"direction": "in",
+"intent_code": "greeting",
+"message_text": "Hello",
+"by_team_member_id": 1,
+"sent_at": "2025-10-01T00:00:00Z",
+"meta": {}
+}
+],
+"media_references": [
+{
+"id": 1,
+"tenant_id": 1,
+"entity_type": "interaction",
+"entity_id": 1,
+"url": "https://example.com/media.jpg",
+"type": "image",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"tickets": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"category": "support",
+"priority": "P1",
+"status": "open",
+"subject": "Issue",
+"notes": "Note",
+"assigned_to": 1,
+"opened_at": "2025-10-01T00:00:00Z",
+"closed_at": null
+}
+],
+"funnel_events": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"event_name": "landing_view",
+"event_at": "2025-10-01T00:00:00Z",
+"meta": {}
+}
+],
+"churn_feedback": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"reason": "price",
+"notes": "Too expensive",
+"recorded_at": "2025-10-01T00:00:00Z"
+}
+],
+"training_plans": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"version": 1,
+"is_active": true,
+"split": "full_body",
+"notes": "Beginner",
+"created_by": 1,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"training_plan_exercises": [
+{
+"id": 1,
+"plan_id": 1,
+"exercise_id": 1,
+"sets": 3,
+"reps": 10,
+"order_index": 1,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"nutrition_plans": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"version": 1,
+"is_active": true,
+"calories_target": 2000,
+"notes": "Balanced",
+"created_by": 1,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"nutrition_plan_macros": [
+{
+"id": 1,
+"plan_id": 1,
+"calories": 2000,
+"protein_g": 150,
+"carbs_g": 250,
+"fat_g": 70,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"nutrition_meals": [
+{
+"id": 1,
+"tenant_id": 1,
+"plan_id": 1,
+"meal_name": "Breakfast",
+"order_index": 1,
+"notes": "Healthy start"
+}
+],
+"nutrition_meal_items": [
+{
+"id": 1,
+"tenant_id": 1,
+"meal_id": 1,
+"food_name": "Oats",
+"food_id": 1,
+"portion_size": "50g",
+"calories": 200,
+"protein_g": 10,
+"carbs_g": 30,
+"fat_g": 5,
+"fiber_g": 5,
+"alternatives": {},
+"order_index": 1
+}
+],
+"checkins": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"period": "weekly",
+"inbody_json": {},
+"checkin_date": "2025-10-01",
+"reviewed_by": 1,
+"reviewed_at": "2025-10-01T00:00:00Z",
+"action_taken": "no_change"
+}
+],
+"progress_tracking": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"recorded_at": "2025-10-01T00:00:00Z",
+"weight_kg": 80,
+"workout_done": true,
+"sleep_hours": 8,
+"pain_score": 2,
+"notes": "Good session"
+}
+],
+"inbody_metrics": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"recorded_at": "2025-10-01T00:00:00Z",
+"height_cm": 180,
+"weight_kg": 80,
+"bmi": 24.7,
+"body_fat_percent": 15,
+"muscle_mass_kg": 60,
+"water_percent": 60,
+"visceral_fat_level": 5,
+"bmr_kcal": 1800,
+"tdee_kcal": 2500,
+"systolic_bp": 120,
+"diastolic_bp": 80,
+"heart_rate_bpm": 70,
+"spo2_percent": 98,
+"body_temp_c": 36.6,
+"notes": "Healthy"
+}
+],
+"metric_definitions": [
+{
+"id": 1,
+"tenant_id": 1,
+"name": "Custom Metric",
+"unit": "kg",
+"description": "User-defined metric",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"customer_metrics": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"metric_definition_id": 1,
+"metric_value": 75.5,
+"category": "fitness",
+"recorded_at": "2025-10-01T00:00:00Z",
+"created_by": 1
+}
+],
+"currencies": [
+{
+"id": 1,
+"code": "USD",
+"name": "US Dollar",
+"fx_rate_to_usd": 1.0,
+"updated_at": "2025-10-01T00:00:00Z"
+}
+],
+"payments": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"subscription_id": 1,
+"gateway": "stripe",
+"provider_region": "Global",
+"amount_cents": 1000,
+"currency_id": 1,
+"amount_usd": 10.0,
+"fx_rate": 1.0,
+"status": "paid",
+"paid_at": "2025-10-01T00:00:00Z",
+"receipt_url": "https://example.com/receipt",
+"installment_plan": {},
+"meta": {}
+}
+],
+"referrals": [
+{
+"id": 1,
+"tenant_id": 1,
+"referrer_customer_id": 1,
+"invite_code": "REF123",
+"referred_phone": "+20123456790",
+"converted_subscription_id": 1,
+"reward_cents": 500,
+"status": "rewarded"
+}
+],
+"plan_pricing": [
+{
+"id": 1,
+"tenant_id": 1,
+"plan_code": "basic",
+"country": "Egypt",
+"currency_id": 1,
+"price_cents": 1000,
+"active": true,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"training_types": [
+{
+"id": 1,
+"tenant_id": 1,
+"name": {"en": "Cardio", "ar": "كارديو"},
+"description": {"en": "Cardiovascular", "ar": "قلبي وعائي"},
+"media_url": "https://example.com/cardio.jpg",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"muscle_groups": [
+{
+"id": 1,
+"tenant_id": 1,
+"name": {"en": "Chest", "ar": "صدر"},
+"description": {"en": "Chest muscles", "ar": "عضلات الصدر"},
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"exercises": [
+{
+"id": 1,
+"tenant_id": 1,
+"name": {"en": "Push-up", "ar": "ضغط"},
+"training_type_id": 1,
+"muscle_group_id": 1,
+"description": {"en": "Bodyweight exercise", "ar": "تمرين وزن الجسم"},
+"equipment_needed": "None",
+"calories_burned_per_min": 8.0,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"nutrition_facts": [
+{
+"id": 1,
+"tenant_id": 1,
+"food_name": {"en": "Apple", "ar": "تفاح"},
+"portion_size": "100g",
+"calories": 52.0,
+"protein_g": 0.3,
+"carbs_g": 13.8,
+"fat_g": 0.2,
+"fiber_g": 2.4,
+"category": "Fruit",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"media_library": [
+{
+"id": 1,
+"tenant_id": 1,
+"title": {"en": "Motivation Poster", "ar": "ملصق تحفيزي"},
+"type": "motivation",
+"description": {"en": "Keep going", "ar": "استمر"},
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"integrations": [
+{
+"id": 1,
+"tenant_id": 1,
+"name": "WhatsApp",
+"provider": "Meta",
+"type": "messaging",
+"base_url": "https://api.whatsapp.com",
+"docs_url": "https://developers.facebook.com/docs/whatsapp",
+"is_enabled": true,
+"created_at": "2025-10-01T00:00:00Z",
+"updated_at": "2025-10-01T00:00:00Z"
+}
+],
+"integration_accounts": [
+{
+"id": 1,
+"tenant_id": 1,
+"integration_id": 1,
+"account_name": "Main Account",
+"auth_type": "api_key",
+"secret_ref": "secret1",
+"metadata": {},
+"is_default": true,
+"is_enabled": true,
+"created_at": "2025-10-01T00:00:00Z",
+"updated_at": "2025-10-01T00:00:00Z"
+}
+],
+"integration_endpoints": [
+{
+"id": 1,
+"integration_id": 1,
+"purpose": "incoming_webhook",
+"url": "https://example.com/webhook",
+"headers": {},
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"webhook_subscriptions": [
+{
+"id": 1,
+"integration_account_id": 1,
+"topic": "message_received",
+"callback_url": "https://example.com/callback",
+"secret_ref": "secret2",
+"is_active": true,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"webhook_events": [
+{
+"id": 1,
+"subscription_id": 1,
+"external_event_id": "event1",
+"topic": "message_received",
+"payload": {},
+"received_at": "2025-10-01T00:00:00Z",
+"processed_at": "2025-10-01T00:00:00Z",
+"status": "processed",
+"error": null
+}
+],
+"message_templates": [
+{
+"id": 1,
+"tenant_id": 1,
+"name": "Welcome",
+"content": {"en": "Welcome!", "ar": "مرحبا!"},
+"language": "en",
+"approved_at": "2025-10-01T00:00:00Z",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"conversations": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"channel": "wa",
+"started_at": "2025-10-01T00:00:00Z",
+"last_activity_at": "2025-10-01T00:00:00Z"
+}
+],
+"inbound_messages": [
+{
+"id": 1,
+"tenant_id": 1,
+"conversation_id": 1,
+"customer_id": 1,
+"integration_account_id": 1,
+"wa_message_id": "msg1",
+"text": "Hello",
+"received_at": "2025-10-01T00:00:00Z",
+"meta": {}
+}
+],
+"outbound_messages": [
+{
+"id": 1,
+"tenant_id": 1,
+"conversation_id": 1,
+"customer_id": 1,
+"integration_account_id": 1,
+"template_id": 1,
+"text": "Hi",
+"send_after": "2025-10-01T00:00:00Z",
+"status": "sent",
+"error": null,
+"attempts": 0,
+"priority": 5,
+"dedupe_key": "key1",
+"created_at": "2025-10-01T00:00:00Z",
+"sent_at": "2025-10-01T00:00:00Z"
+}
+],
+"customer_send_locks": [
+{
+"tenant_id": 1,
+"customer_id": 1,
+"locked_by": "system",
+"locked_at": "2025-10-01T00:00:00Z",
+"expires_at": "2025-10-01T01:00:00Z"
+}
+],
+"dispatch_batches": [
+{
+"id": 1,
+"tenant_id": 1,
+"batch_name": "batch1",
+"created_at": "2025-10-01T00:00:00Z",
+"started_at": "2025-10-01T00:00:00Z",
+"finished_at": "2025-10-01T00:00:00Z",
+"status": "finished",
+"meta": {}
+}
+],
+"rate_limit_policies": [
+{
+"id": 1,
+"tenant_id": 1,
+"scope": "global",
+"integration_account_id": 1,
+"max_per_minute": 60,
+"max_per_hour": 1000,
+"region": "MENA",
+"is_enabled": true,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"rate_limit_quiet_hours": [
+{
+"id": 1,
+"policy_id": 1,
+"timezone": "Africa/Cairo",
+"start_time": "22:00",
+"end_time": "08:00",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"rate_limit_usage": [
+{
+"id": 1,
+"policy_id": 1,
+"window_start": "2025-10-01T00:00:00Z",
+"window_end": "2025-10-01T01:00:00Z",
+"count": 50
+}
+],
+"scheduler_jobs": [
+{
+"id": 1,
+"tenant_id": 1,
+"name": "daily_sync",
+"cron_expr": "0 0 * * *",
+"handler": "sync_handler",
+"is_active": true,
+"created_at": "2025-10-01T00:00:00Z",
+"updated_at": "2025-10-01T00:00:00Z"
+}
+],
+"job_runs": [
+{
+"id": 1,
+"job_id": 1,
+"started_at": "2025-10-01T00:00:00Z",
+"finished_at": "2025-10-01T00:05:00Z",
+"status": "success",
+"items_processed": 100,
+"error": null,
+"meta": {}
+}
+],
+"app_event_logs": [
+{
+"id": 1,
+"tenant_id": 1,
+"level": "INFO",
+"component": "api",
+"message": "Request received",
+"context": {},
+"correlation_id": "corr1",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"error_events": [
+{
+"id": 1,
+"tenant_id": 1,
+"component": "api",
+"error_code": "ERR001",
+"message": "Error message",
+"severity": "medium",
+"context": {},
+"resolution_action": "retry",
+"occurred_at": "2025-10-01T00:00:00Z",
+"resolved_at": null,
+"resolution_notes": null
+}
+],
+"alert_rules": [
+{
+"id": 1,
+"tenant_id": 1,
+"name": "High Error Rate",
+"description": "Alert on errors",
+"condition_json": {},
+"channel": "email",
+"target": "admin@example.com",
+"escalation_chain": {},
+"is_enabled": true,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"alert_events": [
+{
+"id": 1,
+"rule_id": 1,
+"triggered_at": "2025-10-01T00:00:00Z",
+"payload": {},
+"delivered": false,
+"delivered_at": null,
+"error": null
+}
+],
+"service_status": [
+{
+"id": 1,
+"tenant_id": 1,
+"integration_account_id": 1,
+"status": "up",
+"checked_at": "2025-10-01T00:00:00Z",
+"details": {}
+}
+],
+"voice_transcripts": [
+{
+"id": 1,
+"tenant_id": 1,
+"inbound_message_id": 1,
+"transcript": "Hello",
+"language": "en",
+"confidence": 0.95,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"ai_prompt_templates": [
+{
+"id": 1,
+"tenant_id": 1,
+"name": "Greeting",
+"description": "Greeting prompt",
+"template": "Hello {name}",
+"variables_schema": {},
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"ai_inference_logs": [
+{
+"id": 1,
+"tenant_id": 1,
+"component": "nutrition_advice",
+"input_json": {},
+"output_json": {},
+"latency_ms": 100,
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"question_answers": [
+{
+"id": 1,
+"tenant_id": 1,
+"inbound_message_id": 1,
+"answer_text": "Answer",
+"ai_template_id": 1,
+"approved_by": 1,
+"approved_at": "2025-10-01T00:00:00Z",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"conversation_embeddings": [
+{
+"id": 1,
+"tenant_id": 1,
+"interaction_id": 1,
+"content": "Hello",
+"embedding": [0.1, 0.2],
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"etl_process_log": [
+{
+"id": 1,
+"tenant_id": 1,
+"process_name": "sync",
+"started_at": "2025-10-01T00:00:00Z",
+"finished_at": "2025-10-01T00:00:00Z",
+"status": "success",
+"rows_read": 100,
+"rows_written": 100,
+"error": null,
+"error_details": {},
+"meta": {}
+}
+],
+"pii_fields": [
+{
+"id": 1,
+"tenant_id": 1,
+"table_name": "customers",
+"column_name": "phone_e164",
+"pii_type": "phone",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"data_access_log": [
+{
+"id": 1,
+"tenant_id": 1,
+"team_member_id": 1,
+"action": "READ",
+"entity": "customers",
+"entity_id": 1,
+"ip_address": "127.0.0.1",
+"user_agent": "Mozilla/5.0",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"audit_log": [
+{
+"id": 1,
+"tenant_id": 1,
+"actor_team_member_id": 1,
+"entity": "customers",
+"entity_id": 1,
+"action": "CREATE",
+"diff": {},
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"data_retention_tasks": [
+{
+"id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"task_type": "anonymize",
+"scheduled_for": "2026-10-01T00:00:00Z",
+"executed_at": null,
+"status": "scheduled",
+"notes": "Anonymize data"
+}
+],
+"background_jobs": [
+{
+"id": 1,
+"tenant_id": 1,
+"name": "email_notification",
+"args": {},
+"status": "done",
+"attempts": 1,
+"last_error": null,
+"created_at": "2025-10-01T00:00:00Z",
+"updated_at": "2025-10-01T00:00:00Z"
+}
+],
+"automation_runs": [
+{
+"id": 1,
+"tenant_id": 1,
+"workflow_name": "daily_report",
+"triggered_by": "schedule",
+"started_at": "2025-10-01T00:00:00Z",
+"finished_at": "2025-10-01T00:00:00Z",
+"status": "success",
+"items_processed": 10,
+"error": null,
+"meta": {}
+}
+],
+"dead_letter_queue": [
+{
+"id": 1,
+"tenant_id": 1,
+"source": "messages",
+"record_id": 1,
+"reason": "failed",
+"payload": {},
+"created_at": "2025-10-01T00:00:00Z",
+"reprocessed_at": null,
+"status": "parked"
+}
+],
+"system_heartbeat": [
+{
+"id": 1,
+"tenant_id": 1,
+"component": "api",
+"last_ping": "2025-10-01T00:00:00Z",
+"latency_ms": 50,
+"meta": {}
+}
+],
+"ui_translations": [
+{
+"id": 1,
+"tenant_id": 1,
+"table_name": "customers",
+"column_name": "name",
+"language": "en",
+"label": "Name",
+"created_at": "2025-10-01T00:00:00Z"
+}
+],
+"conversation_last_activity": [
+{
+"conversation_id": 1,
+"tenant_id": 1,
+"customer_id": 1,
+"last_ts": "2025-10-01T00:00:00Z"
+}
+],
+"subscription_summary": [
+{
+"tenant_id": 1,
+"status": "active",
+"count": 5,
+"total_cents": 5000,
+"last_renewal": "2025-11-01T00:00:00Z"
+}
+],
+"client_progress_summary": [
+{
+"tenant_id": 1,
+"customer_id": 1,
+"last_recorded": "2025-10-01T00:00:00Z",
+"latest_weight": 80.5,
+"avg_bmi": 22.5
+}
+],
+"system_health_summary": [
+{
+"tenant_id": 1,
+"component": "api",
+"avg_latency_ms": 50,
+"last_ping": "2025-10-01T00:00:00Z"
+}
+],
+"schema_documentation": [
+{
+"id": 1,
+"table_name": "customers",
+"column_name": "phone_e164",
+"description": "E.164 formatted phone number",
+"example": "+20123456789",
+"created_at": "2025-10-01T00:00:00Z"
+}
+]
+}
