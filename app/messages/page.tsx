@@ -1,13 +1,17 @@
+import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
 import { MessagingSystem } from "@/components/messaging-system"
 
-export default function MessagesPage() {
+export default function MessagingPage() {
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">
-        <MessagingSystem />
-      </main>
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1">
+          <MessagingSystem />
+        </main>
+      </div>
     </div>
   )
 }
