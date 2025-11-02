@@ -38,27 +38,38 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 const navigation = [
-  { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { name: "Reports & Analytics", href: "/admin/reports", icon: BarChart3 },
-  { name: "User Management", href: "/admin/users", icon: Users },
-  { name: "Customers", href: "/admin/customers", icon: ShoppingCart },
-  { name: "Conversations", href: "/admin/conversations", icon: MessageSquare },
-  { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
-  { name: "Role Management", href: "/admin/roles", icon: Shield },
-  { name: "Permissions", href: "/admin/permissions", icon: Key },
-  { name: "Referrals", href: "/admin/referrals", icon: UserPlus },
-  { name: "Team Dashboard", href: "/admin/teams/dashboard", icon: Users2 },
-  { name: "Global Analytics", href: "/admin/analytics/global", icon: BarChart3 },
-  { name: "System Monitor", href: "/admin/system", icon: Activity },
-  { name: "Audit Log", href: "/admin/audit", icon: FileText },
-  { name: "Error Queue", href: "/admin/errors", icon: AlertCircle },
-  { name: "Message Templates", href: "/admin/message-templates", icon: MessageSquare },
-  { name: "Notifications", href: "/admin/notifications", icon: Bell },
-  { name: "Integrations", href: "/admin/integrations", icon: Zap },
-  { name: "Support", href: "/admin/support", icon: HelpCircle },
-  { name: "AI Templates", href: "/admin/ai/templates", icon: Sparkles },
-  { name: "AI Logs", href: "/admin/ai/logs", icon: ScrollText },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
+  { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, section: "Overview" },
+  { name: "Reports & Analytics", href: "/admin/reports", icon: BarChart3, section: "Overview" },
+  { name: "Global Analytics", href: "/admin/global", icon: BarChart3, section: "Overview" },
+  
+  { name: "User Management", href: "/admin/users", icon: Users, section: "Users" },
+  { name: "Customers", href: "/admin/customers", icon: ShoppingCart, section: "Users" },
+  { name: "Role Management", href: "/admin/roles", icon: Shield, section: "Users" },
+  { name: "Permissions", href: "/admin/permissions", icon: Key, section: "Users" },
+  { name: "Team Dashboard", href: "/admin/teams/dashboard", icon: Users2, section: "Users" },
+  
+  { name: "WhatsApp", href: "/admin/WhatsApp", icon: MessageSquare, section: "Communication" },
+  { name: "Email", href: "/admin/email", icon: MessageSquare, section: "Communication" },
+  { name: "Instagram", href: "/admin/instagram", icon: MessageSquare, section: "Communication" },
+  { name: "Telegram", href: "/admin/telegram", icon: MessageSquare, section: "Communication" },
+  { name: "Signal", href: "/admin/signal", icon: MessageSquare, section: "Communication" },
+  { name: "Messenger", href: "/admin/messenger", icon: MessageSquare, section: "Communication" },
+  { name: "Conversations", href: "/admin/conversations", icon: MessageSquare, section: "Communication" },
+  { name: "Message Templates", href: "/admin/message-templates", icon: MessageSquare, section: "Communication" },
+  
+  { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard, section: "Business" },
+  { name: "Referrals", href: "/admin/referrals", icon: UserPlus, section: "Business" },
+  
+  { name: "AI Templates", href: "/admin/ai/templates", icon: Sparkles, section: "AI Tools" },
+  { name: "AI Logs", href: "/admin/ai/logs", icon: ScrollText, section: "AI Tools" },
+  
+  { name: "System Monitor", href: "/admin/system", icon: Activity, section: "System" },
+  { name: "Audit Log", href: "/admin/audit", icon: FileText, section: "System" },
+  { name: "Error Queue", href: "/admin/errors", icon: AlertCircle, section: "System" },
+  { name: "Notifications", href: "/admin/notifications", icon: Bell, section: "System" },
+  { name: "Integrations", href: "/admin/integrations", icon: Zap, section: "System" },
+  { name: "Support", href: "/admin/support", icon: HelpCircle, section: "System" },
+  { name: "Settings", href: "/admin/settings", icon: Settings, section: "System" },
 ]
 
 export function AdminSidebar() {
@@ -75,26 +86,39 @@ export function AdminSidebar() {
 
       <ScrollArea className="flex-1">
         <nav className="flex flex-col gap-1 p-4">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
-            const Icon = item.icon
+          {Object.entries(
+            navigation.reduce((acc, item) => {
+              if (!acc[item.section]) acc[item.section] = []
+              acc[item.section].push(item)
+              return acc
+            }, {} as Record<string, typeof navigation>)
+          ).map(([section, items]) => (
+            <div key={section} className="mb-4">
+              <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {section}
+              </div>
+              {items.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+                const Icon = item.icon
 
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                )}
-              >
-                <Icon className="h-5 w-5 flex-shrink-0" />
-                <span className="truncate">{item.name}</span>
-              </Link>
-            )
-          })}
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                    )}
+                  >
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="truncate">{item.name}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
         </nav>
       </ScrollArea>
 

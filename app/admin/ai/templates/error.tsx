@@ -1,3 +1,4 @@
+"use client";
 // Error boundary for templates
 export default function Error() {
   return (

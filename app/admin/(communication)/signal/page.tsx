@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { AdminSidebar } from "@/components/layouts/admin-sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -87,7 +86,6 @@ export default function CommunicationSignalPage() {
 
   return (
     <div className="flex h-screen bg-background">
-      <AdminSidebar />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="border-b bg-card px-6 py-4">

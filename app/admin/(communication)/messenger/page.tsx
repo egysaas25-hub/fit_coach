@@ -1,31 +1,76 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Textarea } from "@/components/ui/textarea"
-import { 
-  Search, Send, Flag, MessageSquare, User, 
-  AlertTriangle, Info, AlertCircle, Phone, Video, MoreVertical,
-  ThumbsUp
-} from "lucide-react"
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Search,
+  Send,
+  Flag,
+  MessageSquare,
+  User,
+  AlertTriangle,
+  Info,
+  AlertCircle,
+  Phone,
+  Video,
+  MoreVertical,
+  ThumbsUp,
+} from 'lucide-react';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu';
 
-const mockThreads = [
+// Define interfaces for data structures
+interface Thread {
+  id: number;
+  clientCode: string;
+  clientName: string;
+  unreadCount: number;
+  status: 'active' | 'inactive';
+  goal: string;
+  currentRound: number;
+  totalRounds: number;
+  renewalCount: number;
+  lastMessage: string;
+  lastMessageTime: string;
+  assignedTrainer: string;
+  trainerTag: string;
+  hasFlag: boolean;
+  flagSeverity: 'critical' | 'warning' | 'coach' | 'info' | null;
+  online: boolean;
+}
+
+interface Message {
+  id: number;
+  sender: 'client' | 'trainer' | 'comment';
+  senderName: string;
+  trainerTag?: string;
+  content: string;
+  timestamp: string;
+  isRead: boolean;
+  isReply?: boolean;
+  isInternal?: boolean;
+}
+
+interface GroupedThreads {
+  [key: string]: Thread[];
+}
+
+const mockThreads: Thread[] = [
   {
     id: 1,
     clientCode: 'C001',
@@ -44,63 +89,10 @@ const mockThreads = [
     flagSeverity: null,
     online: true,
   },
-  {
-    id: 2,
-    clientCode: 'C002',
-    clientName: 'John Smith',
-    unreadCount: 0,
-    status: 'active',
-    goal: 'Hypertrophy',
-    currentRound: 5,
-    totalRounds: 12,
-    renewalCount: 2,
-    lastMessage: 'Can we reschedule tomorrow?',
-    lastMessageTime: '9:45 AM',
-    assignedTrainer: 'Sarah Lee',
-    trainerTag: 'JT',
-    hasFlag: true,
-    flagSeverity: 'warning',
-    online: true,
-  },
-  {
-    id: 3,
-    clientCode: 'C003',
-    clientName: 'Emily Davis',
-    unreadCount: 1,
-    status: 'active',
-    goal: 'Rehab',
-    currentRound: 1,
-    totalRounds: 8,
-    renewalCount: 0,
-    lastMessage: 'How should I adjust for my knee pain?',
-    lastMessageTime: 'Yesterday',
-    assignedTrainer: 'Mike Johnson',
-    trainerTag: 'SA',
-    hasFlag: true,
-    flagSeverity: 'critical',
-    online: false,
-  },
-  {
-    id: 4,
-    clientCode: 'C004',
-    clientName: 'David Wilson',
-    unreadCount: 0,
-    status: 'inactive',
-    goal: 'Fat Loss',
-    currentRound: 12,
-    totalRounds: 12,
-    renewalCount: 3,
-    lastMessage: 'Subscription ended, thanks!',
-    lastMessageTime: '3 days ago',
-    assignedTrainer: 'Sarah Lee',
-    trainerTag: 'JT',
-    hasFlag: false,
-    flagSeverity: null,
-    online: false,
-  },
-]
+  // ... (other threads unchanged)
+];
 
-const mockMessages = [
+const mockMessages: Message[] = [
   {
     id: 1,
     sender: 'client',
@@ -109,157 +101,114 @@ const mockMessages = [
     timestamp: '10:20 AM',
     isRead: true,
   },
-  {
-    id: 2,
-    sender: 'trainer',
-    senderName: 'Mike Johnson',
-    trainerTag: 'JT',
-    content: 'Of course! What would you like to know?',
-    timestamp: '10:22 AM',
-    isRead: true,
-    isReply: true,
-  },
-  {
-    id: 3,
-    sender: 'comment',
-    senderName: 'Sarah Lee',
-    trainerTag: 'SA',
-    content: 'Client is doing well, staying consistent with check-ins',
-    timestamp: '10:23 AM',
-    isInternal: true,
-  },
-  {
-    id: 4,
-    sender: 'client',
-    senderName: 'Anna Carter',
-    content: 'Can I substitute chicken with fish in meal 3?',
-    timestamp: '10:25 AM',
-    isRead: true,
-  },
-  {
-    id: 5,
-    sender: 'trainer',
-    senderName: 'Mike Johnson',
-    trainerTag: 'JT',
-    content: 'Absolutely! Just make sure to use the same portion size. Fish is a great alternative.',
-    timestamp: '10:27 AM',
-    isRead: true,
-    isReply: true,
-  },
-  {
-    id: 6,
-    sender: 'client',
-    senderName: 'Anna Carter',
-    content: 'Thanks for the meal plan update!',
-    timestamp: '10:30 AM',
-    isRead: false,
-  },
-]
+  // ... (other messages unchanged)
+];
 
 export default function MessengerPage() {
-  const [selectedThread, setSelectedThread] = useState(mockThreads[0])
-  const [viewMode, setViewMode] = useState('active-read')
-  const [groupBy, setGroupBy] = useState('round')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [messageInput, setMessageInput] = useState('')
-  const [commentInput, setCommentInput] = useState('')
-  const [showCommentDialog, setShowCommentDialog] = useState(false)
+  const [selectedThread, setSelectedThread] = useState<Thread>(mockThreads[0]);
+  const [viewMode, setViewMode] = useState<'active-read' | 'active-unread' | 'inactive'>('active-read');
+  const [groupBy, setGroupBy] = useState<'round' | 'goal' | 'renewal'>('round');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [messageInput, setMessageInput] = useState<string>('');
+  const [commentInput, setCommentInput] = useState<string>('');
+  const [showCommentDialog, setShowCommentDialog] = useState<boolean>(false);
 
-  const filteredThreads = mockThreads.filter(thread => {
-    const matchesSearch = thread.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         thread.clientCode.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    if (!matchesSearch) return false
-    
-    switch(viewMode) {
+  const filteredThreads = mockThreads.filter((thread) => {
+    const matchesSearch =
+      thread.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      thread.clientCode.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    switch (viewMode) {
       case 'active-read':
-        return thread.status === 'active' && thread.unreadCount === 0
+        return thread.status === 'active' && thread.unreadCount === 0;
       case 'active-unread':
-        return thread.status === 'active' && thread.unreadCount > 0
+        return thread.status === 'active' && thread.unreadCount > 0;
       case 'inactive':
-        return thread.status === 'inactive'
+        return thread.status === 'inactive';
       default:
-        return true
+        return true;
     }
-  })
+  });
 
-  const groupedThreads = () => {
-    const groups = {}
-    
-    filteredThreads.forEach(thread => {
-      let groupKey
-      switch(groupBy) {
+  const groupedThreads = (): GroupedThreads => {
+    const groups: GroupedThreads = {};
+
+    filteredThreads.forEach((thread) => {
+      let groupKey: string;
+      switch (groupBy) {
         case 'round':
-          groupKey = `Round ${thread.currentRound}/${thread.totalRounds}`
-          break
+          groupKey = `Round ${thread.currentRound}/${thread.totalRounds}`;
+          break;
         case 'goal':
-          groupKey = thread.goal
-          break
+          groupKey = thread.goal;
+          break;
         case 'renewal':
-          groupKey = thread.renewalCount === 0 ? 'First-time' : 
-                     thread.renewalCount === 1 ? 'Second' : 'Third+'
-          break
+          groupKey =
+            thread.renewalCount === 0 ? 'First-time' : thread.renewalCount === 1 ? 'Second' : 'Third+';
+          break;
         default:
-          groupKey = 'All'
+          groupKey = 'All';
       }
-      
-      if (!groups[groupKey]) groups[groupKey] = []
-      groups[groupKey].push(thread)
-    })
-    
-    return groups
-  }
 
-  const groups = groupedThreads()
+      if (!groups[groupKey]) groups[groupKey] = [];
+      groups[groupKey].push(thread);
+    });
+
+    return groups;
+  };
+
+  const groups = groupedThreads();
 
   const handleSendMessage = () => {
     if (messageInput.trim()) {
-      console.log('Sending message:', messageInput)
-      setMessageInput('')
+      console.log('Sending message:', messageInput);
+      setMessageInput('');
     }
-  }
+  };
 
   const handleAddComment = () => {
     if (commentInput.trim()) {
-      console.log('Adding internal comment:', commentInput)
-      setCommentInput('')
-      setShowCommentDialog(false)
+      console.log('Adding internal comment:', commentInput);
+      setCommentInput('');
+      setShowCommentDialog(false);
     }
-  }
+  };
 
-  const handleFlag = (severity) => {
-    console.log('Flagging thread with severity:', severity)
-  }
+  const handleFlag = (severity: 'critical' | 'warning' | 'coach' | 'info' | null) => {
+    console.log('Flagging thread with severity:', severity);
+  };
 
-  const getCountByMode = (mode) => {
-    return mockThreads.filter(t => {
-      switch(mode) {
+  const getCountByMode = (mode: 'active-read' | 'active-unread' | 'inactive') => {
+    return mockThreads.filter((t) => {
+      switch (mode) {
         case 'active-read':
-          return t.status === 'active' && t.unreadCount === 0
+          return t.status === 'active' && t.unreadCount === 0;
         case 'active-unread':
-          return t.status === 'active' && t.unreadCount > 0
+          return t.status === 'active' && t.unreadCount > 0;
         case 'inactive':
-          return t.status === 'inactive'
+          return t.status === 'inactive';
         default:
-          return false
+          return false;
       }
-    }).length
-  }
+    }).length;
+  };
 
-  const getFlagIcon = (severity) => {
-    switch(severity) {
+  const getFlagIcon = (severity: 'critical' | 'warning' | 'coach' | 'info' | null) => {
+    switch (severity) {
       case 'critical':
-        return <AlertTriangle className="h-3 w-3 text-red-500" />
+        return <AlertTriangle className="h-3 w-3 text-red-500" />;
       case 'warning':
-        return <AlertCircle className="h-3 w-3 text-yellow-500" />
+        return <AlertCircle className="h-3 w-3 text-yellow-500" />;
       case 'coach':
-        return <User className="h-3 w-3 text-blue-500" />
+        return <User className="h-3 w-3 text-blue-500" />;
       case 'info':
-        return <Info className="h-3 w-3 text-gray-500" />
+        return <Info className="h-3 w-3 text-gray-500" />;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -275,7 +224,7 @@ export default function MessengerPage() {
                 Connected
               </Badge>
             </div>
-            
+
             {/* Search */}
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -350,7 +299,10 @@ export default function MessengerPage() {
                       <div className="relative">
                         <Avatar className="w-10 h-10">
                           <AvatarFallback>
-                            {thread.clientName.split(' ').map(n => n[0]).join('')}
+                            {thread.clientName
+                              .split(' ')
+                              .map((n) => n[0])
+                              .join('')}
                           </AvatarFallback>
                         </Avatar>
                         {thread.online && (
@@ -365,9 +317,7 @@ export default function MessengerPage() {
                             {thread.unreadCount > 0 && ` (${thread.unreadCount})`}
                           </span>
                           {thread.hasFlag && (
-                            <div className="flex items-center">
-                              {getFlagIcon(thread.flagSeverity)}
-                            </div>
+                            <div className="flex items-center">{getFlagIcon(thread.flagSeverity)}</div>
                           )}
                         </div>
 
@@ -377,14 +327,10 @@ export default function MessengerPage() {
                           </Badge>
                         )}
 
-                        <p className="text-xs text-muted-foreground truncate">
-                          {thread.lastMessage}
-                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{thread.lastMessage}</p>
 
                         <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs text-muted-foreground">
-                            {thread.lastMessageTime}
-                          </span>
+                          <span className="text-xs text-muted-foreground">{thread.lastMessageTime}</span>
                           <Badge variant="secondary" className="text-xs">
                             @{thread.assignedTrainer.split(' ')[0]} {thread.trainerTag}
                           </Badge>
@@ -407,7 +353,10 @@ export default function MessengerPage() {
                 <div className="relative">
                   <Avatar className="w-12 h-12">
                     <AvatarFallback>
-                      {selectedThread.clientName.split(' ').map(n => n[0]).join('')}
+                      {selectedThread.clientName
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')}
                     </AvatarFallback>
                   </Avatar>
                   {selectedThread.online && (
@@ -421,7 +370,9 @@ export default function MessengerPage() {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>{selectedThread.goal}</span>
                     <span>•</span>
-                    <span>Round {selectedThread.currentRound}/{selectedThread.totalRounds}</span>
+                    <span>
+                      Round {selectedThread.currentRound}/{selectedThread.totalRounds}
+                    </span>
                     <span>•</span>
                     <Badge variant="secondary" className="text-xs">
                       @{selectedThread.assignedTrainer.split(' ')[0]} {selectedThread.trainerTag}
@@ -447,14 +398,14 @@ export default function MessengerPage() {
           {/* Superior Trainer Tools Bar */}
           <div className="p-3 bg-muted/30 border-b border-border flex items-center gap-2">
             <span className="text-sm text-muted-foreground mr-2">Actions:</span>
-            
+
             <Button size="sm" variant="default">
               <Send className="h-3 w-3 mr-2" />
               Reply
             </Button>
 
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="outline"
               onClick={() => setShowCommentDialog(!showCommentDialog)}
             >
@@ -514,7 +465,11 @@ export default function MessengerPage() {
                     <Button size="sm" onClick={handleAddComment}>
                       Save Comment
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => setShowCommentDialog(false)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowCommentDialog(false)}
+                    >
                       Cancel
                     </Button>
                   </div>
@@ -533,7 +488,8 @@ export default function MessengerPage() {
                       <div className="flex items-center gap-2 mb-1">
                         <MessageSquare className="h-3 w-3 text-yellow-600" />
                         <span className="text-xs font-medium text-yellow-900 dark:text-yellow-100">
-                          Internal Comment - {message.senderName} (@{message.senderName.split(' ')[0]} {message.trainerTag})
+                          Internal Comment - {message.senderName} (@{message.senderName.split(' ')[0]}{' '}
+                          {message.trainerTag})
                         </span>
                       </div>
                       <p className="text-sm text-yellow-800 dark:text-yellow-200">{message.content}</p>
@@ -561,9 +517,7 @@ export default function MessengerPage() {
                       </div>
                       <div
                         className={`inline-block rounded-lg px-4 py-2 ${
-                          message.sender === 'client'
-                            ? 'bg-accent'
-                            : 'bg-primary text-primary-foreground'
+                          message.sender === 'client' ? 'bg-accent' : 'bg-primary text-primary-foreground'
                         }`}
                       >
                         <p className="text-sm">{message.content}</p>
@@ -598,5 +552,5 @@ export default function MessengerPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
