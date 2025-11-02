@@ -1,15 +1,16 @@
 "use client"
 
 import { useState } from "react"
+import { AdminSidebar } from "@/components/layouts/admin-sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { 
   Search, Send, Flag, MessageSquare, User, 
-  AlertTriangle, Info, AlertCircle, Phone, Video, MoreVertical,
-  ThumbsUp
+  AlertTriangle, Info, AlertCircle, Phone, Video, MoreVertical 
 } from "lucide-react"
 import {
   Select,
@@ -25,11 +26,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+// Mock data with all required fields
 const mockThreads = [
   {
     id: 1,
     clientCode: 'C001',
     clientName: 'Anna Carter',
+    phone: '+20123456789',
     unreadCount: 3,
     status: 'active',
     goal: 'Fat Loss',
@@ -48,6 +51,7 @@ const mockThreads = [
     id: 2,
     clientCode: 'C002',
     clientName: 'John Smith',
+    phone: '+20123456790',
     unreadCount: 0,
     status: 'active',
     goal: 'Hypertrophy',
@@ -66,6 +70,7 @@ const mockThreads = [
     id: 3,
     clientCode: 'C003',
     clientName: 'Emily Davis',
+    phone: '+20123456791',
     unreadCount: 1,
     status: 'active',
     goal: 'Rehab',
@@ -84,6 +89,7 @@ const mockThreads = [
     id: 4,
     clientCode: 'C004',
     clientName: 'David Wilson',
+    phone: '+20123456792',
     unreadCount: 0,
     status: 'inactive',
     goal: 'Fat Loss',
@@ -97,6 +103,25 @@ const mockThreads = [
     hasFlag: false,
     flagSeverity: null,
     online: false,
+  },
+  {
+    id: 5,
+    clientCode: 'C005',
+    clientName: 'Sarah Miller',
+    phone: '+20123456793',
+    unreadCount: 2,
+    status: 'active',
+    goal: 'Hypertrophy',
+    currentRound: 3,
+    totalRounds: 12,
+    renewalCount: 0,
+    lastMessage: 'When should I increase weights?',
+    lastMessageTime: '11:15 AM',
+    assignedTrainer: 'Mike Johnson',
+    trainerTag: 'JT',
+    hasFlag: false,
+    flagSeverity: null,
+    online: true,
   },
 ]
 
@@ -156,15 +181,16 @@ const mockMessages = [
   },
 ]
 
-export default function MessengerPage() {
+export default function CommunicationWhatsAppPage() {
   const [selectedThread, setSelectedThread] = useState(mockThreads[0])
-  const [viewMode, setViewMode] = useState('active-read')
-  const [groupBy, setGroupBy] = useState('round')
+  const [viewMode, setViewMode] = useState('active-read') // active-read, active-unread, inactive
+  const [groupBy, setGroupBy] = useState('round') // round, goal, renewal
   const [searchQuery, setSearchQuery] = useState('')
   const [messageInput, setMessageInput] = useState('')
   const [commentInput, setCommentInput] = useState('')
   const [showCommentDialog, setShowCommentDialog] = useState(false)
 
+  // Filter threads based on view mode
   const filteredThreads = mockThreads.filter(thread => {
     const matchesSearch = thread.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          thread.clientCode.toLowerCase().includes(searchQuery.toLowerCase())
@@ -183,6 +209,7 @@ export default function MessengerPage() {
     }
   })
 
+  // Group threads
   const groupedThreads = () => {
     const groups = {}
     
@@ -263,13 +290,15 @@ export default function MessengerPage() {
 
   return (
     <div className="flex h-screen bg-background">
+      <AdminSidebar />
+      
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Thread List */}
         <div className="w-96 border-r border-border flex flex-col bg-card">
           {/* Header */}
           <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">Messenger</h2>
+              <h2 className="text-lg font-bold">WhatsApp Messages</h2>
               <Badge variant="outline" className="gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
                 Connected
@@ -315,7 +344,7 @@ export default function MessengerPage() {
               </Button>
             </div>
 
-            {/* Group By Selector */}
+            {/* Group By Selector (only for active clients) */}
             {viewMode !== 'inactive' && (
               <Select value={groupBy} onValueChange={setGroupBy}>
                 <SelectTrigger>
@@ -334,10 +363,12 @@ export default function MessengerPage() {
           <div className="flex-1 overflow-y-auto">
             {Object.entries(groups).map(([groupName, threads]) => (
               <div key={groupName}>
+                {/* Group Header */}
                 <div className="px-4 py-2 bg-muted/50 text-sm font-medium sticky top-0 z-10">
                   {groupName} ({threads.length})
                 </div>
 
+                {/* Threads in Group */}
                 {threads.map((thread) => (
                   <button
                     key={thread.id}
@@ -359,6 +390,7 @@ export default function MessengerPage() {
                       </div>
 
                       <div className="flex-1 min-w-0">
+                        {/* Thread Title: ClientCode—ClientName (UnreadCount) */}
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`text-sm ${thread.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
                             {thread.clientCode}—{thread.clientName}
@@ -371,16 +403,19 @@ export default function MessengerPage() {
                           )}
                         </div>
 
+                        {/* Round Badge (if grouping by round) */}
                         {groupBy === 'round' && (
                           <Badge variant="outline" className="text-xs mb-1">
                             Round {thread.currentRound}/{thread.totalRounds}
                           </Badge>
                         )}
 
+                        {/* Last Message Preview */}
                         <p className="text-xs text-muted-foreground truncate">
                           {thread.lastMessage}
                         </p>
 
+                        {/* Time and Trainer Tag */}
                         <div className="flex items-center justify-between mt-1">
                           <span className="text-xs text-muted-foreground">
                             {thread.lastMessageTime}
@@ -430,6 +465,7 @@ export default function MessengerPage() {
                 </div>
               </div>
 
+              {/* Action Buttons */}
               <div className="flex gap-2">
                 <Button variant="ghost" size="icon">
                   <Phone className="h-4 w-4" />
@@ -448,11 +484,13 @@ export default function MessengerPage() {
           <div className="p-3 bg-muted/30 border-b border-border flex items-center gap-2">
             <span className="text-sm text-muted-foreground mr-2">Actions:</span>
             
+            {/* Reply Button (client-visible) */}
             <Button size="sm" variant="default">
               <Send className="h-3 w-3 mr-2" />
               Reply
             </Button>
 
+            {/* Comment Button (internal only) */}
             <Button 
               size="sm" 
               variant="outline"
@@ -462,6 +500,7 @@ export default function MessengerPage() {
               Comment
             </Button>
 
+            {/* Flag Dropdown with Severity Levels */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="outline">
@@ -523,11 +562,12 @@ export default function MessengerPage() {
             </div>
           )}
 
-          {/* Messages */}
+          {/* Messages with Trainer Tags */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {mockMessages.map((message) => (
               <div key={message.id}>
                 {message.isInternal ? (
+                  // Internal Comment (Staff Only)
                   <div className="flex justify-center my-2">
                     <div className="max-w-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-4 py-2">
                       <div className="flex items-center gap-2 mb-1">
@@ -541,6 +581,7 @@ export default function MessengerPage() {
                     </div>
                   </div>
                 ) : (
+                  // Regular Message
                   <div className={`flex ${message.sender === 'client' ? '' : 'justify-end'}`}>
                     <div className={`max-w-md ${message.sender === 'client' ? '' : 'text-right'}`}>
                       <div className="flex items-center gap-2 mb-1">
@@ -578,10 +619,7 @@ export default function MessengerPage() {
 
           {/* Message Input */}
           <div className="p-4 border-t border-border bg-card">
-            <div className="flex gap-2 items-center">
-              <Button variant="ghost" size="icon">
-                <ThumbsUp className="h-4 w-4" />
-              </Button>
+            <div className="flex gap-2">
               <Input
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
