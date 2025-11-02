@@ -1,6 +1,6 @@
-'use client';
 
-import { useState } from 'react';
+"use client"
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,9 @@ import {
   ChevronRight,
   ChevronLeft,
   MessageCircle,
+  ThumbsUp,
+  Heart,
+  Lock,
 } from 'lucide-react';
 import {
   Select,
@@ -35,14 +38,57 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Thread, Message, GroupedThreads, Comment } from '@/types/communication';
 
+// Types
+interface Thread {
+  id: number;
+  clientCode: string;
+  clientName: string;
+  phone?: string;
+  username?: string;
+  unreadCount: number;
+  status: 'active' | 'inactive';
+  goal: string;
+  currentRound: number;
+  totalRounds: number;
+  renewalCount: number;
+  lastMessage: string;
+  lastMessageTime: string;
+  assignedTrainer: string;
+  trainerTag: string;
+  hasFlag: boolean;
+  flagSeverity: 'critical' | 'warning' | 'coach' | 'info' | null;
+  online: boolean;
+}
+
+interface Message {
+  id: number;
+  sender: 'client' | 'trainer';
+  senderName: string;
+  trainerTag?: string;
+  content: string;
+  timestamp: string;
+  isRead: boolean;
+  isReply?: boolean;
+  comments?: Comment[];
+}
+
+interface Comment {
+  id: number;
+  senderName: string;
+  trainerTag: string;
+  content: string;
+  timestamp: string;
+}
+
+// Mock Data
 const mockThreads: Thread[] = [
   {
     id: 1,
     clientCode: 'C001',
     clientName: 'Anna Carter',
     phone: '+20123456789',
+    username: '@anna_carter',
     unreadCount: 3,
     status: 'active',
     goal: 'Fat Loss',
@@ -62,6 +108,7 @@ const mockThreads: Thread[] = [
     clientCode: 'C002',
     clientName: 'John Smith',
     phone: '+20123456790',
+    username: '@john_smith',
     unreadCount: 0,
     status: 'active',
     goal: 'Hypertrophy',
@@ -81,6 +128,7 @@ const mockThreads: Thread[] = [
     clientCode: 'C003',
     clientName: 'Emily Davis',
     phone: '+20123456791',
+    username: '@emily_davis',
     unreadCount: 1,
     status: 'active',
     goal: 'Rehab',
@@ -94,44 +142,6 @@ const mockThreads: Thread[] = [
     hasFlag: true,
     flagSeverity: 'critical',
     online: false,
-  },
-  {
-    id: 4,
-    clientCode: 'C004',
-    clientName: 'David Wilson',
-    phone: '+20123456792',
-    unreadCount: 0,
-    status: 'inactive',
-    goal: 'Fat Loss',
-    currentRound: 12,
-    totalRounds: 12,
-    renewalCount: 3,
-    lastMessage: 'Subscription ended, thanks!',
-    lastMessageTime: '3 days ago',
-    assignedTrainer: 'Sarah Lee',
-    trainerTag: 'JT',
-    hasFlag: false,
-    flagSeverity: null,
-    online: false,
-  },
-  {
-    id: 5,
-    clientCode: 'C005',
-    clientName: 'Sarah Miller',
-    phone: '+20123456793',
-    unreadCount: 2,
-    status: 'active',
-    goal: 'Hypertrophy',
-    currentRound: 3,
-    totalRounds: 12,
-    renewalCount: 0,
-    lastMessage: 'When should I increase weights?',
-    lastMessageTime: '11:15 AM',
-    assignedTrainer: 'Mike Johnson',
-    trainerTag: 'JT',
-    hasFlag: false,
-    flagSeverity: null,
-    online: true,
   },
 ];
 
@@ -165,7 +175,7 @@ const mockMessages: Message[] = [
     ],
   },
   {
-    id: 4,
+    id: 3,
     sender: 'client',
     senderName: 'Anna Carter',
     content: 'Can I substitute chicken with fish in meal 3?',
@@ -174,7 +184,7 @@ const mockMessages: Message[] = [
     comments: [],
   },
   {
-    id: 5,
+    id: 4,
     sender: 'trainer',
     senderName: 'Mike Johnson',
     trainerTag: 'JT',
@@ -184,18 +194,10 @@ const mockMessages: Message[] = [
     isReply: true,
     comments: [],
   },
-  {
-    id: 6,
-    sender: 'client',
-    senderName: 'Anna Carter',
-    content: 'Thanks for the meal plan update!',
-    timestamp: '10:30 AM',
-    isRead: false,
-    comments: [],
-  },
 ];
 
-export default function CommunicationWhatsAppPage() {
+// Communication Page Component
+const CommunicationPage = ({ platform }: { platform: 'whatsapp' | 'messenger' | 'telegram' | 'instagram' | 'signal' }) => {
   const [selectedThread, setSelectedThread] = useState<Thread>(mockThreads[0]);
   const [viewMode, setViewMode] = useState<'active-read' | 'active-unread' | 'inactive'>('active-read');
   const [groupBy, setGroupBy] = useState<'round' | 'goal' | 'renewal'>('round');
@@ -205,7 +207,41 @@ export default function CommunicationWhatsAppPage() {
   const [activeCommentMessageId, setActiveCommentMessageId] = useState<number | null>(null);
   const [isCommentPanelOpen, setIsCommentPanelOpen] = useState<boolean>(true);
 
-  // Filter threads based on view mode
+  const platformConfig = {
+    whatsapp: {
+      title: 'WhatsApp Messages',
+      icon: MessageSquare,
+      color: 'text-green-500',
+      features: { phone: true, encryption: false },
+    },
+    messenger: {
+      title: 'Messenger',
+      icon: MessageCircle,
+      color: 'text-blue-500',
+      features: { phone: false, encryption: false },
+    },
+    telegram: {
+      title: 'Telegram Communication',
+      icon: Send,
+      color: 'text-blue-400',
+      features: { phone: true, encryption: false },
+    },
+    instagram: {
+      title: 'Instagram Direct Messages',
+      icon: MessageCircle,
+      color: 'text-pink-500',
+      features: { phone: false, encryption: false },
+    },
+    signal: {
+      title: 'Signal Communication',
+      icon: Lock,
+      color: 'text-blue-600',
+      features: { phone: true, encryption: true },
+    },
+  };
+
+  const config = platformConfig[platform];
+
   const filteredThreads = mockThreads.filter((thread) => {
     const matchesSearch =
       thread.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -225,9 +261,8 @@ export default function CommunicationWhatsAppPage() {
     }
   });
 
-  // Group threads
-  const groupedThreads = (): GroupedThreads => {
-    const groups: GroupedThreads = {};
+  const groupedThreads = () => {
+    const groups: { [key: string]: Thread[] } = {};
 
     filteredThreads.forEach((thread) => {
       let groupKey: string;
@@ -239,8 +274,7 @@ export default function CommunicationWhatsAppPage() {
           groupKey = thread.goal;
           break;
         case 'renewal':
-          groupKey =
-            thread.renewalCount === 0 ? 'First-time' : thread.renewalCount === 1 ? 'Second' : 'Third+';
+          groupKey = thread.renewalCount === 0 ? 'First-time' : thread.renewalCount === 1 ? 'Second' : 'Third+';
           break;
         default:
           groupKey = 'All';
@@ -254,26 +288,6 @@ export default function CommunicationWhatsAppPage() {
   };
 
   const groups = groupedThreads();
-
-  const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      console.log('Sending message:', messageInput);
-      setMessageInput('');
-    }
-  };
-
-  const handleAddComment = (messageId: number) => {
-    if (commentInput.trim()) {
-      console.log(`Adding comment to message ${messageId}:`, commentInput);
-      // In a real app, update mockMessages with the new comment
-      setCommentInput('');
-      setActiveCommentMessageId(null);
-    }
-  };
-
-  const handleFlag = (severity: 'critical' | 'warning' | 'coach' | 'info' | null) => {
-    console.log('Flagging thread with severity:', severity);
-  };
 
   const getCountByMode = (mode: 'active-read' | 'active-unread' | 'inactive') => {
     return mockThreads.filter((t) => {
@@ -305,19 +319,42 @@ export default function CommunicationWhatsAppPage() {
     }
   };
 
+  const handleSendMessage = () => {
+    if (messageInput.trim()) {
+      console.log('Sending message:', messageInput);
+      setMessageInput('');
+    }
+  };
+
+  const handleAddComment = (messageId: number) => {
+    if (commentInput.trim()) {
+      console.log(`Adding comment to message ${messageId}:`, commentInput);
+      setCommentInput('');
+      setActiveCommentMessageId(null);
+    }
+  };
+
+  const handleFlag = (severity: 'critical' | 'warning' | 'coach' | 'info' | null) => {
+    console.log('Flagging thread with severity:', severity);
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <div className="flex-1 grid grid-cols-[384px_1fr_320px] h-full">
-        {/* First Column - Thread List */}
+        {/* Thread List Column */}
         <div className="border-r border-border bg-card flex flex-col">
           <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">WhatsApp Messages</h2>
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <config.icon className={`h-5 w-5 ${config.color}`} />
+                {config.title}
+              </h2>
               <Badge variant="outline" className="gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
                 Connected
               </Badge>
             </div>
+
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -327,12 +364,13 @@ export default function CommunicationWhatsAppPage() {
                 className="pl-10"
               />
             </div>
+
             <div className="flex gap-2 mb-4">
               <Button
                 variant={viewMode === 'active-read' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('active-read')}
-                className="flex-1"
+                className="flex-1 text-xs"
               >
                 Read ({getCountByMode('active-read')})
               </Button>
@@ -340,7 +378,7 @@ export default function CommunicationWhatsAppPage() {
                 variant={viewMode === 'active-unread' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('active-unread')}
-                className="flex-1"
+                className="flex-1 text-xs"
               >
                 Unread ({getCountByMode('active-unread')})
               </Button>
@@ -348,13 +386,14 @@ export default function CommunicationWhatsAppPage() {
                 variant={viewMode === 'inactive' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('inactive')}
-                className="flex-1"
+                className="flex-1 text-xs"
               >
                 Inactive ({getCountByMode('inactive')})
               </Button>
             </div>
+
             {viewMode !== 'inactive' && (
-              <Select value={groupBy} onValueChange={setGroupBy}>
+              <Select value={groupBy} onValueChange={(val) => setGroupBy(val as any)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -366,6 +405,7 @@ export default function CommunicationWhatsAppPage() {
               </Select>
             )}
           </div>
+
           <div className="flex-1 overflow-y-auto">
             {Object.entries(groups).map(([groupName, threads]) => (
               <div key={groupName}>
@@ -384,10 +424,7 @@ export default function CommunicationWhatsAppPage() {
                       <div className="relative">
                         <Avatar className="w-10 h-10">
                           <AvatarFallback>
-                            {thread.clientName
-                              .split(' ')
-                              .map((n) => n[0])
-                              .join('')}
+                            {thread.clientName.split(' ').map((n) => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
                         {thread.online && (
@@ -425,7 +462,7 @@ export default function CommunicationWhatsAppPage() {
           </div>
         </div>
 
-        {/* Second Column - Chat Area */}
+        {/* Chat Area Column */}
         <div className="border-r border-border flex flex-col">
           <div className="p-4 border-b border-border bg-card">
             <div className="flex items-center justify-between">
@@ -433,10 +470,7 @@ export default function CommunicationWhatsAppPage() {
                 <div className="relative">
                   <Avatar className="w-12 h-12">
                     <AvatarFallback>
-                      {selectedThread.clientName
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')}
+                      {selectedThread.clientName.split(' ').map((n) => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
                   {selectedThread.online && (
@@ -459,18 +493,23 @@ export default function CommunicationWhatsAppPage() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="ghost" size="icon">
-                  <Phone className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon">
-                  <Video className="h-4 w-4" />
-                </Button>
+                {config.features.phone && (
+                  <>
+                    <Button variant="ghost" size="icon">
+                      <Phone className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <Video className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
                 <Button variant="ghost" size="icon">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </div>
+
           <div className="p-3 bg-muted/30 border-b border-border flex items-center gap-2">
             <span className="text-sm text-muted-foreground mr-2">Actions:</span>
             <Button size="sm" variant="default">
@@ -507,12 +546,12 @@ export default function CommunicationWhatsAppPage() {
               💡 Reply = Client sees | Comment = Staff only
             </div>
           </div>
+
           <div className="flex-1 overflow-y-auto p-4 space-y-0">
             {mockMessages.map((message, index) => (
               <div
                 key={message.id}
                 className="grid grid-cols-[1fr_auto] items-start gap-4 py-3 border-b border-border/50 last:border-b-0 hover:bg-accent/20"
-                style={{ gridRow: index + 1 }}
               >
                 <div className={`flex ${message.sender === 'client' ? 'justify-start' : 'justify-end'} items-start`}>
                   <div className={`max-w-2xl ${message.sender === 'client' ? '' : 'text-right'}`}>
@@ -533,11 +572,11 @@ export default function CommunicationWhatsAppPage() {
                             className={`${activeCommentMessageId === message.id ? 'bg-yellow-50 border-yellow-200' : ''} transition-all duration-200`}
                           >
                             <MessageSquare className="h-4 w-4" />
-                            {message.comments?.length ? (
+                            {message.comments && message.comments.length > 0 && (
                               <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 text-xs">
                                 {message.comments.length}
                               </Badge>
-                            ) : null}
+                            )}
                           </Button>
                         </div>
                       )}
@@ -553,7 +592,9 @@ export default function CommunicationWhatsAppPage() {
                     </div>
                     <div
                       className={`inline-block rounded-lg px-4 py-2 max-w-full ${
-                        message.sender === 'client' ? 'bg-accent text-accent-foreground' : 'bg-primary text-primary-foreground'
+                        message.sender === 'client'
+                          ? 'bg-accent text-accent-foreground'
+                          : 'bg-primary text-primary-foreground'
                       }`}
                     >
                       <p className="text-sm leading-relaxed">{message.content}</p>
@@ -565,8 +606,19 @@ export default function CommunicationWhatsAppPage() {
               </div>
             ))}
           </div>
+
           <div className="p-4 border-t border-border bg-card">
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              {platform === 'messenger' && (
+                <Button variant="ghost" size="icon">
+                  <ThumbsUp className="h-4 w-4" />
+                </Button>
+              )}
+              {platform === 'instagram' && (
+                <Button variant="ghost" size="icon">
+                  <Heart className="h-4 w-4" />
+                </Button>
+              )}
               <Input
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
@@ -579,10 +631,16 @@ export default function CommunicationWhatsAppPage() {
                 Send
               </Button>
             </div>
+            {config.features.encryption && (
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                <Lock className="h-3 w-3" />
+                Messages are end-to-end encrypted
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Third Column - Collapsible Comments */}
+        {/* Comments Panel Column */}
         <div
           className={`bg-card border-l border-border flex flex-col transition-all duration-300 ease-in-out ${
             isCommentPanelOpen ? 'w-80' : 'w-0 overflow-hidden'
@@ -593,7 +651,7 @@ export default function CommunicationWhatsAppPage() {
               <MessageCircle className="h-4 w-4 text-yellow-600" />
               <h3 className="text-sm font-semibold">Internal Comments</h3>
               <Badge variant="secondary" className="text-xs">
-                {mockMessages.filter((m) => m.comments?.length).length} messages
+                {mockMessages.filter((m) => m.comments && m.comments.length > 0).length} messages
               </Badge>
             </div>
             <Button
@@ -605,6 +663,7 @@ export default function CommunicationWhatsAppPage() {
               {isCommentPanelOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </Button>
           </div>
+
           {isCommentPanelOpen && (
             <div className="flex-1 overflow-y-auto p-4 space-y-0">
               {mockMessages.map((message, index) => (
@@ -615,18 +674,17 @@ export default function CommunicationWhatsAppPage() {
                       ? 'bg-yellow-50/80 dark:bg-yellow-900/20 border-yellow-200/50'
                       : 'hover:bg-accent/20'
                   } transition-all duration-200 ${message.sender !== 'trainer' ? 'opacity-30' : ''}`}
-                  style={{ gridRow: index + 1 }}
                 >
                   {message.sender === 'trainer' ? (
                     <>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium text-muted-foreground">Msg #{message.id}</span>
-                          {message.comments?.length ? (
+                          {message.comments && message.comments.length > 0 && (
                             <Badge variant="secondary" className="text-xs">
                               {message.comments.length} comment{message.comments.length !== 1 ? 's' : ''}
                             </Badge>
-                          ) : null}
+                          )}
                         </div>
                         {activeCommentMessageId === message.id && (
                           <div className="flex gap-1">
@@ -698,19 +756,70 @@ export default function CommunicationWhatsAppPage() {
               ))}
             </div>
           )}
-          {!isCommentPanelOpen && (
-            <div className="flex items-center justify-center h-full border-l border-border/50">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsCommentPanelOpen(true)}
-                className="h-12 w-12"
-              >
-                <MessageCircle className="h-5 w-5 text-yellow-600" />
-              </Button>
-            </div>
-          )}
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Main App Component with Platform Selector
+export default function CommunicationDemo() {
+  const [selectedPlatform, setSelectedPlatform] = useState<'whatsapp' | 'messenger' | 'telegram' | 'instagram' | 'signal'>('whatsapp');
+
+  return (
+    <div className="h-screen flex flex-col bg-background">
+      {/* Platform Selector */}
+      <div className="border-b bg-card p-4">
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold">Communication Platforms</h1>
+          <div className="flex gap-2">
+            <Button
+              variant={selectedPlatform === 'whatsapp' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedPlatform('whatsapp')}
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              WhatsApp
+            </Button>
+            <Button
+              variant={selectedPlatform === 'messenger' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedPlatform('messenger')}
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Messenger
+            </Button>
+            <Button
+              variant={selectedPlatform === 'telegram' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedPlatform('telegram')}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Telegram
+            </Button>
+            <Button
+              variant={selectedPlatform === 'instagram' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedPlatform('instagram')}
+            >
+              <Heart className="h-4 w-4 mr-2" />
+              Instagram
+            </Button>
+            <Button
+              variant={selectedPlatform === 'signal' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedPlatform('signal')}
+            >
+              <Lock className="h-4 w-4 mr-2" />
+              Signal
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Communication Page */}
+      <div className="flex-1 overflow-hidden">
+        <CommunicationPage platform={selectedPlatform} />
       </div>
     </div>
   );
