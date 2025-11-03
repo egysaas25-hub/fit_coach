@@ -1,22 +1,9 @@
-// src/types/nutrition.ts
-export interface NutritionPlanMacros {
+export interface NutritionPlanMacrosDto {
   id: number;
   carbs_grams: number;
   protein_grams: number;
   fat_grams: number;
   calories_kcal: number;
-}
-
-export interface NutritionPlan {
-  id: number;
-  tenant_id: number;
-  customer_id: string;
-  version: number;
-  is_active: boolean;
-  notes: string | null;
-  created_by: number;
-  created_at: string;
-  macros: NutritionPlanMacros[];
 }
 
 export interface CreateNutritionPlanDto {
@@ -44,4 +31,16 @@ export interface UpdateNutritionPlanDto {
     fat_grams: number;
     calories_kcal: number;
   }[];
+}
+
+export interface NutritionPlanResponseDto {
+  id: number;
+  tenant_id: number;
+  customer_id: string;
+  version: number;
+  is_active: boolean;
+  notes: string | null;
+  created_by: number;
+  created_at: string;
+  macros: NutritionPlanMacrosDto[];
 }
