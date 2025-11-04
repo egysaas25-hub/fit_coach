@@ -42,18 +42,11 @@ const navigation = [
   { name: "Reports & Analytics", href: "/admin/reports", icon: BarChart3, section: "Overview" },
   { name: "Global Analytics", href: "/admin/global", icon: BarChart3, section: "Overview" },
   
-  { name: "User Management", href: "/admin/users", icon: Users, section: "Users" },
   { name: "Customers", href: "/admin/customers", icon: ShoppingCart, section: "Users" },
-  { name: "Role Management", href: "/admin/roles", icon: Shield, section: "Users" },
-  { name: "Permissions", href: "/admin/permissions", icon: Key, section: "Users" },
   { name: "Team Dashboard", href: "/admin/teams/dashboard", icon: Users2, section: "Users" },
   
   { name: "WhatsApp", href: "/admin/WhatsApp", icon: MessageSquare, section: "Communication" },
   { name: "Email", href: "/admin/email", icon: MessageSquare, section: "Communication" },
-  { name: "Instagram", href: "/admin/instagram", icon: MessageSquare, section: "Communication" },
-  { name: "Telegram", href: "/admin/telegram", icon: MessageSquare, section: "Communication" },
-  { name: "Signal", href: "/admin/signal", icon: MessageSquare, section: "Communication" },
-  { name: "Messenger", href: "/admin/messenger", icon: MessageSquare, section: "Communication" },
   { name: "Conversations", href: "/admin/conversations", icon: MessageSquare, section: "Communication" },
   { name: "Message Templates", href: "/admin/message-templates", icon: MessageSquare, section: "Communication" },
   
