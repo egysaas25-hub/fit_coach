@@ -1,9 +1,10 @@
 // lib/api/services/nutrition.service.ts
-import { NutritionPlanResponseDto, CreateNutritionPlanDto } from '@/types/api/nutrition.dto';
-import { NutritionPlan } from '@/types/models/nutrition.model';
+
 import { nutritionMapper } from '@/lib/mappers/nutrition.mapper';
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
+import { NutritionPlan } from '@/types/domain/nutrition.model';
+import { NutritionPlanResponseDto } from '@/types/api/request/nutrition.dto';
 
 export const nutritionService = {
   getAll: async (customerId?: string): Promise<NutritionPlan[]> => {

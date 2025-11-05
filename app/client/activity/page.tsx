@@ -1,12 +1,14 @@
-import { Sidebar } from "@/components/sidebar"
-import { ClientActivity } from "@/components/client-activity"
+import { ClientActivity } from "@/components/features/client/client-stats";
+import { Sidebar } from "@/components/ui/sidebar";
+
 
 export default function ActivityPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <main className="flex-1 overflow-auto">
-        <ClientActivity />
+        <ClientActivity
+         />
       </main>
     </div>
   )

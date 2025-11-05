@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Sidebar } from "@/components/layouts/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Sidebar } from "@/components/ui/sidebar"
 
 export default function BillingPage() {
   const [activeTab, setActiveTab] = useState<"subscriptions" | "invoices" | "payment-history">("subscriptions")

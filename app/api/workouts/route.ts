@@ -1,9 +1,9 @@
-// lib/api/services/workout.service.ts
-import { WorkoutResponseDto, CreateWorkoutDto } from '@/types/api/workout.dto';
-import { Workout } from '@/types/models/workout.model';
+
 import { workoutMapper } from '@/lib/mappers/workout.mapper';
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
+import { Workout } from '@/types/domain/workout.model';
+import { WorkoutResponseDto } from '@/types/api/request/workout.dto';
 
 export const workoutService = {
   getAll: async (customerId?: string): Promise<Workout[]> => {

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, Users, FileText, Apple, TrendingUp, HelpCircle, Settings, User, LogOut } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils/cn'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,

@@ -21,7 +21,7 @@ import {
   Webhook,
   HardDrive,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils/cn'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,

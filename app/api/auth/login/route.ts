@@ -1,9 +1,10 @@
 // lib/api/services/auth.service.ts
-import { AuthResponseDto, LoginDto } from '@/types/api/auth.dto';
-import { User } from '@/types/models/user.model';
+
 import { authMapper } from '@/lib/mappers/auth.mapper';
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
+import { AuthResponseDto, LoginDto } from '@/types/api/request/auth.dto';
+import { User } from '@/types/domain/user.model';
 
 export const authService = {
   login: async (dto: LoginDto): Promise<{ user: User; token: string }> => {

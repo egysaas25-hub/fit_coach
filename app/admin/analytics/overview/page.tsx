@@ -1,4 +1,3 @@
-import { AdminSidebar } from "@/components/layouts/admin-sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, Users, DollarSign } from "lucide-react"
 

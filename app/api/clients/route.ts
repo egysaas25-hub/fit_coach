@@ -1,9 +1,9 @@
-// lib/api/services/client.service.ts
-import { ClientResponseDto, CreateClientDto } from '@/types/api/client.dto';
-import { Client } from '@/types/models/client.model';
+
 import { clientMapper } from '@/lib/mappers/client.mapper';
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
+import { Client } from '@/types/domain/client.model';
+import { ClientResponseDto } from '@/types/api/request/client.dto';
 
 export const clientService = {
   getAll: async (tenantId?: number): Promise<Client[]> => {

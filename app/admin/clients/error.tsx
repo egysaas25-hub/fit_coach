@@ -1,3 +1,4 @@
+"use client"
 // Error boundary for clients
 export default function Error() {
   return (

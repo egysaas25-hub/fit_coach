@@ -1,7 +1,7 @@
-import { AdminSidebar } from "@/components/layouts/admin-sidebar"
+import { AdminSidebar } from "@/components/navigation/admin-sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table";
 
 export default function ReferralManagementPage() {
   const referrals = [

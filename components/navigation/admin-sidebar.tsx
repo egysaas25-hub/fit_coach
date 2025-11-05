@@ -28,7 +28,6 @@ import {
   Dumbbell,
   Table,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -39,22 +38,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { cn } from "@/lib/utils/cn"
 
 const navigation = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, section: "Overview" },
   { name: "Reports & Analytics", href: "/admin/reports", icon: BarChart3, section: "Overview" },
-  { name: "Global Analytics", href: "/admin/global", icon: BarChart3, section: "Overview" },
   
-  { name: "Customers", href: "/admin/customers", icon: ShoppingCart, section: "Users" },
-  { name: "Team Dashboard", href: "/admin/teams/dashboard", icon: Users2, section: "Users" },
-  { name: "Workout", href: "/workouts", icon: Dumbbell, section: "plans" },
-  {name : "Nutrition", href: "/nutrition", icon: Target, section: "plans" },
-  { name: "programs", href: "/programs", icon: Table, section: "plans" },
+  { name: "Customers", href: "/admin/clients", icon: ShoppingCart, section: "Users" },
+  { name: "Team Dashboard", href: "/admin/teams", icon: Users2, section: "Users" },
+  { name: "Workout", href: "/admin/workouts", icon: Dumbbell, section: "plans" },
+  {name : "Nutrition", href: "/admin/nutrition", icon: Target, section: "plans" },
+  { name: "programs", href: "/admin/programs", icon: Table, section: "plans" },
   
-  { name: "WhatsApp", href: "/admin/WhatsApp", icon: MessageSquare, section: "Communication" },
-  { name: "Email", href: "/admin/email", icon: MessageSquare, section: "Communication" },
-  { name: "Conversations", href: "/admin/conversations", icon: MessageSquare, section: "Communication" },
-  { name: "Message Templates", href: "/admin/message-templates", icon: MessageSquare, section: "Communication" },
+  { name: "WhatsApp", href: "/admin/communication/whatsapp", icon: MessageSquare, section: "Communication" },
+  { name: "Email", href: "/admin/communication/email", icon: MessageSquare, section: "Communication" },
+  { name: "Conversations", href: "/admin/communication/conversations", icon: MessageSquare, section: "Communication" },
+  { name: "Message Templates", href: "/admin/communication/templates", icon: MessageSquare, section: "Communication" },
   
   { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard, section: "Business" },
   { name: "Referrals", href: "/admin/referrals", icon: UserPlus, section: "Business" },
@@ -66,9 +65,9 @@ const navigation = [
   { name: "Audit Log", href: "/admin/audit", icon: FileText, section: "System" },
   { name: "Error Queue", href: "/admin/errors", icon: AlertCircle, section: "System" },
   { name: "Notifications", href: "/admin/notifications", icon: Bell, section: "System" },
-  { name: "Integrations", href: "/admin/integrations", icon: Zap, section: "System" },
+  { name: "Integrations", href: "/admin/settings/integrations", icon: Zap, section: "System" },
   { name: "Support", href: "/admin/support", icon: HelpCircle, section: "System" },
-  { name: "Settings", href: "/admin/settings", icon: Settings, section: "System" },
+  { name: "Settings", href: "/admin/settings/general", icon: Settings, section: "System" },
 ]
 
 export function AdminSidebar() {
