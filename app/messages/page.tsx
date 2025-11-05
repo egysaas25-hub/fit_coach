@@ -1,5 +1,5 @@
 import { Header } from "@/components/header"
-import { Sidebar } from "@/components/sidebar"
+import { Sidebar } from "@/components/layouts/sidebar"
 import { MessagingSystem } from "@/components/messaging-system"
 
 export default function MessagingPage() {

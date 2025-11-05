@@ -1,7 +1,7 @@
 // app/admin/dashboard/AdminClientComponents.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, createContext, useContext } from 'react';
 import { Bell, FileText, Send } from 'lucide-react';
 
 // Mock notification data
@@ -10,6 +10,14 @@ const mockNotifications = [
   { id: 2, type: 'warning', title: 'Payment failed', message: 'Subscription payment failed', time: '1h ago', read: false },
   { id: 3, type: 'success', title: 'Backup completed', message: 'Daily backup successful', time: '2h ago', read: true },
 ];
+
+// Tabs Context
+interface TabsContextType {
+  activeTab: string;
+  setActiveTab: React.Dispatch<React.SetStateAction<string>>;
+}
+
+const TabsContext = createContext<TabsContextType | undefined>(undefined);
 
 // AdminHeader Component
 export const AdminHeader: React.FC = () => {
@@ -91,57 +99,53 @@ export const Tabs: React.FC<{ children: React.ReactNode; defaultValue: string }>
   const [activeTab, setActiveTab] = useState(defaultValue);
 
   return (
-    <div className="space-y-4">
-      {React.Children.map(children, (child) => {
-        if ((child as any).type === TabsList) {
-          return React.cloneElement(child as React.ReactElement, { activeTab, setActiveTab });
-        }
-        if ((child as any).type === TabsContent) {
-          return React.cloneElement(child as React.ReactElement, { activeTab });
-        }
-        return child;
-      })}
-    </div>
+    <TabsContext.Provider value={{ activeTab, setActiveTab }}>
+      <div className="space-y-4">
+        {children}
+      </div>
+    </TabsContext.Provider>
   );
 };
 
-export const TabsList: React.FC<{
-  children: React.ReactNode;
-  activeTab: string;
-  setActiveTab: React.Dispatch<React.SetStateAction<string>>;
-}> = ({ children, activeTab, setActiveTab }) => (
+// TabsList Component
+export const TabsList: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="border-b border-border">
     <div className="flex gap-4">
-      {React.Children.map(children, (child) =>
-        React.cloneElement(child as React.ReactElement, { activeTab, setActiveTab })
-      )}
+      {children}
     </div>
   </div>
 );
 
-export const TabsTrigger: React.FC<{
-  value: string;
-  children: React.ReactNode;
-  activeTab: string;
-  setActiveTab: React.Dispatch<React.SetStateAction<string>>;
-}> = ({ value, children, activeTab, setActiveTab }) => (
-  <button
-    onClick={() => setActiveTab(value)}
-    className={`px-4 py-2 border-b-2 transition-colors ${
-      activeTab === value
-        ? 'border-primary text-primary font-medium'
-        : 'border-transparent text-muted-foreground hover:text-foreground'
-    }`}
-  >
-    {children}
-  </button>
-);
+// TabsTrigger Component
+export const TabsTrigger: React.FC<{ value: string; children: React.ReactNode }> = ({ value, children }) => {
+  const context = useContext(TabsContext);
+  if (!context) {
+    throw new Error('TabsTrigger must be used within a Tabs component');
+  }
+  const { activeTab, setActiveTab } = context;
 
-export const TabsContent: React.FC<{
-  value: string;
-  children: React.ReactNode;
-  activeTab: string;
-}> = ({ value, children, activeTab }) => {
+  return (
+    <button
+      onClick={() => setActiveTab(value)}
+      className={`px-4 py-2 border-b-2 transition-colors ${
+        activeTab === value
+          ? 'border-primary text-primary font-medium'
+          : 'border-transparent text-muted-foreground hover:text-foreground'
+      }`}
+    >
+      {children}
+    </button>
+  );
+};
+
+// TabsContent Component
+export const TabsContent: React.FC<{ value: string; children: React.ReactNode }> = ({ value, children }) => {
+  const context = useContext(TabsContext);
+  if (!context) {
+    throw new Error('TabsContent must be used within a Tabs component');
+  }
+  const { activeTab } = context;
+
   if (value !== activeTab) return null;
   return <div className="py-4">{children}</div>;
 };

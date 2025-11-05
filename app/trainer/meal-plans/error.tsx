@@ -1,3 +1,4 @@
+"use client";
 // Error boundary for meal-plans
 export default function Error() {
   return (

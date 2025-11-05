@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Plus, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -70,7 +69,7 @@ export function WorkoutPlanBuilder() {
   }
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-8rem)]">
+    <div className="flex h-full gap-6">
       {/* Sidebar */}
       <div className="w-64 space-y-6">
         <Card className="bg-card">
@@ -83,10 +82,10 @@ export function WorkoutPlanBuilder() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card">
+        <Card className="bg-card flex-1">
           <CardContent className="p-4">
             <h3 className="font-semibold mb-3">Exercise Library</h3>
-            <ScrollArea className="h-[400px]">
+            <ScrollArea className="h-full min-h-[300px] max-h-[calc(100vh-20rem)]">
               <div className="space-y-2">
                 {exerciseLibrary.map((exercise) => (
                   <div
@@ -109,7 +108,7 @@ export function WorkoutPlanBuilder() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1">
+      <div className="flex-1 space-y-6">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-3xl font-bold text-balance">Drag & Drop Workout Plan</h1>
           <Button className="gap-2">

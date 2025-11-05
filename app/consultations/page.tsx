@@ -1,4 +1,4 @@
-import { Sidebar } from "@/components/sidebar"
+import { Sidebar } from "@/components/layouts/sidebar"
 import { ConsultationManagement } from "@/components/consultation-management"
 
 export default function ConsultationsPage() {

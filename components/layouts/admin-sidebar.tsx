@@ -24,6 +24,9 @@ import {
   HelpCircle,
   Zap,
   ShoppingCart,
+  Target,
+  Dumbbell,
+  Table,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -44,6 +47,9 @@ const navigation = [
   
   { name: "Customers", href: "/admin/customers", icon: ShoppingCart, section: "Users" },
   { name: "Team Dashboard", href: "/admin/teams/dashboard", icon: Users2, section: "Users" },
+  { name: "Workout", href: "/workouts", icon: Dumbbell, section: "plans" },
+  {name : "Nutrition", href: "/nutrition", icon: Target, section: "plans" },
+  { name: "programs", href: "/programs", icon: Table, section: "plans" },
   
   { name: "WhatsApp", href: "/admin/WhatsApp", icon: MessageSquare, section: "Communication" },
   { name: "Email", href: "/admin/email", icon: MessageSquare, section: "Communication" },
