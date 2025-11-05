@@ -30,7 +30,7 @@ export default function WorkoutPage() {
   } = useWorkout()
 
   const handleCreateProgram = () => {
-    router.push("/workouts/builder")
+    router.push("/admin/workouts/builder")
   }
 
   const handleEditProgram = (programId: number) => {

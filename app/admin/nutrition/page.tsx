@@ -28,7 +28,7 @@ export default function NutritionPage() {
   } = useNutrition()
 
   const handleCreatePlan = () => {
-    router.push("/nutrition/builder")
+    router.push("/admin/nutrition/builder")
   }
 
   const handleEditPlan = (planId: number) => {
