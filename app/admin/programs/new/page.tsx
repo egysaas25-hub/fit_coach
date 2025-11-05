@@ -13,7 +13,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Trash2, ArrowLeft, Sparkles } from "lucide-react"
 import { toast } from "sonner"
-import { AdminSidebar } from "@/components/layouts/admin-sidebar"
 
 export default function CreateProgramPage() {
   const router = useRouter()
@@ -93,7 +92,6 @@ export default function CreateProgramPage() {
 
   return (
     <div className="flex max-h-screen">
-          <AdminSidebar />
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()}>

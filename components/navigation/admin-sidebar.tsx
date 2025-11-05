@@ -48,7 +48,7 @@ const navigation = [
   { name: "Team Dashboard", href: "/admin/teams", icon: Users2, section: "Users" },
   { name: "Workout", href: "/admin/workouts", icon: Dumbbell, section: "plans" },
   {name : "Nutrition", href: "/admin/nutrition", icon: Target, section: "plans" },
-  { name: "programs", href: "/admin/programs", icon: Table, section: "plans" },
+  { name: "programs", href: "/admin/programs/new", icon: Table, section: "plans" },
   
   { name: "WhatsApp", href: "/admin/communication/whatsapp", icon: MessageSquare, section: "Communication" },
   { name: "Email", href: "/admin/communication/email", icon: MessageSquare, section: "Communication" },
