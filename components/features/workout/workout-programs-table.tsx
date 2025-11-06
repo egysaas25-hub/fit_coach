@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Eye, Edit, Copy, Trash2, Users } from "lucide-react"
-import { WorkoutProgram } from "@/types/workout"
+import { WorkoutProgram } from "@/types/domain/workout"
 
 interface WorkoutProgramsTableProps {
   programs: WorkoutProgram[]

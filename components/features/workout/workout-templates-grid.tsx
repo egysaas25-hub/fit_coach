@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
-import { WorkoutTemplate } from "@/types/workout"
+import { WorkoutTemplate } from "@/types/domain/workout"
 
 interface WorkoutTemplatesGridProps {
   templates: WorkoutTemplate[]

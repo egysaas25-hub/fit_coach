@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuthStore } from '@/lib/store/auth.store';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/lib/hooks/common/use-toast';
 import { useAuth } from '@/hooks/api/use-auth';
 
 export default function UnifiedLoginPage() {

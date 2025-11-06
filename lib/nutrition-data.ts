@@ -1,4 +1,4 @@
-import { MealPlan, NutritionTemplate } from "@/types/nutrition"
+import { MealPlan, NutritionTemplate } from "@/types/domain/nutrition"
 
 export const mealPlansData: MealPlan[] = [
   { 
