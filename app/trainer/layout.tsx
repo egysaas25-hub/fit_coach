@@ -1,4 +1,5 @@
-import { TrainerSidebar } from "@/components/trainer-sidebar"
+"use client"
+import { TrainerSidebar } from "@/components/layouts/trainer-sidebar"
 
 export default function TrainerLayout({
   children,

@@ -1,12 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { AdminSidebar } from "@/components/admin-sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table";
 import { Search, Send, Inbox, Archive, Trash2, Star, Mail } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -54,7 +53,6 @@ export default function CommunicationEmailPage() {
 
   return (
     <div className="flex h-screen bg-background">
-      <AdminSidebar />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="border-b bg-card px-6 py-4">
