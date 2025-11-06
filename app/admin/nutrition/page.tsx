@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Search } from "lucide-react"
 import { toast } from "sonner"
-import { useNutrition } from "@/hooks/api/use-nutrition"
 import { NutritionStats } from "@/components/features/nutrition/nutrition-tracker"
 import { MealPlansTable } from "@/components/features/nutrition/meal-plans-table"
 import { NutritionTemplatesTable } from "@/components/features/nutrition/nutrition-templates-table"
 import { NutritionOverviewGrid } from "@/components/features/nutrition/nutrition-overview-grid"
+import { useNutritionLogs } from "@/lib/hooks/api/useNutritionLogs"
 
 
 export default function NutritionPage() {
@@ -25,7 +25,7 @@ export default function NutritionPage() {
     filteredTemplates,
     stats,
     allPlans
-  } = useNutrition()
+  } = useNutritionLogs()
 
   const handleCreatePlan = () => {
     router.push("/admin/nutrition/builder")
