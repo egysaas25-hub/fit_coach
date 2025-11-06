@@ -1,3 +1,4 @@
+"use client";
 // Error boundary for appointments
 export default function Error() {
   return (

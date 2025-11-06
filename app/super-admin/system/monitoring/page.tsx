@@ -1,5 +1,5 @@
-import { Sidebar } from "@/components/sidebar"
-import { ApiMonitoring } from "@/components/api-monitoring"
+import { ApiMonitoring } from "@/components/features/api-monitoring";
+import { Sidebar } from "@/components/ui/sidebar";
 
 export default function ApiMonitoringPage() {
   return (

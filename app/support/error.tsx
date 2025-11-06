@@ -1,3 +1,4 @@
+"use client";
 // Error boundary for support
 export default function Error() {
   return (

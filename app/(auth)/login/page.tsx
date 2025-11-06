@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuthStore } from '@/lib/store/auth.store';
 import { toast } from '@/lib/hooks/common/use-toast';
-import { useAuth } from '@/hooks/api/use-auth';
+import { useAuth } from '@/lib/hooks/api/useAuth';
 
 export default function UnifiedLoginPage() {
   const [email, setEmail] = useState('');

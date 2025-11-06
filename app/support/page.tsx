@@ -1,5 +1,5 @@
-import { Sidebar } from "@/components/sidebar"
-import { CustomerSupport } from "@/components/customer-support"
+import { CustomerSupport } from "@/components/features/customer-support";
+import { Sidebar } from "@/components/ui/sidebar";
 
 export default function SupportPage() {
   return (

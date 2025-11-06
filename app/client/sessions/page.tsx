@@ -1,5 +1,5 @@
-import { Sidebar } from "@/components/sidebar"
-import { SessionManagement } from "@/components/session-management"
+import { SessionManagement } from "@/components/features/session-management";
+import { Sidebar } from "@/components/ui/sidebar";
 
 export default function SessionsPage() {
   return (

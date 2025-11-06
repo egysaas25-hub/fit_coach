@@ -1,6 +1,5 @@
-// app/nutrition/builder/page.tsx
-import { Header } from "@/components/layouts/header"
-import { NutritionPlanBuilder } from "@/components/features/nutrition-plan-builder"
+import { NutritionPlanBuilder } from "@/components/features/nutrition/meal-plan-builder";
+import { Header } from "@/components/navigation/navbar";
 
 export default function NutritionBuilderPage() {
   return (

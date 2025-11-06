@@ -1,4 +1,3 @@
-import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -6,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Camera } from "lucide-react"
+import { Sidebar } from "@/components/ui/sidebar"
 
 export default function ProfilePage() {
   return (

@@ -1,3 +1,4 @@
+"use client";
 // Error boundary for activity
 export default function Error() {
   return (

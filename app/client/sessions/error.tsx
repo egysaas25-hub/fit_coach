@@ -1,3 +1,4 @@
+"use client";
 // Error boundary for sessions
 export default function Error() {
   return (

@@ -1,7 +1,5 @@
-// app/workouts/builder/page.tsx
-import { Header } from "@/components/layouts/header"
-import { WorkoutPlanBuilder } from "@/components/features/workout-plan-builder"
-import { AdminSidebar } from "@/components/layouts/admin-sidebar"
+import { WorkoutPlanBuilder } from "@/components/features/workout/workout-builder";
+import { AdminSidebar } from "@/components/navigation/admin-sidebar";
 
 export default function WorkoutBuilderPage() {
   return (

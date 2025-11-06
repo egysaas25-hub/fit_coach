@@ -1,5 +1,5 @@
-import { Sidebar } from "@/components/sidebar"
-import { ReportsAnalytics } from "@/components/reports-analytics"
+import { ReportsAnalytics } from "@/components/features/analytics/revenue-chart";
+import { Sidebar } from "@/components/ui/sidebar";
 
 export default function AnalyticsPage() {
   return (

@@ -1,6 +1,6 @@
-import { Header } from "@/components/header"
-import { Sidebar } from "@/components/layouts/sidebar"
-import { MessagingSystem } from "@/components/messaging-system"
+import { MessagingSystem } from "@/components/features/messaging/chat-interface";
+import { Header } from "@/components/navigation/navbar";
+import { Sidebar } from "@/components/ui/sidebar";
 
 export default function MessagingPage() {
   return (
