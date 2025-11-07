@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { AITemplate, AILog } from '@/types/domain/ai';
+import { AITemplate, AILog, AIState } from '@/types/domain/ai';
 import { useAITemplates, useAILogs } from '@/lib/hooks/api/useAI';
 
 
