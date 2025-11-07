@@ -1,56 +1,63 @@
-"use client"
+// app/admin/workouts/page.tsx
+'use client';
+export const dynamic = "force-dynamic";
 
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Search } from "lucide-react"
-import { toast } from "sonner"
-import { useWorkout } from "@/hooks/api/use-workouts"
-import { WorkoutStats } from "@/components/features/workout/workout-stats"
-import { WorkoutProgramsTable } from "@/components/features/workout/workout-programs-table"
-import { WorkoutTemplatesGrid } from "@/components/features/workout/workout-templates-grid"
-import { ExerciseLibraryTable } from "@/components/features/workout/exercise-library"
-import { WorkoutOverviewGrid } from "@/components/features/workout/workout-overview-grid"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Search } from "lucide-react";
+import { toast } from "sonner";
 
+// Mock data - replace with your actual data
+const mockStats = {
+  totalPrograms: 12,
+  activeClients: 45,
+  completionRate: 87,
+  avgDuration: 8
+};
+
+const mockPrograms = [
+  { id: 1, name: "Beginner Full Body", clients: 15, duration: "8 weeks", difficulty: "Beginner" },
+  { id: 2, name: "Advanced Strength", clients: 12, duration: "12 weeks", difficulty: "Advanced" },
+];
+
+const mockTemplates = [
+  { id: 1, name: "Upper Body Push", exercises: 8, category: "Strength" },
+  { id: 2, name: "Lower Body Power", exercises: 10, category: "Strength" },
+];
+
+const mockExercises = [
+  { id: 1, name: "Barbell Bench Press", category: "Chest", equipment: "Barbell" },
+  { id: 2, name: "Squat", category: "Legs", equipment: "Barbell" },
+];
 
 export default function WorkoutPage() {
-  const router = useRouter()
-  const {
-    searchQuery,
-    setSearchQuery,
-    activeTab,
-    setActiveTab,
-    filteredPrograms,
-    filteredTemplates,
-    filteredExercises,
-    stats,
-    allPrograms
-  } = useWorkout()
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"programs" | "templates" | "exercises" | "overview">("programs");
 
   const handleCreateProgram = () => {
-    router.push("/admin/workouts/builder")
-  }
+    router.push("/admin/workouts/builder");
+  };
 
   const handleEditProgram = (programId: number) => {
-    toast.info(`Editing program ${programId}`)
-    router.push(`/workouts/edit/${programId}`)
-  }
+    toast.info(`Editing program ${programId}`);
+    router.push(`/admin/workouts/edit/${programId}`);
+  };
 
   const handleDuplicateProgram = (programName: string) => {
-    toast.success(`Duplicated ${programName}`)
-  }
+    toast.success(`Duplicated ${programName}`);
+  };
 
   const handleDeleteProgram = (programName: string) => {
-    toast.error(`Deleted ${programName}`)
-  }
+    toast.error(`Deleted ${programName}`);
+  };
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-
-      {/* Main Content */}
       <div className="flex-1 space-y-6 p-6 lg:p-8">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -65,7 +72,40 @@ export default function WorkoutPage() {
         </div>
 
         {/* Stats */}
-        <WorkoutStats {...stats} />
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <p className="text-sm font-medium text-muted-foreground">Total Programs</p>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{mockStats.totalPrograms}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <p className="text-sm font-medium text-muted-foreground">Active Clients</p>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{mockStats.activeClients}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <p className="text-sm font-medium text-muted-foreground">Completion Rate</p>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{mockStats.completionRate}%</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <p className="text-sm font-medium text-muted-foreground">Avg Duration</p>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{mockStats.avgDuration} weeks</div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Main Content */}
         <Card>
@@ -90,29 +130,66 @@ export default function WorkoutPage() {
               </TabsList>
 
               <TabsContent value="programs">
-                <WorkoutProgramsTable
-                  programs={filteredPrograms}
-                  onEdit={handleEditProgram}
-                  onDuplicate={handleDuplicateProgram}
-                  onDelete={handleDeleteProgram}
-                />
+                <div className="space-y-4">
+                  {mockPrograms.map((program) => (
+                    <div key={program.id} className="p-4 border rounded-lg">
+                      <h3 className="font-semibold">{program.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {program.clients} clients • {program.duration} • {program.difficulty}
+                      </p>
+                      <div className="flex gap-2 mt-3">
+                        <Button size="sm" variant="outline" onClick={() => handleEditProgram(program.id)}>
+                          Edit
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDuplicateProgram(program.name)}>
+                          Duplicate
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDeleteProgram(program.name)}>
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </TabsContent>
 
               <TabsContent value="templates">
-                <WorkoutTemplatesGrid templates={filteredTemplates} />
+                <div className="grid gap-4 md:grid-cols-2">
+                  {mockTemplates.map((template) => (
+                    <div key={template.id} className="p-4 border rounded-lg">
+                      <h3 className="font-semibold">{template.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {template.exercises} exercises • {template.category}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </TabsContent>
 
               <TabsContent value="exercises">
-                <ExerciseLibraryTable exercises={filteredExercises} />
+                <div className="space-y-4">
+                  {mockExercises.map((exercise) => (
+                    <div key={exercise.id} className="p-4 border rounded-lg flex justify-between items-center">
+                      <div>
+                        <h3 className="font-semibold">{exercise.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {exercise.category} • {exercise.equipment}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </TabsContent>
 
               <TabsContent value="overview">
-                <WorkoutOverviewGrid programs={allPrograms} />
+                <div className="text-center py-8 text-muted-foreground">
+                  Overview dashboard coming soon
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }

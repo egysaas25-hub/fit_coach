@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { AdminSidebar } from "@/components/layouts/admin-sidebar"
+import { AdminSidebar } from "@/components/navigation/admin-sidebar"
 
 export default function ProgramsPage() {
   const router = useRouter()

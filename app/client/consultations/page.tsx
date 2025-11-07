@@ -1,5 +1,8 @@
-import { Sidebar } from "@/components/layouts/sidebar"
-import { ConsultationManagement } from "@/components/consultation-management"
+'use client';
+export const dynamic = "force-dynamic";
+
+import { ConsultationManagement } from "@/components/features/consultation-management";
+import { Sidebar } from "@/components/ui/sidebar";
 
 export default function ConsultationsPage() {
   return (

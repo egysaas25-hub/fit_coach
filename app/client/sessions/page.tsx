@@ -1,5 +1,8 @@
-import { Sidebar } from "@/components/sidebar"
-import { SessionManagement } from "@/components/session-management"
+'use client';
+export const dynamic = "force-dynamic";
+
+import { SessionManagement } from "@/components/features/session-management";
+import { Sidebar } from "@/components/ui/sidebar";
 
 export default function SessionsPage() {
   return (

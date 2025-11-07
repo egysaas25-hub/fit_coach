@@ -1,3 +1,4 @@
+"use client";
 // Error boundary for workout
 export default function Error() {
   return (

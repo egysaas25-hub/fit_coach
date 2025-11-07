@@ -1,5 +1,8 @@
-import { Sidebar } from "@/components/sidebar"
-import { AppointmentScheduling } from "@/components/appointment-scheduling"
+'use client';
+export const dynamic = "force-dynamic";
+
+import { AppointmentScheduling } from "@/components/features/appointment-scheduling";
+import { Sidebar } from "@/components/ui/sidebar";
 
 export default function AppointmentsPage() {
   return (

@@ -1,4 +1,4 @@
-import { WorkoutProgram, WorkoutTemplate, Exercise } from "@/types/workout"
+import { WorkoutProgram, WorkoutTemplate, Exercise } from "@/types/domain/workout"
 
 export const workoutProgramsData: WorkoutProgram[] = [
   { 

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -5,14 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { Sidebar } from "@/components/ui/sidebar"
+import { AdminSidebar } from "@/components/navigation/admin-sidebar"
+
+export const dynamic = "force-dynamic";
 
 export default function BillingPage() {
   const [activeTab, setActiveTab] = useState<"subscriptions" | "invoices" | "payment-history">("subscriptions")
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <AdminSidebar />
       <main className="flex-1">
         <div className="border-b border-border bg-card px-8 py-6">
           <h1 className="text-3xl font-bold text-foreground">Billing</h1>

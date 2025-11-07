@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Eye, Copy } from "lucide-react"
-import { NutritionTemplate } from "@/types/nutrition"
+import { NutritionTemplate } from "@/types/domain/nutrition"
 
 interface NutritionTemplatesTableProps {
   templates: NutritionTemplate[]

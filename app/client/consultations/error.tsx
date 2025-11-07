@@ -1,3 +1,4 @@
+"use client";
 // Error boundary for consultations
 export default function Error() {
   return (

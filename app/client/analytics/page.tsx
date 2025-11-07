@@ -1,5 +1,7 @@
-import { Sidebar } from "@/components/sidebar"
-import { ReportsAnalytics } from "@/components/reports-analytics"
+'use client';
+export const dynamic = "force-dynamic";
+import { ReportsAnalytics } from "@/components/features/analytics/revenue-chart";
+import { Sidebar } from "@/components/ui/sidebar";
 
 export default function AnalyticsPage() {
   return (

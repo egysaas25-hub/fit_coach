@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Users } from "lucide-react"
-import { WorkoutProgram } from "@/types/workout"
+import { WorkoutProgram } from "@/types/domain/workout"
 
 interface WorkoutOverviewGridProps {
   programs: WorkoutProgram[]

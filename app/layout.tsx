@@ -3,7 +3,8 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
-import "../styles/globals.css"; // Import CSS
+import { Providers } from "@/components/providers";
+import "../styles/globals.css";
 
 export const metadata: Metadata = {
   title: "FitCoach Pro - Client Progress Tracking",
@@ -17,10 +18,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <Suspense fallback={null}>{children}</Suspense>
-        <Analytics />
+    <html lang="en" className="dark h-full">
+      <body
+        className={`h-full min-h-screen flex flex-col bg-background text-foreground font-sans ${GeistSans.variable} ${GeistMono.variable}`}
+      >
+        <Providers>
+          <Suspense fallback={null}>
+            <main className="flex flex-1 h-full">{children}</main> {/* Flex-1 ensures this fills remaining height */}
+          </Suspense>
+        </Providers>
+        <Analytics /> {/* Placed outside main, typically at bottom for tracking */}
       </body>
     </html>
   );

@@ -1,3 +1,4 @@
+"use client";
 // Error boundary for analytics
 export default function Error() {
   return (

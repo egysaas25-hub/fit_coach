@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 

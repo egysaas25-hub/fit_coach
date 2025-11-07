@@ -1,3 +1,4 @@
+"use client";
 // Error boundary for tenants
 export default function Error() {
   return (

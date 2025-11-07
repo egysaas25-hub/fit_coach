@@ -1,3 +1,5 @@
+'use client';
+export const dynamic = "force-dynamic";
 import { ClientActivity } from "@/components/features/client/client-stats";
 import { Sidebar } from "@/components/ui/sidebar";
 

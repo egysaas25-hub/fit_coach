@@ -1,3 +1,4 @@
+"use client";
 // Error boundary for api-monitoring
 export default function Error() {
   return (

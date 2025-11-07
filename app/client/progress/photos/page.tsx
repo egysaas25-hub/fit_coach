@@ -1,5 +1,5 @@
-import { Header } from "@/components/header"
-import { ProgressPhotosComparison } from "@/components/progress-photos-comparison"
+import { ProgressPhotosComparison } from "@/components/features/client/progress-chart";
+import { Header } from "@/components/navigation/navbar";
 
 export default function ProgressPhotosPage() {
   return (
