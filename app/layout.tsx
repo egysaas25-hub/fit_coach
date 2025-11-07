@@ -20,15 +20,17 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark h-full">
       <body
-        className={`h-full min-h-screen flex flex-col bg-background text-foreground font-sans ${GeistSans.variable} ${GeistMono.variable}`}
+        className={`h-full bg-background text-foreground font-sans ${GeistSans.variable} ${GeistMono.variable}`}
       >
         <Providers>
           <Suspense fallback={null}>
-            <main className="flex flex-1 h-full">{children}</main> {/* Flex-1 ensures this fills remaining height */}
+            {children}
           </Suspense>
         </Providers>
-        <Analytics /> {/* Placed outside main, typically at bottom for tracking */}
+        <Analytics />
       </body>
     </html>
   );
 }
+
+
