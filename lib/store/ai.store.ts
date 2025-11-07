@@ -1,7 +1,7 @@
-// lib/store/ai.store.ts
 import { create } from 'zustand';
-import { AITemplate, AILog, AIState } from '@/types/domain/ai';
+import { AITemplate, AILog } from '@/types/domain/ai';
 import { useAITemplates, useAILogs } from '@/lib/hooks/api/useAI';
+
 
 export const useAIStore = create<AIState>((set) => ({
   templates: [],

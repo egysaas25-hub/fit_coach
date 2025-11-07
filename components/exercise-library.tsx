@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Exercise } from '@/types/domain/workout.model';
 
+
 const EXERCISES: Exercise[] = [
   {
     id: '1',
