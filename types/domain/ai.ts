@@ -43,3 +43,12 @@ export enum LogStatus {
   Success = 'Success',
   Failed = 'Failed',
 }
+
+interface AIState {
+  templates: AITemplate[];
+  logs: AILog[];
+  loading: boolean;
+  error: string | null;
+  fetchTemplates: () => Promise<void>;
+  fetchLogs: () => Promise<void>;
+}

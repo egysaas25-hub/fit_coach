@@ -1,9 +1,19 @@
-export interface Exercise {
-  id: number;
-  tenantId: number;
-  name: string; // Simplified from { en: string }
-  createdAt: Date;
+interface Exercise {
+  id: string;
+  name: string;
+  category: string;
+  muscleGroup: string[];
+  equipment: string[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  description: string;
+  instructions: string[];
+  videoUrl?: string;
+  imageUrl?: string;
+  variations?: string[];
+  isFavorite: boolean;
+  usageCount: number;
 }
+
 
 export interface TrainingPlanExercise {
   id: number;
