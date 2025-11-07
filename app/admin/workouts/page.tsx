@@ -1,4 +1,5 @@
-"use client"
+'use client';
+export const dynamic = "force-dynamic";
 
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,7 @@ import { WorkoutProgramsTable } from "@/components/features/workout/workout-prog
 import { WorkoutTemplatesGrid } from "@/components/features/workout/workout-templates-grid"
 import { ExerciseLibraryTable } from "@/components/features/workout/exercise-library"
 import { WorkoutOverviewGrid } from "@/components/features/workout/workout-overview-grid"
+
 
 
 export default function WorkoutPage() {

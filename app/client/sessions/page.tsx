@@ -1,3 +1,6 @@
+'use client';
+export const dynamic = "force-dynamic";
+
 import { SessionManagement } from "@/components/features/session-management";
 import { Sidebar } from "@/components/ui/sidebar";
 

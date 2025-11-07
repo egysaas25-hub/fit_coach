@@ -1,5 +1,7 @@
 'use client';
-import { useState } from 'react';
+export const dynamic = "force-dynamic";
+
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -19,18 +21,19 @@ export default function UnifiedLoginPage() {
   const { user } = useAuthStore();
   const router = useRouter();
 
-  // Redirect if already logged in
-  if (user) {
-    const redirectPath =
-      user.role === 'admin'
-        ? '/admin/dashboard'
-        : user.role === 'super-admin'
-        ? '/super-admin/dashboard'
-        : user.role === 'trainer'
-        ? '/trainer/dashboard'
-        : '/client/dashboard';
-    router.push(redirectPath);
-  }
+  useEffect(() => {
+    if (user) {
+      const redirectPath =
+        user.role === 'admin'
+          ? '/admin/dashboard'
+          : user.role === 'super-admin'
+          ? '/super-admin/dashboard'
+          : user.role === 'trainer'
+          ? '/trainer/dashboard'
+          : '/client/dashboard';
+      router.push(redirectPath);
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

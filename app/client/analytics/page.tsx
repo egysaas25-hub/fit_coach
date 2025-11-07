@@ -1,3 +1,5 @@
+'use client';
+export const dynamic = "force-dynamic";
 import { ReportsAnalytics } from "@/components/features/analytics/revenue-chart";
 import { Sidebar } from "@/components/ui/sidebar";
 

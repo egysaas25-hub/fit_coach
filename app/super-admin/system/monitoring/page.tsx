@@ -1,3 +1,6 @@
+'use client';
+export const dynamic = "force-dynamic";
+
 import { ApiMonitoring } from "@/components/features/api-monitoring";
 import { Sidebar } from "@/components/ui/sidebar";
 

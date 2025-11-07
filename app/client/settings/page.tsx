@@ -4,12 +4,12 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sidebar } from "@/components/ui/sidebar"
+import { ClientSidebar } from "@/components/layouts/client-layout"
 
 export default function SettingsPage() {
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <ClientSidebar />
       <div className="flex-1 flex flex-col">
         <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center justify-between px-6 py-4">

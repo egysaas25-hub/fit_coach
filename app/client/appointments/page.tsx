@@ -1,3 +1,6 @@
+'use client';
+export const dynamic = "force-dynamic";
+
 import { AppointmentScheduling } from "@/components/features/appointment-scheduling";
 import { Sidebar } from "@/components/ui/sidebar";
 

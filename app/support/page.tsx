@@ -1,3 +1,6 @@
+'use client';
+export const dynamic = "force-dynamic";
+
 import { CustomerSupport } from "@/components/features/customer-support";
 import { Sidebar } from "@/components/ui/sidebar";
 

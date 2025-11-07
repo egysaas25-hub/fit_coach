@@ -1,3 +1,6 @@
+'use client';
+export const dynamic = "force-dynamic";
+
 import { MessagingSystem } from "@/components/features/messaging/chat-interface";
 import { Header } from "@/components/navigation/navbar";
 import { Sidebar } from "@/components/ui/sidebar";

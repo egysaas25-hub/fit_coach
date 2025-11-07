@@ -1,3 +1,6 @@
+'use client';
+export const dynamic = "force-dynamic";
+
 import { ConsultationManagement } from "@/components/features/consultation-management";
 import { Sidebar } from "@/components/ui/sidebar";
 
