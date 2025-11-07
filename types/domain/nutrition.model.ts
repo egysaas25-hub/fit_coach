@@ -18,3 +18,10 @@ export interface NutritionPlan {
   macros: NutritionPlanMacros[];
   totalCalories: number; // Computed
 }
+
+export interface NutritionState {
+  nutritionPlans: NutritionPlan[];
+  selectedPlan: NutritionPlan | null;
+  fetchPlans: (customerId?: string) => Promise<void>;
+  setSelectedPlan: (selectedPlan: NutritionPlan | null) => void;
+}

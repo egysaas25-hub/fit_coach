@@ -17,3 +17,8 @@ export interface Appointment {
   updatedAt: Date;
   duration: number; // Computed: minutes
 }
+
+export interface AppointmentState {
+  appointments: Appointment[];
+  fetchAppointments: (tenantId?: number) => Promise<void>;
+}

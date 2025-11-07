@@ -18,3 +18,9 @@ export interface NutritionTemplate {
   status: string
   macros: string
 }
+export interface NutritionState {
+  nutritionPlans: NutritionPlan[];
+  selectedPlan: NutritionPlan | null;
+  fetchPlans: (customerId?: string) => Promise<void>;
+  setSelectedPlan: (plan: NutritionPlan | null) => void;
+}

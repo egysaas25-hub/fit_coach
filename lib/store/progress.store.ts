@@ -1,20 +1,18 @@
-// lib/store/program.store.ts
+// lib/store/progress.store.ts
 import { create } from 'zustand';
-import { Program, ProgramWeek, ProgramExercise } from '@/types/domain/program';
-import { usePrograms, useProgramWeeks, useProgramExercises } from '@/lib/hooks/api/useProgram';
+import {
+  Program,
+  ProgramWeek,
+  ProgramExercise,
+  ProgramState,
+} from '@/types/domain/program';
+import {
+  usePrograms,
+  useProgramWeeks,
+  useProgramExercises,
+} from '@/lib/hooks/api/useProgram';
 
-interface ProgramState {
-  programs: Program[];
-  weeks: Record<string, ProgramWeek[]>;
-  exercises: Record<string, ProgramExercise[]>;
-  loading: boolean;
-  error: string | null;
-  fetchPrograms: () => Promise<void>;
-  fetchWeeks: (programId: string) => Promise<void>;
-  fetchExercises: (programId: string, weekId: string) => Promise<void>;
-}
-
-export const useProgramStore = create<ProgramState>((set) => ({
+export const useProgramStore = create<ProgramState>(set => ({
   programs: [],
   weeks: {},
   exercises: {},
@@ -33,7 +31,7 @@ export const useProgramStore = create<ProgramState>((set) => ({
     set({ loading: true });
     try {
       const { weeks, error } = await useProgramWeeks(programId);
-      set((state) => ({
+      set(state => ({
         weeks: { ...state.weeks, [programId]: weeks },
         error,
         loading: false,
@@ -46,7 +44,7 @@ export const useProgramStore = create<ProgramState>((set) => ({
     set({ loading: true });
     try {
       const { exercises, error } = await useProgramExercises(programId, weekId);
-      set((state) => ({
+      set(state => ({
         exercises: { ...state.exercises, [weekId]: exercises },
         error,
         loading: false,

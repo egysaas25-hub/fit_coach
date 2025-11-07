@@ -1,18 +1,9 @@
 // lib/store/support.store.ts
 import { create } from 'zustand';
-import { Ticket } from '@/types/domain/support';
+import { Ticket, SupportState } from '@/types/domain/support';
 import { useTickets, useTicketStats } from '@/lib/hooks/api/useSupport';
 
-interface SupportState {
-  tickets: Ticket[];
-  stats: { open: number; inProgress: number; resolved: number; avgResponseTime: string } | null;
-  loading: boolean;
-  error: string | null;
-  fetchTickets: () => Promise<void>;
-  fetchStats: () => Promise<void>;
-}
-
-export const useSupportStore = create<SupportState>((set) => ({
+export const useSupportStore = create<SupportState>(set => ({
   tickets: [],
   stats: null,
   loading: false,

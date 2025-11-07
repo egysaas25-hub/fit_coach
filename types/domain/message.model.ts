@@ -22,3 +22,12 @@ export interface MessageThread {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface MessageState {
+  threads: MessageThread[];
+  messages: Message[];
+  selectedThread: MessageThread | null;
+  fetchThreads: (customerId?: string) => Promise<void>;
+  fetchMessages: (threadId: number) => Promise<void>;
+  setSelectedThread: (thread: MessageThread | null) => void;
+}

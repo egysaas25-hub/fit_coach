@@ -1,20 +1,18 @@
 // lib/store/subscription.store.ts
 import { create } from 'zustand';
-import { Subscription, Invoice, Payment } from '@/types/domain/subscription';
-import { useSubscriptions, useInvoices, usePayments } from '@/lib/hooks/api/useSubscriptions';
+import {
+  Subscription,
+  Invoice,
+  Payment,
+  SubscriptionState,
+} from '@/types/domain/subscription';
+import {
+  useSubscriptions,
+  useInvoices,
+  usePayments,
+} from '@/lib/hooks/api/useSubscriptions';
 
-interface SubscriptionState {
-  subscriptions: Subscription[];
-  invoices: Record<string, Invoice[]>;
-  payments: Record<string, Payment[]>;
-  loading: boolean;
-  error: string | null;
-  fetchSubscriptions: () => Promise<void>;
-  fetchInvoices: (subscriptionId: string) => Promise<void>;
-  fetchPayments: (subscriptionId: string) => Promise<void>;
-}
-
-export const useSubscriptionStore = create<SubscriptionState>((set) => ({
+export const useSubscriptionStore = create<SubscriptionState>(set => ({
   subscriptions: [],
   invoices: {},
   payments: {},
@@ -33,7 +31,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set) => ({
     set({ loading: true });
     try {
       const { invoices, error } = await useInvoices(subscriptionId);
-      set((state) => ({
+      set(state => ({
         invoices: { ...state.invoices, [subscriptionId]: invoices },
         error,
         loading: false,
@@ -46,7 +44,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set) => ({
     set({ loading: true });
     try {
       const { payments, error } = await usePayments(subscriptionId);
-      set((state) => ({
+      set(state => ({
         payments: { ...state.payments, [subscriptionId]: payments },
         error,
         loading: false,

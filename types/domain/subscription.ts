@@ -46,3 +46,14 @@ export enum PaymentStatus {
   Cancelled = 'Cancelled',
   PastDue = 'Past Due',
 }
+
+export interface SubscriptionState {
+  subscriptions: Subscription[];
+  invoices: Record<string, Invoice[]>;
+  payments: Record<string, Payment[]>;
+  loading: boolean;
+  error: string | null;
+  fetchSubscriptions: () => Promise<void>;
+  fetchInvoices: (subscriptionId: string) => Promise<void>;
+  fetchPayments: (subscriptionId: string) => Promise<void>;
+}
