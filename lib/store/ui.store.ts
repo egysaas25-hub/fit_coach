@@ -1,12 +1,6 @@
 // lib/store/ui.store.ts
 import { create } from 'zustand';
-
-interface UIState {
-  isLoading: boolean;
-  setLoading: (isLoading: boolean) => void;
-  toast: { message: string; type: 'success' | 'error' | 'info' } | null;
-  setToast: (message: string, type: 'success' | 'error' | 'info') => void;
-}
+import { UIState } from '@/types/domain/settings';
 
 export const useUIStore = create<UIState>(set => ({
   isLoading: false,

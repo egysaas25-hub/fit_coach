@@ -1,4 +1,4 @@
-interface Exercise {
+export interface Exercise {
   id: string;
   name: string;
   category: string;
@@ -38,4 +38,13 @@ export interface Workout {
   trainingPlanExercises: TrainingPlanExercise[];
   totalSets: number; // Computed
   totalExercises: number; // Computed
+}
+
+export interface WorkoutState {
+  workouts: Workout[];
+  selectedWorkout: Workout | null;
+  loading: boolean;
+  error: string | null;
+  fetchWorkouts: (customerId?: string) => Promise<void>;
+  setSelectedWorkout: (workout: Workout | null) => void;
 }

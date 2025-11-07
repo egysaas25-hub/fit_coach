@@ -44,7 +44,7 @@ export enum LogStatus {
   Failed = 'Failed',
 }
 
-interface AIState {
+export interface AIState {
   templates: AITemplate[];
   logs: AILog[];
   loading: boolean;

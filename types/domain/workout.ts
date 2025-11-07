@@ -26,3 +26,10 @@ export interface Exercise {
   equipment: string
   difficulty: "Beginner" | "Intermediate" | "Advanced"
 }
+
+export interface WorkoutState {
+  workouts: Workout[];
+  selectedWorkout: Workout | null;
+  fetchWorkouts: (customerId?: string) => Promise<void>;
+  setSelectedWorkout: (workout: Workout | null) => void;
+}

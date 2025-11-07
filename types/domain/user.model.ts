@@ -12,11 +12,15 @@ export interface User {
   initials: string; // Computed
 }
 
-interface AuthState {
+export interface AuthState {
   user: User | null;
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string, type: string) => Promise<void>;
   logout: () => Promise<void>;
   fetchCurrentUser: () => Promise<void>;
+}
+export interface UserState {
+  user: User | null;
+  setUser: (user: User | null) => void;
 }

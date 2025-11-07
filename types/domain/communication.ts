@@ -46,3 +46,12 @@ export enum FlagSeverity {
   Moderate = 'Moderate',
   Critical = 'Critical',
 }
+
+export interface CommunicationState {
+  threads: Thread[];
+  messages: Record<string, Comment[]>;
+  loading: boolean;
+  error: string | null;
+  fetchThreads: (userId?: string) => Promise<void>;
+  fetchMessages: (threadId: string) => Promise<void>;
+}

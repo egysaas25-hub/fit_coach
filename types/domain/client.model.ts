@@ -21,3 +21,9 @@ export interface Client {
   updatedAt: Date;
   initials: string; // Computed
 }
+export interface ClientState {
+  selectedClient: Client | null;
+  filters: { status?: string; search?: string };
+  setSelectedClient: (client: Client | null) => void;
+  setFilters: (filters: { status?: string; search?: string }) => void;
+  clearFilters: () => void;

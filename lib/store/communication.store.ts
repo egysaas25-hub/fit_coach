@@ -1,18 +1,16 @@
 // lib/store/communication.store.ts
 import { create } from 'zustand';
-import { Thread, Comment } from '@/types/domain/communication';
-import { useThreads, useThreadMessages } from '@/lib/hooks/api/useCommunication';
+import {
+  Thread,
+  Comment,
+  CommunicationState,
+} from '@/types/domain/communication';
+import {
+  useThreads,
+  useThreadMessages,
+} from '@/lib/hooks/api/useCommunication';
 
-interface CommunicationState {
-  threads: Thread[];
-  messages: Record<string, Comment[]>;
-  loading: boolean;
-  error: string | null;
-  fetchThreads: (userId?: string) => Promise<void>;
-  fetchMessages: (threadId: string) => Promise<void>;
-}
-
-export const useCommunicationStore = create<CommunicationState>((set) => ({
+export const useCommunicationStore = create<CommunicationState>(set => ({
   threads: [],
   messages: {},
   loading: false,
@@ -30,7 +28,7 @@ export const useCommunicationStore = create<CommunicationState>((set) => ({
     set({ loading: true });
     try {
       const { messages, error } = await useThreadMessages(threadId);
-      set((state) => ({
+      set(state => ({
         messages: { ...state.messages, [threadId]: messages },
         error,
         loading: false,
