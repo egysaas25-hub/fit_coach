@@ -40,3 +40,24 @@ export interface IntegrationAccount {
   credentials: Record<string, string>;
   createdAt: string;
 }
+
+export interface UIState {
+  isLoading: boolean;
+  setLoading: (isLoading: boolean) => void;
+  toast: { message: string; type: 'success' | 'error' | 'info' } | null;
+  setToast: (message: string, type: 'success' | 'error' | 'info') => void;
+}
+
+export interface SettingsState {
+  settings: {
+    general: GeneralSettings;
+    notifications: NotificationSettings;
+    security: SecuritySettings;
+    preferences: PreferenceSettings;
+  } | null;
+  integrations: Integration[];
+  loading: boolean;
+  error: string | null;
+  fetchSettings: () => Promise<void>;
+  fetchIntegrations: () => Promise<void>;
+}

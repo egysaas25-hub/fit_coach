@@ -22,22 +22,7 @@ import {
   Dumbbell, Heart, Target, Activity, TrendingUp,
   Star, Eye, Copy, Edit, Trash2, PlayCircle
 } from 'lucide-react';
-
-interface Exercise {
-  id: string;
-  name: string;
-  category: string;
-  muscleGroup: string[];
-  equipment: string[];
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  description: string;
-  instructions: string[];
-  videoUrl?: string;
-  imageUrl?: string;
-  variations?: string[];
-  isFavorite: boolean;
-  usageCount: number;
-}
+import { Exercise } from '@/types/domain/workout.model';
 
 const EXERCISES: Exercise[] = [
   {

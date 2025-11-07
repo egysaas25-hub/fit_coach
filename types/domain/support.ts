@@ -28,3 +28,17 @@ export enum TicketCategory {
   FeatureRequest = 'Feature Request',
   General = 'General',
 }
+
+export interface SupportState {
+  tickets: Ticket[];
+  stats: {
+    open: number;
+    inProgress: number;
+    resolved: number;
+    avgResponseTime: string;
+  } | null;
+  loading: boolean;
+  error: string | null;
+  fetchTickets: () => Promise<void>;
+  fetchStats: () => Promise<void>;
+}

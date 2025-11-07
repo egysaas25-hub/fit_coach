@@ -1,15 +1,6 @@
 import { create } from 'zustand';
 import { AuthService } from '@/lib/api/services/auth.service'; // Fixed import
-import { User } from '@/types/domain/user.model';
-
-interface AuthState {
-  user: User | null;
-  isLoading: boolean;
-  error: string | null;
-  login: (email: string, password: string, type: string) => Promise<void>;
-  logout: () => Promise<void>;
-  fetchCurrentUser: () => Promise<void>;
-}
+import { User, AuthState } from '@/types/domain/user.model';
 
 const authService = new AuthService();
 

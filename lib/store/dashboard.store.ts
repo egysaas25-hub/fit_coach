@@ -1,24 +1,22 @@
 // lib/store/dashboard.store.ts
 import { create } from 'zustand';
-import { DashboardStats, ActivityFeedItem, Alert, AIInsight, QuickAction } from '@/types/domain/dashboard';
-import { useDashboardStats, useActivityFeed, useAlerts, useAIInsights, useQuickActions } from '@/lib/hooks/api/useDashboard';
+import {
+  DashboardStats,
+  ActivityFeedItem,
+  Alert,
+  AIInsight,
+  QuickAction,
+  DashboardState,
+} from '@/types/domain/dashboard';
+import {
+  useDashboardStats,
+  useActivityFeed,
+  useAlerts,
+  useAIInsights,
+  useQuickActions,
+} from '@/lib/hooks/api/useDashboard';
 
-interface DashboardState {
-  stats: DashboardStats | null;
-  feed: ActivityFeedItem[];
-  alerts: Alert[];
-  insights: AIInsight[];
-  actions: QuickAction[];
-  loading: boolean;
-  error: string | null;
-  fetchStats: () => Promise<void>;
-  fetchFeed: () => Promise<void>;
-  fetchAlerts: () => Promise<void>;
-  fetchInsights: () => Promise<void>;
-  fetchActions: () => Promise<void>;
-}
-
-export const useDashboardStore = create<DashboardState>((set) => ({
+export const useDashboardStore = create<DashboardState>(set => ({
   stats: null,
   feed: [],
   alerts: [],

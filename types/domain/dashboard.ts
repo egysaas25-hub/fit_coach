@@ -44,3 +44,18 @@ export interface QuickAction {
   action: string; // e.g., '/admin/workouts/builder'
   icon: string;
 }
+
+export interface DashboardState {
+  stats: DashboardStats | null;
+  feed: ActivityFeedItem[];
+  alerts: Alert[];
+  insights: AIInsight[];
+  actions: QuickAction[];
+  loading: boolean;
+  error: string | null;
+  fetchStats: () => Promise<void>;
+  fetchFeed: () => Promise<void>;
+  fetchAlerts: () => Promise<void>;
+  fetchInsights: () => Promise<void>;
+  fetchActions: () => Promise<void>;
+}

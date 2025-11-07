@@ -48,3 +48,14 @@ export enum ProgramGoal {
   Endurance = 'Endurance',
   Athletic = 'Athletic Performance',
 }
+
+export interface ProgramState {
+  programs: Program[];
+  weeks: Record<string, ProgramWeek[]>;
+  exercises: Record<string, ProgramExercise[]>;
+  loading: boolean;
+  error: string | null;
+  fetchPrograms: () => Promise<void>;
+  fetchWeeks: (programId: string) => Promise<void>;
+  fetchExercises: (programId: string, weekId: string) => Promise<void>;
+}

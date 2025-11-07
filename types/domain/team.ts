@@ -39,3 +39,14 @@ export interface TeamStats {
   memberCount: number;
   growthRate: string;
 }
+
+export interface TeamState {
+  members: TeamMember[];
+  roles: Role[];
+  permissions: Permission[];
+  loading: boolean;
+  error: string | null;
+  fetchMembers: () => Promise<void>;
+  fetchRoles: () => Promise<void>;
+  fetchPermissions: () => Promise<void>;
+}

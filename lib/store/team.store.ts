@@ -1,20 +1,13 @@
 // lib/store/team.store.ts
 import { create } from 'zustand';
-import { TeamMember, Role, Permission } from '@/types/domain/team';
-import { useTeamMembers, useRoles, usePermissions } from '@/lib/hooks/api/useTeam';
+import { TeamMember, Role, Permission, TeamState } from '@/types/domain/team';
+import {
+  useTeamMembers,
+  useRoles,
+  usePermissions,
+} from '@/lib/hooks/api/useTeam';
 
-interface TeamState {
-  members: TeamMember[];
-  roles: Role[];
-  permissions: Permission[];
-  loading: boolean;
-  error: string | null;
-  fetchMembers: () => Promise<void>;
-  fetchRoles: () => Promise<void>;
-  fetchPermissions: () => Promise<void>;
-}
-
-export const useTeamStore = create<TeamState>((set) => ({
+export const useTeamStore = create<TeamState>(set => ({
   members: [],
   roles: [],
   permissions: [],

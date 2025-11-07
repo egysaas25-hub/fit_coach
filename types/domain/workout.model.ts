@@ -1,8 +1,17 @@
 export interface Exercise {
-  id: number;
-  tenantId: number;
-  name: string; // Simplified from { en: string }
-  createdAt: Date;
+  id: string;
+  name: string;
+  category: string;
+  muscleGroup: string[];
+  equipment: string[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  description: string;
+  instructions: string[];
+  videoUrl?: string;
+  imageUrl?: string;
+  variations?: string[];
+  isFavorite: boolean;
+  usageCount: number;
 }
 
 export interface TrainingPlanExercise {
@@ -28,4 +37,13 @@ export interface Workout {
   trainingPlanExercises: TrainingPlanExercise[];
   totalSets: number; // Computed
   totalExercises: number; // Computed
+}
+
+export interface WorkoutState {
+  workouts: Workout[];
+  selectedWorkout: Workout | null;
+  loading: boolean;
+  error: string | null;
+  fetchWorkouts: (customerId?: string) => Promise<void>;
+  setSelectedWorkout: (workout: Workout | null) => void;
 }

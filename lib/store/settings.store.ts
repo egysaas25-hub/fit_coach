@@ -1,23 +1,16 @@
 // lib/store/settings.store.ts
 import { create } from 'zustand';
-import { GeneralSettings, NotificationSettings, SecuritySettings, PreferenceSettings, Integration } from '@/types/domain/settings';
+import {
+  GeneralSettings,
+  NotificationSettings,
+  SecuritySettings,
+  PreferenceSettings,
+  Integration,
+  SettingsState,
+} from '@/types/domain/settings';
 import { useSettings, useIntegrations } from '@/lib/hooks/api/useSettings';
 
-interface SettingsState {
-  settings: {
-    general: GeneralSettings;
-    notifications: NotificationSettings;
-    security: SecuritySettings;
-    preferences: PreferenceSettings;
-  } | null;
-  integrations: Integration[];
-  loading: boolean;
-  error: string | null;
-  fetchSettings: () => Promise<void>;
-  fetchIntegrations: () => Promise<void>;
-}
-
-export const useSettingsStore = create<SettingsState>((set) => ({
+export const useSettingsStore = create<SettingsState>(set => ({
   settings: null,
   integrations: [],
   loading: false,
