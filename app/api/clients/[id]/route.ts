@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
 import { database, Client } from '@/lib/mock-db/database';
 import { success, error, notFound, forbidden } from '@/lib/utils/response';
+import { withValidation } from '@/lib/middleware/validate.middleware';
+import { updateClientSchema } from '@/lib/schemas/client/client.schema';
+import { ensureDbInitialized } from '@/lib/db/init';
 
 interface RouteParams {
   params: {
@@ -17,6 +20,7 @@ interface RouteParams {
  * - An admin can view any client.
  */
 export async function GET(req: NextRequest, { params }: RouteParams) {
+  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) {
     return authResult;
@@ -38,7 +42,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     return forbidden("You don't have permission to view this client.");
   }
 
-  return success(client);
+  const { passwordHash, ...clientResponse } = client;
+  return success(clientResponse);
 }
 
 /**
@@ -48,44 +53,43 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
  * - A trainer can update their assigned clients.
  * - An admin can update any client.
  */
-export async function PATCH(req: NextRequest, { params }: RouteParams) {
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) {
-    return authResult;
-  }
-  const { user } = authResult;
-  const { id } = params;
+const patchHandler = async (req: NextRequest, validatedBody: any, { params }: RouteParams) => {
+    ensureDbInitialized();
+    const authResult = await requireAuth(req);
+    if (authResult instanceof NextResponse) {
+        return authResult;
+    }
+    const { user } = authResult;
+    const { id } = params;
 
-  const client = database.get<Client>('clients', id);
-  if (!client) {
-    return notFound('Client');
-  }
-
-  // Permission check
-  const isOwner = user.role === 'client' && user.id === client.id;
-  const isAssignedTrainer = user.role === 'trainer' && client.trainerId === user.id;
-  const isAdmin = user.role === 'admin' || user.role === 'super-admin';
-
-  if (!isOwner && !isAssignedTrainer && !isAdmin) {
-    return forbidden("You don't have permission to update this client.");
-  }
-
-  try {
-    const body = await req.json();
-
-    // In a real application, you would implement field-level security.
-    // For example, a client can't change their own trainerId.
-    if (user.role === 'client' && 'trainerId' in body) {
-        return forbidden("Clients cannot change their assigned trainer.");
+    const client = database.get<Client>('clients', id);
+    if (!client) {
+        return notFound('Client');
     }
 
-    const updatedClient = database.update('clients', id, body);
-    return success(updatedClient);
-  } catch (err) {
-    console.error('Failed to update client:', err);
-    return error('An unexpected error occurred while updating the client.', 500);
-  }
-}
+    // Permission check
+    const isOwner = user.role === 'client' && user.id === client.id;
+    const isAssignedTrainer = user.role === 'trainer' && client.trainerId === user.id;
+    const isAdmin = user.role === 'admin' || user.role === 'super-admin';
+
+    if (!isOwner && !isAssignedTrainer && !isAdmin) {
+        return forbidden("You don't have permission to update this client.");
+    }
+
+    try {
+        if (user.role === 'client' && 'trainerId' in validatedBody) {
+            return forbidden("Clients cannot change their assigned trainer.");
+        }
+
+        const updatedClient = database.update('clients', id, validatedBody);
+        const { passwordHash, ...clientResponse } = updatedClient!;
+        return success(clientResponse);
+    } catch (err) {
+        console.error('Failed to update client:', err);
+        return error('An unexpected error occurred while updating the client.', 500);
+    }
+};
+export const PATCH = withValidation(updateClientSchema, patchHandler);
 
 /**
  * DELETE /api/clients/[id]
@@ -93,6 +97,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
  * - Accessible only by Admins.
  */
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) {
     return authResult;

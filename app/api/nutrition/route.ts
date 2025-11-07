@@ -1,20 +1,62 @@
-// lib/api/services/nutrition.service.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
+import { database, NutritionPlan } from '@/lib/mock-db/database';
+import { success, error } from '@/lib/utils/response';
 
-import { nutritionMapper } from '@/lib/mappers/nutrition.mapper';
-import { apiClient } from '@/lib/api/client';
-import { endpoints } from '@/lib/api/endpoints';
-import { NutritionPlan } from '@/types/domain/nutrition.model';
-import { NutritionPlanResponseDto } from '@/types/api/request/nutrition.dto';
+/**
+ * GET /api/nutrition
+ * Retrieves a list of nutrition plans.
+ */
+export async function GET(req: NextRequest) {
+  const authResult = await requireAuth(req);
+  if (authResult instanceof NextResponse) {
+    return authResult;
+  }
 
-export const nutritionService = {
-  getAll: async (customerId?: string): Promise<NutritionPlan[]> => {
-    const url = customerId ? `${endpoints.nutrition}?customer_id=${customerId}` : endpoints.nutrition;
-    const { data } = await apiClient.get<NutritionPlanResponseDto[]>(url);
-    return data.map(nutritionMapper.toModel);
-  },
-  create: async (model: Partial<NutritionPlan>): Promise<NutritionPlan> => {
-    const dto = nutritionMapper.toCreateDto(model);
-    const { data } = await apiClient.post<NutritionPlanResponseDto>(endpoints.nutrition, dto);
-    return nutritionMapper.toModel(data);
-  },
-};
+  try {
+    const nutritionPlans = database.getAll<NutritionPlan>('nutritionPlans');
+    return success(nutritionPlans);
+  } catch (err) {
+    console.error('Failed to fetch nutrition plans:', err);
+    return error('An unexpected error occurred while fetching nutrition plans.', 500);
+  }
+}
+
+/**
+ * POST /api/nutrition
+ * Creates a new nutrition plan.
+ * - Accessible by Trainers and Admins.
+ */
+export async function POST(req: NextRequest) {
+  const authResult = await requireAuth(req);
+  if (authResult instanceof NextResponse) {
+    return authResult;
+  }
+  const { user } = authResult;
+
+  const roleCheck = requireRole(user, ['trainer', 'admin', 'super-admin']);
+  if (roleCheck) {
+    return roleCheck;
+  }
+
+  try {
+    const body = await req.json();
+
+    if (!body.name) {
+      return error('Nutrition plan name is required.', 400);
+    }
+
+    const newPlanData: Omit<NutritionPlan, 'id' | 'createdAt' | 'updatedAt'> = {
+        name: body.name,
+        ...body,
+        creatorId: user.id,
+    };
+
+    const newPlan = database.create('nutritionPlans', newPlanData);
+
+    return success(newPlan, 201);
+  } catch (err) {
+    console.error('Failed to create nutrition plan:', err);
+    return error('An unexpected error occurred while creating the nutrition plan.', 500);
+  }
+}

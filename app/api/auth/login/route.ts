@@ -3,6 +3,7 @@ import { database } from '@/lib/mock-db/database';
 import { comparePassword } from '@/lib/auth/password';
 import { generateToken } from '@/lib/auth/jwt';
 import { success, unauthorized, error } from '@/lib/utils/response';
+import { ensureDbInitialized } from '@/lib/db/init';
 
 /**
  * Handles user login.
@@ -10,6 +11,7 @@ import { success, unauthorized, error } from '@/lib/utils/response';
  * @returns A success response with a JWT token or an error response.
  */
 export async function POST(req: NextRequest) {
+  ensureDbInitialized();
   try {
     const { email, password } = await req.json();
 
@@ -17,16 +19,14 @@ export async function POST(req: NextRequest) {
       return unauthorized('Email and password are required.');
     }
 
-    // In a real app, you'd query your database more efficiently.
     const user = database.query('users', (u) => u.email === email)[0];
 
     if (!user) {
       return unauthorized('Invalid credentials.');
     }
 
-    // Use the mock password comparison function
-    const isPasswordValid = comparePassword(password, 'mock-hashed-password123');
-
+    // Use the mock password comparison function with the user's stored hash
+    const isPasswordValid = comparePassword(password, user.passwordHash);
 
     if (!isPasswordValid) {
         return unauthorized('Invalid credentials.');
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const token = await generateToken(user.id, user.role);
 
     // Exclude sensitive data from the response
-    const { ...userWithoutPassword } = user;
+    const { passwordHash, ...userWithoutPassword } = user;
 
     return success({ user: userWithoutPassword, token });
   } catch (err) {

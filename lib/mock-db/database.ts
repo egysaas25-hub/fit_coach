@@ -10,12 +10,12 @@ interface BaseEntity {
 }
 
 // Dummy interfaces for now, to be replaced with actual models
-export interface User extends BaseEntity { email: string; name: string; role: string; }
+export interface User extends BaseEntity { email: string; name: string; role: string; passwordHash: string; }
 export interface Client extends User { trainerId: string; }
 export interface Trainer extends User {}
-export interface Workout extends BaseEntity { name: string; }
+export interface Workout extends BaseEntity { name: string; creatorId: string; exercises: any[]; }
 export interface WorkoutLog extends BaseEntity { workoutId: string; clientId: string; }
-export interface NutritionPlan extends BaseEntity { name: string; }
+export interface NutritionPlan extends BaseEntity { name: string; creatorId: string; }
 export interface NutritionLog extends BaseEntity { planId: string; clientId: string; }
 export interface ProgressEntry extends BaseEntity { clientId: string; }
 export interface Appointment extends BaseEntity { clientId: string; trainerId: string; }

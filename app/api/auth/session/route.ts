@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/middleware/auth.middleware';
 import { success } from '@/lib/utils/response';
 import { NextResponse } from 'next/server';
+import { ensureDbInitialized } from '@/lib/db/init';
 
 /**
  * Retrieves the current user's session data.
@@ -9,6 +10,7 @@ import { NextResponse } from 'next/server';
  * @returns A success response with the user data or an error response.
  */
 export async function GET(req: NextRequest) {
+  ensureDbInitialized();
   const authResult = await requireAuth(req);
 
   if (authResult instanceof NextResponse) {
@@ -17,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   const { user } = authResult;
   // Exclude sensitive data from the response
-  const { ...userWithoutPassword } = user;
+  const { passwordHash, ...userWithoutPassword } = user;
 
   return success({ user: userWithoutPassword });
 }

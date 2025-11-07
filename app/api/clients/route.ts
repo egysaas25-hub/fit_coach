@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
 import { database, Client } from '@/lib/mock-db/database';
 import { success, paginatedSuccess, error, unauthorized, forbidden } from '@/lib/utils/response';
+import { withValidation } from '@/lib/middleware/validate.middleware';
+import { createClientSchema } from '@/lib/schemas/client/client.schema';
+import { hashPassword } from '@/lib/auth/password';
+import { ensureDbInitialized } from '@/lib/db/init';
 
 /**
  * GET /api/clients
@@ -10,6 +14,7 @@ import { success, paginatedSuccess, error, unauthorized, forbidden } from '@/lib
  * - Admins can see all clients.
  */
 export async function GET(req: NextRequest) {
+  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) {
     return authResult;
@@ -56,42 +61,40 @@ export async function GET(req: NextRequest) {
  * Creates a new client.
  * - Accessible by Trainers and Admins.
  */
-export async function POST(req: NextRequest) {
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) {
-    return authResult;
-  }
-  const { user } = authResult;
+const postHandler = async (req: NextRequest, validatedBody: any) => {
+    ensureDbInitialized();
+    const authResult = await requireAuth(req);
+    if (authResult instanceof NextResponse) {
+        return authResult;
+    }
+    const { user } = authResult;
 
-  const roleCheck = requireRole(user, ['trainer', 'admin', 'super-admin']);
-  if (roleCheck) {
-    return roleCheck;
-  }
-
-  try {
-    const body = await req.json();
-
-    // In a real app, use Zod for validation
-    if (!body.email || !body.name) {
-      return error('Email and name are required.', 400);
+    const roleCheck = requireRole(user, ['trainer', 'admin', 'super-admin']);
+    if (roleCheck) {
+        return roleCheck;
     }
 
-    const existingClient = database.query('clients', c => c.email === body.email)[0];
-    if (existingClient) {
-      return error('A client with this email already exists.', 409); // 409 Conflict
+    try {
+        const existingClient = database.query('clients', c => c.email === validatedBody.email)[0];
+        if (existingClient) {
+        return error('A client with this email already exists.', 409); // 409 Conflict
+        }
+
+        const newClientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'> = {
+            ...validatedBody,
+            role: 'client',
+            passwordHash: hashPassword('password123'), // Default password for new clients
+            trainerId: user.role === 'trainer' ? user.id : validatedBody.trainerId, // Assign trainer if creator is one
+        };
+
+        const newClient = database.create('clients', newClientData);
+        const { passwordHash, ...clientResponse } = newClient;
+
+        return success(clientResponse, 201);
+    } catch (err) {
+        console.error('Failed to create client:', err);
+        return error('An unexpected error occurred while creating the client.', 500);
     }
+};
 
-    const newClientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'> = {
-        ...body,
-        role: 'client',
-        trainerId: user.role === 'trainer' ? user.id : body.trainerId, // Assign trainer if creator is one
-    };
-
-    const newClient = database.create('clients', newClientData);
-
-    return success(newClient, 201);
-  } catch (err) {
-    console.error('Failed to create client:', err);
-    return error('An unexpected error occurred while creating the client.', 500);
-  }
-}
+export const POST = withValidation(createClientSchema, postHandler);

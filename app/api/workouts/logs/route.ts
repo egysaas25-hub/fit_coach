@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware/auth.middleware';
 import { database, WorkoutLog } from '@/lib/mock-db/database';
 import { success, error, forbidden } from '@/lib/utils/response';
+import { ensureDbInitialized } from '@/lib/db/init';
 
 // Assume the WorkoutLog model in database.ts will be expanded to include these fields:
 // interface WorkoutLog extends BaseEntity {
@@ -18,6 +19,7 @@ import { success, error, forbidden } from '@/lib/utils/response';
  * - A trainer/admin can get logs for a specific client using a query parameter.
  */
 export async function GET(req: NextRequest) {
+  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) {
     return authResult;
@@ -62,6 +64,7 @@ export async function GET(req: NextRequest) {
  * Logs a completed workout for the authenticated client.
  */
 export async function POST(req: NextRequest) {
+  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) {
     return authResult;
