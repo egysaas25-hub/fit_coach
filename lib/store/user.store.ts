@@ -1,6 +1,5 @@
-// lib/store/user.store.ts
-import {create, UserState } from 'zustand';
-import {User, UserState } from '@/types/models/user.model';
+import { UserState } from '@/types/domain/user.model';
+import {create} from 'zustand';
 
 
 export const useUserStore = create<UserState>(set => ({

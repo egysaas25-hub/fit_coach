@@ -1,6 +1,8 @@
 // In a real application, you would use a library like 'jsonwebtoken' or 'jose'.
 // For this mock backend, we'll use simple base64 encoding to simulate tokens.
 
+import { isBlacklisted } from '@/app/api/auth/logout/route';
+
 export interface TokenPayload {
   userId: string;
   role: string;
@@ -20,11 +22,13 @@ export async function generateToken(userId: string, role: string): Promise<strin
   const payload: TokenPayload = {
     userId,
     role,
-    exp: Date.now() + (60 * 60 * 1000), // Expires in 1 hour
+    exp: Date.now() + 60 * 60 * 1000, // Expires in 1 hour
   };
 
   // Simple base64 encoding to simulate a token
-  const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64');
+  const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString(
+    'base64'
+  );
   const body = Buffer.from(JSON.stringify(payload)).toString('base64');
 
   return `${header}.${body}.mock_signature`;
@@ -37,12 +41,20 @@ export async function generateToken(userId: string, role: string): Promise<strin
  */
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
+    // Check if token is blacklisted
+    if (isBlacklisted(token)) {
+      console.log('Token is blacklisted');
+      return null;
+    }
+
     const [header, body, signature] = token.split('.');
     if (!header || !body || !signature) {
       return null;
     }
 
-    const payload: TokenPayload = JSON.parse(Buffer.from(body, 'base64').toString('utf-8'));
+    const payload: TokenPayload = JSON.parse(
+      Buffer.from(body, 'base64').toString('utf-8')
+    );
 
     // Check for expiration
     if (payload.exp < Date.now()) {
@@ -64,10 +76,10 @@ export async function verifyToken(token: string): Promise<TokenPayload | null> {
  * @returns A new mock access token.
  */
 export async function refreshToken(token: string): Promise<string> {
-    // For simplicity, we'll just re-use the verify logic and generate a new token
-    const payload = await verifyToken(token);
-    if (!payload) {
-        throw new Error("Invalid refresh token");
-    }
-    return generateToken(payload.userId, payload.role);
+  // For simplicity, we'll just re-use the verify logic and generate a new token
+  const payload = await verifyToken(token);
+  if (!payload) {
+    throw new Error('Invalid refresh token');
+  }
+  return generateToken(payload.userId, payload.role);
 }

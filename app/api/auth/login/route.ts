@@ -4,13 +4,14 @@ import { comparePassword } from '@/lib/auth/password';
 import { generateToken } from '@/lib/auth/jwt';
 import { success, unauthorized, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
+import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
 
 /**
  * Handles user login.
  * @param req - The Next.js request object.
  * @returns A success response with a JWT token or an error response.
  */
-export async function POST(req: NextRequest) {
+async function loginHandler(req: NextRequest) {
   ensureDbInitialized();
   try {
     const { email, password } = await req.json();
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
     const isPasswordValid = comparePassword(password, user.passwordHash);
 
     if (!isPasswordValid) {
-        return unauthorized('Invalid credentials.');
+      return unauthorized('Invalid credentials.');
     }
 
     const token = await generateToken(user.id, user.role);
@@ -43,3 +44,6 @@ export async function POST(req: NextRequest) {
     return error('An unexpected error occurred during login.', 500);
   }
 }
+
+// Apply rate limiting: max 5 attempts per 15 minutes
+export const POST = withRateLimit(loginHandler, 5, 15 * 60 * 1000);
