@@ -1,10 +1,9 @@
 // lib/store/appointments.store.ts
 import { create } from 'zustand';
-import {
-  Appointment,
-  AppointmentState,
-} from '@/types/domain/appointment.model';
 import { appointmentService } from '@/lib/api/services/appointment.service';
+import { AppointmentState } from '@/types/domain/appointment.model';
+
+
 
 export const useAppointmentsStore = create<AppointmentState>((set) => ({
   appointments: [],
