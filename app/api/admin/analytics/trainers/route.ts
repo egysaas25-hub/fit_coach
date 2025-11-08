@@ -41,6 +41,34 @@ export async function GET(req: NextRequest) {
         workoutsCreated: trainerWorkouts.length,
         nutritionPlansCreated: trainerNutrition.length,
         totalAppointments: trainerAppointments.length,
-        completedAppointments: trainerAppointments.filter((a: any) => a.status === 'completed').length,
+completedAppointments: trainerAppointments.filter(
+          (a: any) => a.status === 'completed'
+        ).length,
       };
-    }
+    });
+
+    // Sort by client count
+    trainerStats.sort((a, b) => b.clientCount - a.clientCount);
+
+    const analytics = {
+      totalTrainers: trainers.length,
+      trainerPerformance: trainerStats,
+      averageClientsPerTrainer:
+        trainers.length > 0 ? clients.length / trainers.length : 0,
+      totalWorkoutsCreated: workouts.length,
+      totalNutritionPlansCreated: nutritionPlans.length,
+      workload: {
+        mostClients: trainerStats[0] || null,
+        leastClients: trainerStats[trainerStats.length - 1] || null,
+        balanced: trainerStats.filter(
+          (t) => t.clientCount >= 3 && t.clientCount <= 10
+        ).length,
+      },
+    };
+
+    return success(analytics);
+  } catch (err) {
+    console.error('Failed to fetch trainer analytics:', err);
+    return error('Failed to fetch trainer analytics', 500);
+  }
+}
