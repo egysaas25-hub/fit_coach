@@ -1,5 +1,4 @@
 'use client';
-export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -12,13 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuthStore } from '@/lib/store/auth.store';
 import { toast } from '@/lib/hooks/common/use-toast';
 import { useAuth } from '@/lib/hooks/api/useAuth';
+import { User } from '@/types/domain/user.model'; 
+import { LoginRequest } from '@/types/api/request/auth.dto'; // Rule 2: Import API request type
+import { ApiResponse } from '@/types/shared/response'; // Rule 3: Import shared response type
+import { loginSchema } from '@/lib/schemas/auth/auth.schema';
 
 export default function UnifiedLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('client');
+  const [role, setRole] = useState<'client' | 'trainer' | 'admin' | 'super-admin'>('client'); // Align with User.role
   const { mutate: login, isLoading } = useAuth();
-  const { user } = useAuthStore();
+  const { user } = useAuthStore() as { user: User | null }; // Type assertion with existing type
   const router = useRouter();
 
   useEffect(() => {
@@ -37,30 +40,40 @@ export default function UnifiedLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(
-      { email, password, type: role },
-      {
-        onSuccess: () => {
-          toast({ title: 'Success', description: 'Logged in successfully' });
-          const redirectPath =
-            role === 'admin'
-              ? '/admin/dashboard'
-              : role === 'super-admin'
-              ? '/super-admin/dashboard'
-              : role === 'trainer'
-              ? '/trainer/dashboard'
-              : '/client/dashboard';
-          router.push(redirectPath);
-        },
-        onError: (error: any) => {
-          toast({
-            title: 'Error',
-            description: error.message || 'Invalid credentials',
-            variant: 'destructive',
-          });
-        },
-      }
-    );
+    try {
+      // Rule 4: Validate against existing schema
+      const validatedData = loginSchema.parse({ email, password, role });
+      login(
+        validatedData as LoginRequest, // Rule 2: Cast to existing request type
+        {
+          onSuccess: (data: ApiResponse) => { // Rule 3: Use existing response type
+            toast({ title: 'Success', description: 'Logged in successfully' });
+            const redirectPath =
+              role === 'admin'
+                ? '/admin/dashboard'
+                : role === 'super-admin'
+                ? '/super-admin/dashboard'
+                : role === 'trainer'
+                ? '/trainer/dashboard'
+                : '/client/dashboard';
+            router.push(redirectPath);
+          },
+          onError: (error: any) => {
+            toast({
+              title: 'Error',
+              description: error.message || 'Invalid credentials',
+              variant: 'destructive',
+            });
+          },
+        }
+      );
+    } catch (error) {
+      toast({
+        title: 'Validation Error',
+        description: (error as Error).message || 'Please check your input',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

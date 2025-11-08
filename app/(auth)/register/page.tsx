@@ -3,8 +3,64 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "@/components/ui/use-toast"
+import { ApiResponse } from "@/types/shared/response"
+import { registerSchema } from "@/lib/schemas/auth/auth.schema"
+import { useRouter } from "next/router"
+import { useAuth } from "@/lib/hooks/api/useAuth"
+import { useState } from "react"
 
 export default function RegisterPage() {
+  const [formData, setFormData] = useState<Partial<RegisterRequest>>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    role: 'trainer', // Fixed to 'trainer' as per page context
+  });
+  const { mutate: register, isLoading } = useAuth('register'); // Assuming useAuth supports register
+  const router = useRouter();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Rule 4: Validate against existing schema, ensuring confirmPassword is checked
+      const validatedData = registerSchema.parse({
+        ...formData,
+        role: 'trainer', // Enforce trainer role
+      });
+      register(
+        validatedData as RegisterRequest, // Rule 2: Cast to existing request type
+        {
+          onSuccess: (data: ApiResponse) => {
+            toast({ title: 'Success', description: 'Registration successful! Redirecting...' });
+            router.push('/trainer/dashboard'); // Redirect to trainer dashboard
+          },
+          onError: (error: any) => {
+            toast({
+              title: 'Error',
+              description: error.message || 'Registration failed',
+              variant: 'destructive',
+            });
+          },
+        }
+      );
+    } catch (error) {
+      toast({
+        title: 'Validation Error',
+        description: (error as Error).message || 'Please check your input',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md border-border/50">
