@@ -19,9 +19,12 @@ export const apiClient = axios.create({
 
 // Request interceptor: Inject auth token
 apiClient.interceptors.request.use(config => {
-  const { token } = useAuthStore.getState();
+  const { token, tenantId } = useAuthStore.getState();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (tenantId) {
+    (config.headers as any)['X-Tenant-Id'] = tenantId;
   }
   return config;
 });

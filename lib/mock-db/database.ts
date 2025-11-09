@@ -1,4 +1,4 @@
-import { nanoid } from 'nanoid';
+const nanoid = () => Math.random().toString(36).slice(2);
 
 interface BaseEntity {
   id: string;
@@ -71,6 +71,13 @@ export interface Webhook extends BaseEntity {
   secret: string;
 }
 
+export interface AuthAttempt extends BaseEntity {
+  phone: string;
+  countryCode: string;
+  success: boolean;
+  reason?: string;
+}
+
 export interface Database {
   users: User[];
   clients: Client[];
@@ -85,6 +92,7 @@ export interface Database {
   messageThreads: MessageThread[];
   notifications: Notification[];
   webhooks: Webhook[];
+  authAttempts: AuthAttempt[];
 }
 
 let db: Database = {
@@ -101,6 +109,7 @@ let db: Database = {
   messageThreads: [],
   notifications: [],
   webhooks: [],
+  authAttempts: [],
 };
 
 export const database = {
@@ -108,7 +117,7 @@ export const database = {
     table: keyof Database,
     id: string
   ): T | undefined => {
-    const tableData = db[table] as T[];
+    const tableData = db[table] as unknown as T[];
     return tableData.find((item) => item.id === id);
   },
 
@@ -144,7 +153,7 @@ export const database = {
     id: string,
     data: Partial<T>
   ): T | null => {
-    const tableData = db[table] as T[];
+    const tableData = db[table] as unknown as T[];
     const itemIndex = tableData.findIndex((item) => item.id === id);
     if (itemIndex > -1) {
       const updatedItem = {
@@ -175,7 +184,7 @@ export const database = {
     searchTerm: string,
     fields: string[]
   ): T[] => {
-    const tableData = db[table] as T[];
+    const tableData = db[table] as unknown as T[];
     if (!searchTerm) return tableData;
 
     const lowerSearch = searchTerm.toLowerCase();
@@ -243,6 +252,7 @@ export const database = {
       messageThreads: [],
       notifications: [],
       webhooks: [],
+      authAttempts: [],
     };
   },
 

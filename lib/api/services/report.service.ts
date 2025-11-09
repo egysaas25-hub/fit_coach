@@ -1,40 +1,22 @@
 // lib/api/services/report.service.ts
+import { apiClient } from '@/lib/api/client';
+import { endpoints } from '@/lib/api/endpoints';
+import { ApiResponse } from '@/types/shared/response';
 import { Report, ReportType } from '@/types/domain/report';
 
 export class ReportService {
   async getReports(): Promise<Report[]> {
-    try {
-      const response = await fetch('/api/reports');
-      const data = await response.json();
-      return data as Report[];
-    } catch (error) {
-      console.error('Error fetching reports:', error);
-      throw new Error('Failed to fetch reports');
-    }
+    const response = await apiClient.get<ApiResponse<Report[]>>(endpoints.reports);
+    return response.data.data;
   }
 
   async generateReport(type: ReportType): Promise<Report> {
-    try {
-      const response = await fetch('/api/reports/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type }),
-      });
-      const data = await response.json();
-      return data as Report;
-    } catch (error) {
-      console.error('Error generating report:', error);
-      throw new Error('Failed to generate report');
-    }
+    const response = await apiClient.post<ApiResponse<Report>>(`${endpoints.reports}/generate`, { type });
+    return response.data.data;
   }
 
   async exportReport(reportId: string): Promise<Blob> {
-    try {
-      const response = await fetch(`/api/reports/${reportId}/export`);
-      return await response.blob();
-    } catch (error) {
-      console.error('Error exporting report:', error);
-      throw new Error('Failed to export report');
-    }
+    const response = await apiClient.get(`${endpoints.reports}/${reportId}/export`, { responseType: 'blob' });
+    return response.data as Blob;
   }
 }

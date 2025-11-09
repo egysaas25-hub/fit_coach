@@ -1,16 +1,34 @@
+'use client';
+
 import { ClientSidebar } from "@/components/client-sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Dumbbell, Apple, TrendingUp } from "lucide-react"
+import { useClientActivities } from '@/lib/hooks/api/useProgress';
+import { useAuthStore } from '@/lib/store/auth.store';
+import { useUserStore } from '@/lib/store/user.store';
 
+/**
+ * Client Dashboard Page
+ * Follows Architecture Rules:
+ * - Rule 1: Component calls hooks only
+ * - Uses React Query for server data
+ * - Uses Zustand for user state
+ */
 export default function ClientDashboardPage() {
+  const { user } = useUserStore();
+  const { data: activitiesData, isLoading } = useClientActivities(user?.id || '', { limit: 10 });
+
+  const workoutsThisWeek = activitiesData?.summary.workouts || 0;
+  const mealsLogged = activitiesData?.summary.nutritionLogs || 0;
+  const recentActivities = activitiesData?.activities.slice(0, 4) || [];
   return (
     <div className="flex min-h-screen bg-background">
       
       <main className="flex-1 p-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-balance mb-2">Welcome back, Anna!</h1>
+          <h1 className="text-3xl font-bold text-balance mb-2">Welcome back, {user?.name || 'Client'}!</h1>
           <p className="text-muted-foreground">Here's your fitness progress overview</p>
         </div>
 
@@ -21,7 +39,7 @@ export default function ClientDashboardPage() {
               <Dumbbell className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
+              <div className="text-2xl font-bold">{isLoading ? '...' : workoutsThisWeek}</div>
               <p className="text-xs text-muted-foreground">+2 from last week</p>
             </CardContent>
           </Card>
@@ -43,7 +61,7 @@ export default function ClientDashboardPage() {
               <Apple className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">18</div>
+              <div className="text-2xl font-bold">{isLoading ? '...' : mealsLogged}</div>
               <p className="text-xs text-muted-foreground">6 days tracked</p>
             </CardContent>
           </Card>
@@ -100,41 +118,27 @@ export default function ClientDashboardPage() {
               <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Completed Upper Body Workout</p>
-                  <p className="text-xs text-muted-foreground">2 hours ago • 45 min • 320 cal</p>
-                </div>
-                <Badge variant="secondary">Completed</Badge>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Logged Lunch</p>
-                  <p className="text-xs text-muted-foreground">4 hours ago • 520 calories</p>
-                </div>
-                <Badge variant="secondary">Logged</Badge>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Morning Cardio Session</p>
-                  <p className="text-xs text-muted-foreground">Yesterday • 30 min • 280 cal</p>
-                </div>
-                <Badge variant="secondary">Completed</Badge>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Weight Check-in</p>
-                  <p className="text-xs text-muted-foreground">2 days ago • 152.5 lbs</p>
-                </div>
-                <Badge variant="secondary">Updated</Badge>
-              </div>
+              {isLoading ? (
+                <div className="text-center py-4 text-muted-foreground">Loading activities...</div>
+              ) : recentActivities.length > 0 ? (
+                recentActivities.map((activity, index) => (
+                  <div key={activity.id} className="flex items-start gap-3">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{activity.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(activity.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge variant="secondary">
+                      {activity.type === 'workout' ? 'Completed' : 
+                       activity.type === 'nutrition' ? 'Logged' : 'Updated'}
+                    </Badge>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">No recent activity</div>
+              )}
             </CardContent>
           </Card>
         </div>

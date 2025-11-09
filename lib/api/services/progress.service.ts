@@ -1,18 +1,78 @@
 // lib/api/services/progress.service.ts
-import { ProgressEntryResponseDto, ProgressChartResponseDto } from '@/types/api/progress.dto';
-import { ProgressEntry, ProgressChart } from '@/types/models/progress.model';
-import { progressMapper } from '@/lib/mappers/progress.mapper';
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
+import { ApiResponse } from '@/types/shared/response';
 
-export const progressService = {
-  getEntries: async (customerId?: string): Promise<ProgressEntry[]> => {
-    const url = customerId ? `${endpoints.progress}?customer_id=${customerId}` : endpoints.progress;
-    const { data } = await apiClient.get<ProgressEntryResponseDto[]>(url);
-    return data.map(progressMapper.toEntryModel);
-  },
-  getChartData: async (customerId: string, category: string): Promise<ProgressChart> => {
-    const { data } = await apiClient.get<ProgressChartResponseDto>(`${endpoints.progress}/chart?customer_id=${customerId}&category=${category}`);
-    return progressMapper.toChartModel(data);
-  },
-};
+/**
+ * Progress Service
+ * Rule 5: Service calls apiClient
+ * Rule 6: Uses endpoints
+ */
+
+export interface ProgressEntry {
+  id: string;
+  clientId: string;
+  metric: string;
+  value: number | string;
+  date: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface ProgressData {
+  clientId: string;
+  total: number;
+  byMetric: {
+    weight: ProgressEntry[];
+    bodyfat: ProgressEntry[];
+    measurements: ProgressEntry[];
+    photos: ProgressEntry[];
+  };
+  recent: ProgressEntry[];
+}
+
+export interface Activity {
+  id: string;
+  type: 'workout' | 'nutrition' | 'progress';
+  date: string;
+  description: string;
+  data: any;
+}
+
+export interface ActivityData {
+  clientId: string;
+  activities: Activity[];
+  total: number;
+  summary: {
+    workouts: number;
+    nutritionLogs: number;
+    progressEntries: number;
+  };
+}
+
+export class ProgressService {
+  /**
+   * Get client progress data
+   */
+  async getClientProgress(clientId: string): Promise<ProgressData> {
+    const response = await apiClient.get<ApiResponse<ProgressData>>(
+      endpoints.clientProgress(clientId)
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Get client activities feed
+   */
+  async getClientActivities(clientId: string, params?: { limit?: number; from?: string }): Promise<ActivityData> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.from) queryParams.append('from', params.from);
+
+    const url = `${endpoints.clientActivities(clientId)}?${queryParams.toString()}`;
+    const response = await apiClient.get<ApiResponse<ActivityData>>(url);
+    return response.data.data;
+  }
+}
+
+export const progressService = new ProgressService();

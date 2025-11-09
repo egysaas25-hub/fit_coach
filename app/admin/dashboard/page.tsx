@@ -33,33 +33,33 @@ const KPICards: React.FC<{ stats: DashboardStats | undefined }> = ({ stats }) =>
 
   const kpis = [
     {
-      title: "Active Clients",
-      value: stats.activeClients,
-      change: stats.clientGrowth,
+      title: "Total Users",
+      value: stats.totalUsers || 0,
+      change: stats.growthRate || 0,
       icon: Users,
-      trend: "up",
+      trend: (stats.growthRate || 0) >= 0 ? "up" : "down",
       href: "/admin/clients",
     },
     {
-      title: "Renewals Due",
-      value: stats.renewalsDue,
-      change: -5.2,
+      title: "Active Sessions",
+      value: stats.activeSessions || 0,
+      change: 0,
       icon: Calendar,
-      trend: "down",
-      href: "/admin/clients?filter=renewals",
+      trend: "up",
+      href: "/admin/workouts",
     },
     {
-      title: "Monthly Revenue",
-      value: `$${stats.monthlyRevenue.toLocaleString()}`,
-      change: stats.revenueGrowth,
+      title: "Revenue",
+      value: `$${(stats.revenue || 0).toLocaleString()}`,
+      change: 0,
       icon: DollarSign,
       trend: "up",
-      href: "/admin/analytics/business",
+      href: "/admin/billing",
     },
     {
-      title: "Pending Tickets",
-      value: stats.pendingTickets,
-      change: -12.5,
+      title: "Open Tickets",
+      value: stats.openTickets || 0,
+      change: 0,
       icon: AlertCircle,
       trend: "down",
       href: "/admin/support",
@@ -126,60 +126,53 @@ const QuickActions: React.FC = () => {
 };
 
 // Activity Feed Component
-const ActivityFeed: React.FC = () => {
-  const activities = [
-    { id: 1, type: "client", message: "Client Alex completed workout", time: "1 hour ago", icon: Users },
-    { id: 2, type: "message", message: "Client Jordan logged nutrition", time: "2 hours ago", icon: Send },
-    { id: 3, type: "renewal", message: "Client Sarah subscription renewed", time: "3 hours ago", icon: Calendar },
-    { id: 4, type: "alert", message: "Client Mike missed check-in", time: "4 hours ago", icon: AlertCircle },
-  ];
+const ActivityFeed: React.FC<{ feed: any[] | undefined }> = ({ feed }) => {
+  if (!feed || feed.length === 0) {
+    return (
+      <div className="bg-card border border-border rounded-lg p-6">
+        <h2 className="text-lg font-semibold mb-2">Recent Activity</h2>
+        <p className="text-sm text-muted-foreground mb-4">Latest client interactions and system events</p>
+        <div className="text-center py-8 text-muted-foreground">
+          No recent activity
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card border border-border rounded-lg p-6">
       <h2 className="text-lg font-semibold mb-2">Recent Activity</h2>
       <p className="text-sm text-muted-foreground mb-4">Latest client interactions and system events</p>
       <div className="space-y-4">
-        {activities.map((activity) => {
-          const Icon = activity.icon;
-          return (
-            <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-border last:border-0">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Icon className="w-4 h-4 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-foreground">{activity.message}</p>
-                <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
-              </div>
+        {feed.map((activity) => (
+          <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-border last:border-0">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Users className="w-4 h-4 text-primary" />
             </div>
-          );
-        })}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-foreground">{activity.message}</p>
+              <p className="text-xs text-muted-foreground mt-1">{activity.timestamp}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 };
 
 // Alerts Component
-const AlertsList: React.FC = () => {
-  const alerts = [
-    {
-      id: 1,
-      title: "12 Renewals Due This Week",
-      description: "Follow up with clients for subscription renewals",
-      severity: "warning",
-    },
-    {
-      id: 2,
-      title: "3 Clients Inactive >30 Days",
-      description: "Re-engagement campaign recommended",
-      severity: "alert",
-    },
-    {
-      id: 3,
-      title: "Payment Gateway Issue",
-      description: "Stripe integration needs attention",
-      severity: "critical",
-    },
-  ];
+const AlertsList: React.FC<{ alerts: any[] | undefined }> = ({ alerts }) => {
+  if (!alerts || alerts.length === 0) {
+    return (
+      <div className="bg-card border border-border rounded-lg p-6">
+        <h2 className="text-lg font-semibold mb-2">Alerts & Notifications</h2>
+        <p className="text-sm text-muted-foreground mb-4">Important updates requiring attention</p>
+        <div className="text-center py-8 text-muted-foreground">
+          No alerts at this time
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card border border-border rounded-lg p-6">
@@ -220,27 +213,18 @@ const AlertsList: React.FC = () => {
 };
 
 // AI Insights Component
-const AIInsights: React.FC = () => {
-  const insights = [
-    {
-      id: 1,
-      title: "Churn Risk Detected",
-      description: "5 clients showing low engagement patterns",
-      action: "View Details",
-    },
-    {
-      id: 2,
-      title: "Revenue Opportunity",
-      description: "23 clients eligible for premium upgrade",
-      action: "Create Campaign",
-    },
-    {
-      id: 3,
-      title: "Trainer Performance",
-      description: "Sarah Miller has 95% satisfaction rate",
-      action: "View Report",
-    },
-  ];
+const AIInsights: React.FC<{ insights: any[] | undefined }> = ({ insights }) => {
+  if (!insights || insights.length === 0) {
+    return (
+      <div className="bg-card border border-border rounded-lg p-6">
+        <h2 className="text-lg font-semibold mb-2">AI-Powered Insights</h2>
+        <p className="text-sm text-muted-foreground mb-4">Recommendations and predictions</p>
+        <div className="text-center py-8 text-muted-foreground">
+          No insights available yet
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card border border-border rounded-lg p-6">

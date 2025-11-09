@@ -76,6 +76,25 @@ export class AuthService {
    * Rule 5: Service calls apiClient
    * Rule 3: Uses mapper
    */
+  async requestOtp(data: { phone: string; countryCode: string }): Promise<{ message: string; ttlSeconds: number }> {
+    const response = await apiClient.post<ApiResponse<{ message: string; ttlSeconds: number }>>(
+      endpoints.auth.requestOtp,
+      data
+    );
+    return response.data.data;
+  }
+
+  async verifyOtp(data: { phone: string; countryCode: string; code: string; role?: string }): Promise<{ user: User; token: string }> {
+    const response = await apiClient.post<ApiResponse<{ token: string; user: any }>>(
+      endpoints.auth.verifyOtp,
+      data
+    );
+    const { token, user: userDto } = response.data.data;
+    const user = authMapper.toModel(userDto);
+    return { user, token };
+  }
+
+  // Restored: getCurrentUser
   async getCurrentUser(): Promise<User | null> {
     try {
       const response = await apiClient.get<ApiResponse<AuthResponseDto['user']>>(

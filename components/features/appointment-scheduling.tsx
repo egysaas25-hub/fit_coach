@@ -5,52 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import React from 'react'
 import { Calendar, Clock, User } from "lucide-react"
-
+import { useAppointments, useCreateAppointment } from '@/lib/hooks/api/useAppointments'
 export function AppointmentScheduling() {
-  const appointments = [
-    {
-      date: "Nov 25, 2024",
-      time: "9:00 AM",
-      client: "Sarah Miller",
-      type: "Initial Consultation",
-      status: "Confirmed",
-    },
-    {
-      date: "Nov 25, 2024",
-      time: "11:00 AM",
-      client: "John Davis",
-      type: "Follow-up Session",
-      status: "Confirmed",
-    },
-    {
-      date: "Nov 26, 2024",
-      time: "2:00 PM",
-      client: "Emily Carter",
-      type: "Progress Review",
-      status: "Pending",
-    },
-    {
-      date: "Nov 27, 2024",
-      time: "10:00 AM",
-      client: "Michael Brown",
-      type: "Nutrition Planning",
-      status: "Confirmed",
-    },
-    {
-      date: "Nov 27, 2024",
-      time: "3:00 PM",
-      client: "Lisa Anderson",
-      type: "Workout Planning",
-      status: "Cancelled",
-    },
-  ]
-
-  const upcomingAppointments = [
-    { client: "Sarah Miller", time: "Today at 9:00 AM", type: "Initial Consultation" },
-    { client: "John Davis", time: "Today at 11:00 AM", type: "Follow-up Session" },
-    { client: "Emily Carter", time: "Tomorrow at 2:00 PM", type: "Progress Review" },
-  ]
+  const { data, isLoading } = useAppointments({ limit: 50 })
+  const { mutate: createAppointment, isPending } = useCreateAppointment()
+  const appointments = data?.data || []
+  const upcomingAppointments = appointments.slice(0, 3).map(a => ({ client: a.clientId, time: new Date(a.date).toLocaleString(), type: a.type }))
 
   return (
     <div className="p-8 space-y-8">
@@ -72,7 +34,7 @@ export function AppointmentScheduling() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Today's Appointments</p>
-              <p className="text-2xl font-bold text-foreground">5</p>
+              <p className="text-2xl font-bold text-foreground">{isLoading ? '...' : appointments.filter(a => new Date(a.date).toDateString() === new Date().toDateString()).length}</p>
             </div>
           </div>
         </Card>
@@ -84,7 +46,7 @@ export function AppointmentScheduling() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">This Week</p>
-              <p className="text-2xl font-bold text-foreground">18</p>
+              <p className="text-2xl font-bold text-foreground">{isLoading ? '...' : appointments.length}</p>
             </div>
           </div>
         </Card>
@@ -96,7 +58,7 @@ export function AppointmentScheduling() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Pending</p>
-              <p className="text-2xl font-bold text-foreground">3</p>
+              <p className="text-2xl font-bold text-foreground">{isLoading ? '...' : appointments.filter(a => a.status === 'scheduled').length}</p>
             </div>
           </div>
         </Card>
@@ -125,22 +87,17 @@ export function AppointmentScheduling() {
                   </tr>
                 </thead>
                 <tbody>
-                  {appointments.map((apt, i) => (
-                    <tr key={i} className="border-b border-border hover:bg-muted/50">
-                      <td className="py-3 px-4 text-sm text-foreground">{apt.date}</td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground">{apt.time}</td>
-                      <td className="py-3 px-4 text-sm text-foreground">{apt.client}</td>
+                  {appointments.map((apt) => (
+                    <tr key={apt.id} className="border-b border-border hover:bg-muted/50">
+                      <td className="py-3 px-4 text-sm text-foreground">{new Date(apt.date).toLocaleDateString()}</td>
+                      <td className="py-3 px-4 text-sm text-muted-foreground">{new Date(apt.date).toLocaleTimeString()}</td>
+                      <td className="py-3 px-4 text-sm text-foreground">{apt.clientId}</td>
                       <td className="py-3 px-4 text-sm text-muted-foreground">{apt.type}</td>
                       <td className="py-3 px-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            apt.status === "Confirmed"
-                              ? "bg-emerald-500/10 text-emerald-500"
-                              : apt.status === "Pending"
-                                ? "bg-amber-500/10 text-amber-500"
-                                : "bg-red-500/10 text-red-500"
-                          }`}
-                        >
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          apt.status === 'scheduled' ? 'bg-emerald-500/10 text-emerald-500'
+                          : apt.status === 'cancelled' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'
+                        }`}>
                           {apt.status}
                         </span>
                       </td>
@@ -194,49 +151,23 @@ export function AppointmentScheduling() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Simplified booking form (demo) */}
             <div className="space-y-2">
-              <Label htmlFor="client-select">Client</Label>
-              <Select>
-                <SelectTrigger className="bg-background border-border">
-                  <SelectValue placeholder="Select client" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sarah">Sarah Miller</SelectItem>
-                  <SelectItem value="john">John Davis</SelectItem>
-                  <SelectItem value="emily">Emily Carter</SelectItem>
-                  <SelectItem value="michael">Michael Brown</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="client-select">Client ID</Label>
+              <Input id="client-select" placeholder="client-id" />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="apt-type">Appointment Type</Label>
-              <Select>
-                <SelectTrigger className="bg-background border-border">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="consultation">Initial Consultation</SelectItem>
-                  <SelectItem value="followup">Follow-up Session</SelectItem>
-                  <SelectItem value="review">Progress Review</SelectItem>
-                  <SelectItem value="nutrition">Nutrition Planning</SelectItem>
-                  <SelectItem value="workout">Workout Planning</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="apt-date">Date</Label>
-              <Input id="apt-date" type="date" className="bg-background border-border" />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="apt-time">Time</Label>
-              <Input id="apt-time" type="time" className="bg-background border-border" />
+              <Input id="apt-date" type="datetime-local" className="bg-background border-border" />
             </div>
           </div>
-
-          <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">Schedule Appointment</Button>
+          <Button onClick={() => {
+            const clientInput = (document.getElementById('client-select') as HTMLInputElement);
+            const dateInput = (document.getElementById('apt-date') as HTMLInputElement);
+            if (clientInput?.value && dateInput?.value) {
+              createAppointment({ clientId: clientInput.value, date: new Date(dateInput.value).toISOString(), type: 'training' });
+            }
+          }} className="bg-emerald-500 hover:bg-emerald-600 text-white" disabled={isPending}>Schedule Appointment</Button>
         </div>
       </Card>
     </div>

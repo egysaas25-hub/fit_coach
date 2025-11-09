@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Phone, MessageSquare, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { useRequestOtp, useVerifyOtp, useTenants } from '@/lib/hooks/api/useAuth';
+import { useAuthStore } from '@/lib/store/auth.store';
 
 const COUNTRY_CODES = [
   { code: '+1', country: 'US/Canada', flag: '🇺🇸' },
@@ -22,7 +24,7 @@ const COUNTRY_CODES = [
 ];
 
 export default function WhatsAppLogin() {
-  const [step, setStep] = useState<'phone' | 'otp' | 'role'>('phone');
+  const [step, setStep] = useState<'phone' | 'otp' | 'tenant' | 'role'>('phone');
   const [countryCode, setCountryCode] = useState('+20');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -31,9 +33,18 @@ export default function WhatsAppLogin() {
   const [error, setError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const requestOtp = useRequestOtp();
+  const verifyOtp = useVerifyOtp();
+  const [statusMessage, setStatusMessage] = useState('');
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [language, setLanguage] = useState<'en' | 'ar'>('en');
+  const { data: tenants } = useTenants();
+  const { setTenantId } = useAuthStore();
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
 
-  // Phone number validation
-  const isValidPhone = phoneNumber.length >= 9 && /^\d+$/.test(phoneNumber);
+  const fullPhone = `${countryCode}${phoneNumber}`;
+  const isValidPhone = /^\+[0-9]{1,3}[0-9]{6,14}$/.test(fullPhone);
 
   // Send OTP
   const handleSendOTP = async () => {
@@ -41,18 +52,17 @@ export default function WhatsAppLogin() {
       setError('Please enter a valid phone number');
       return;
     }
-
     setIsLoading(true);
     setError('');
-
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const res = await requestOtp.mutateAsync({ phone: phoneNumber, countryCode });
       setIsLoading(false);
       setOtpSent(true);
       setStep('otp');
-      setResendTimer(60);
-      
-      // Start countdown
+      setIsOtpModalOpen(true);
+      setStatusMessage('Code sent via WhatsApp');
+      const ttl = res?.ttlSeconds ?? 60;
+      setResendTimer(ttl);
       const interval = setInterval(() => {
         setResendTimer(prev => {
           if (prev <= 1) {
@@ -62,7 +72,10 @@ export default function WhatsAppLogin() {
           return prev - 1;
         });
       }, 1000);
-    }, 1500);
+    } catch (e: any) {
+      setIsLoading(false);
+      setError(e?.response?.data?.error?.message || 'Failed to send OTP');
+    }
   };
 
   // Handle OTP input
@@ -98,59 +111,74 @@ export default function WhatsAppLogin() {
   const handleVerifyOTP = async (otpCode: string) => {
     setIsLoading(true);
     setError('');
-
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const { token, user } = await verifyOtp.mutateAsync({ phone: phoneNumber, countryCode, code: otpCode, role });
       setIsLoading(false);
-      
-      // Check OTP (in real app, this is done on backend)
-      if (otpCode === '123456') {
-        setStep('role');
-      } else {
-        setError('Invalid OTP code. Please try again.');
-        setOtp(['', '', '', '', '', '']);
-        document.getElementById('otp-0')?.focus();
-      }
-    }, 1000);
+      setStatusMessage('Code verified');
+      setIsOtpModalOpen(false);
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({ event: 'EVT-AUTH-VERIFY', phone: fullPhone });
+      setStep('tenant');
+    } catch (e: any) {
+      setIsLoading(false);
+      setError(e?.response?.data?.error?.message || 'Invalid OTP code. Please try again.');
+      setOtp(['', '', '', '', '', '']);
+      document.getElementById('otp-0')?.focus();
+    }
   };
 
   // Complete login
   const handleLogin = () => {
     setIsLoading(true);
-    
-    // Simulate API call
+    const { tenantId } = useAuthStore.getState();
     setTimeout(() => {
-      const dashboards = {
+      const dashboards: Record<string, string> = {
         client: '/client/dashboard',
         trainer: '/trainer/dashboard',
         admin: '/admin/dashboard',
         'super-admin': '/super-admin/dashboard'
       };
-      
-      // In real app: window.location.href = dashboards[role];
-      alert(`Redirecting to ${dashboards[role as keyof typeof dashboards]}`);
+      const basePath = dashboards[role as keyof typeof dashboards] || '/client/dashboard';
+      const target = tenantId ? `/t/${tenantId}${basePath}` : basePath;
+      window.location.href = target;
       setIsLoading(false);
-    }, 1000);
+    }, 500);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0B0E0C] p-4">
       <Card className="w-full max-w-md border-border/50 bg-card">
         <CardHeader className="space-y-1">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-3 h-3 rounded-full bg-[#00C26A]" />
-            <span className="text-2xl font-bold">VTrack</span>
+      <div className="flex items-center gap-2 mb-4 justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#00C26A]" />
+              <span className="text-2xl font-bold">VTrack</span>
+            </div>
+            <div className="w-28">
+              <Select value={language} onValueChange={(val) => setLanguage(val as 'en' | 'ar')}>
+                <SelectTrigger id="language" className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">EN</SelectItem>
+                  <SelectItem value="ar">AR</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <CardTitle className="text-2xl font-bold">
-            {step === 'phone' && 'Sign In'}
+            {step === 'phone' && 'Welcome back 👋'}
             {step === 'otp' && 'Verify Your Number'}
+            {step === 'tenant' && 'Select Your Workspace'}
             {step === 'role' && 'Select Your Role'}
           </CardTitle>
           <CardDescription>
-            {step === 'phone' && 'Enter your phone number to receive a verification code via WhatsApp'}
-            {step === 'otp' && `We sent a code to ${countryCode} ${phoneNumber}`}
+            {step === 'phone' && 'Sign in to your Trainer Dashboard'}
+            {step === 'otp' && `We sent a code to ${countryCode} ${phoneNumber.replace(/\d(?=\d{4})/g, 'x')}`}
+            {step === 'tenant' && 'Select your workspace'}
             {step === 'role' && 'Choose how you want to access VTrack'}
           </CardDescription>
+          <div role="status" aria-live="polite" className="sr-only">{statusMessage}</div>
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -225,7 +253,7 @@ export default function WhatsAppLogin() {
                 ) : (
                   <>
                     <Phone className="w-4 h-4 mr-2" />
-                    Continue with WhatsApp
+                    Send code on WhatsApp
                   </>
                 )}
               </Button>
@@ -239,78 +267,104 @@ export default function WhatsAppLogin() {
             </>
           )}
 
-          {/* Step 2: OTP Verification */}
+          {/* Step 2: OTP Verification (Modal) */}
           {step === 'otp' && (
-            <>
-              <div className="space-y-4">
-                <div className="flex justify-center gap-2">
-                  {otp.map((digit, index) => (
-                    <Input
-                      key={index}
-                      id={`otp-${index}`}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      className="w-12 h-14 text-center text-xl font-bold bg-background"
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      autoFocus={index === 0}
-                    />
-                  ))}
-                </div>
-
-                {error && (
-                  <div className="flex items-center gap-2 text-sm text-[#F14A4A]">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>{error}</span>
+            <Dialog open={isOtpModalOpen} onOpenChange={setIsOtpModalOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Enter the 6-digit code</DialogTitle>
+                  <DialogDescription>Sent to {countryCode} {phoneNumber.replace(/\d(?=\d{4})/g, 'x')}</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="flex justify-center gap-2">
+                    {otp.map((digit, index) => (
+                      <Input
+                        key={index}
+                        id={`otp-${index}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        className="w-12 h-14 text-center text-xl font-bold bg-background"
+                        value={digit}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                        autoFocus={index === 0}
+                        aria-label={`OTP digit ${index + 1}`}
+                      />
+                    ))}
                   </div>
-                )}
 
-                {isLoading && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Verifying code...</span>
-                  </div>
-                )}
-
-                <div className="text-center text-sm">
-                  {resendTimer > 0 ? (
-                    <span className="text-muted-foreground">
-                      Resend code in {resendTimer}s
-                    </span>
-                  ) : (
-                    <button
-                      onClick={handleSendOTP}
-                      className="text-[#00C26A] hover:underline font-medium"
-                    >
-                      Resend Code
-                    </button>
+                  {error && (
+                    <div className="flex items-center gap-2 text-sm text-[#F14A4A]">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{error}</span>
+                    </div>
                   )}
+
+                  {isLoading && (
+                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Verifying code...</span>
+                    </div>
+                  )}
+
+                  <div className="text-center text-sm">
+                    {resendTimer > 0 ? (
+                      <span className="text-muted-foreground">Resend code in {resendTimer}s</span>
+                    ) : (
+                      <button onClick={() => { (window as any).dataLayer = (window as any).dataLayer || []; (window as any).dataLayer.push({ event: 'EVT-AUTH-RESEND', phone: fullPhone }); handleSendOTP(); }} className="text-[#00C26A] hover:underline font-medium">Resend via WhatsApp</button>
+                    )}
+                  </div>
+
+                  <Button className="w-full bg-[#00C26A] hover:bg-[#00C26A]/90" size="lg" onClick={() => handleVerifyOTP(otp.join(''))} disabled={isLoading || !otp.every(d => d)}>
+                    Verify
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setStep('phone');
+                      setOtp(['', '', '', '', '', '']);
+                      setError('');
+                      setIsOtpModalOpen(false);
+                    }}
+                  >
+                    Use Different Number
+                  </Button>
+
+                  <div className="text-center pt-2 border-t border-border">
+                    <button className="text-sm text-muted-foreground hover:text-[#00C26A]" onClick={() => setIsHelpOpen(true)}>
+                      Lost access to WhatsApp?
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </DialogContent>
+            </Dialog>
+          )}
 
-              <div className="bg-muted/50 border border-border rounded-lg p-4">
-                <p className="text-xs text-muted-foreground text-center">
-                  <span className="font-medium">Tip:</span> Check your WhatsApp for a message from VTrack. The code expires in 5 minutes.
-                </p>
+          {/* Step 3: Tenant Selection */}
+          {step === 'tenant' && (
+            <>
+              <div className="space-y-2">
+                <Label>Select Workspace</Label>
+                <Select value={selectedTenantId ?? ''} onValueChange={(val) => setSelectedTenantId(val)}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(tenants || []).map((t: any) => (
+                      <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-
-              <Button
-                variant="ghost"
-                className="w-full"
-                onClick={() => {
-                  setStep('phone');
-                  setOtp(['', '', '', '', '', '']);
-                  setError('');
-                }}
-              >
-                Use Different Number
+              <Button className="w-full bg-[#00C26A] hover:bg-[#00C26A]/90" size="lg" onClick={() => { if (selectedTenantId) setTenantId(selectedTenantId); setStep('role'); }} disabled={!selectedTenantId}>
+                Continue
               </Button>
             </>
           )}
-
-          {/* Step 3: Role Selection */}
+          {/* Step 4: Role Selection */}
           {step === 'role' && (
             <>
               <div className="flex items-center justify-center p-4 bg-[#00C26A]/10 border border-[#00C26A]/20 rounded-lg">
@@ -380,16 +434,27 @@ export default function WhatsAppLogin() {
             </>
           )}
 
-          {/* Forgot Device Link */}
-          {step === 'otp' && (
-            <div className="text-center pt-2 border-t border-border">
-              <button className="text-sm text-muted-foreground hover:text-[#00C26A]">
-                Lost access to WhatsApp?
-              </button>
-            </div>
-          )}
+          {/* Help Modal */}
+          <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Need help with WhatsApp verification?</DialogTitle>
+                <DialogDescription>If you lost access to WhatsApp, contact support or use an alternate verification method provided by your admin.</DialogDescription>
+              </DialogHeader>
+              <div className="text-sm text-muted-foreground">
+                <ul className="list-disc pl-4">
+                  <li>Ensure WhatsApp is installed and connected.</li>
+                  <li>Check network connectivity.</li>
+                  <li>Verify your country code and number.</li>
+                </ul>
+              </div>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
+      <div className="mt-4 text-xs text-muted-foreground text-center">
+        ©2025 Trainer SaaS · v2025.1
+      </div>
     </div>
   );
 }

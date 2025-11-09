@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,10 +16,18 @@ import { CustomerStatus } from '@/types/domain/client.model';
  * Follows Architecture Rules:
  * - Rule 1: Component calls hooks only
  * - Uses React Query for server data
+ * - Implements client-side search filtering
  */
 export default function AdminCustomersPage() {
   // Rule 1: Component calls hook
   const { data: clients, isLoading, error } = useClients();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Client-side filtering
+  const filteredClients = clients?.filter(client => 
+    client.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.phone.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
 
   if (error) {
     return (
@@ -92,7 +101,12 @@ export default function AdminCustomersPage() {
             <div className="flex items-center gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search customers..." className="pl-9 bg-background" />
+                <Input 
+                  placeholder="Search customers..." 
+                  className="pl-9 bg-background" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
             </div>
           </CardHeader>
@@ -101,7 +115,7 @@ export default function AdminCustomersPage() {
               <div className="text-center py-8">
                 <p className="text-muted-foreground">Loading clients...</p>
               </div>
-            ) : clients && clients.length > 0 ? (
+            ) : filteredClients.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -113,7 +127,7 @@ export default function AdminCustomersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {clients.map((client) => (
+                  {filteredClients.map((client) => (
                     <TableRow key={client.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">

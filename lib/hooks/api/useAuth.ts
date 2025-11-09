@@ -3,7 +3,7 @@ import { AuthService } from '@/lib/api/services/auth.service';
 import { useUserStore } from '@/lib/store/user.store';
 import { useAuthStore } from '@/lib/store/auth.store';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from '@/types/api/request/auth.dto';
-import { User } from '@/types/domain/user.model';
+import { tenantService } from '@/lib/api/services/tenant.service';
 
 const authService = new AuthService();
 
@@ -64,16 +64,25 @@ export const useForgotPassword = () => {
  * Hook for reset password mutation
  * Rule 2: Hooks call services
  */
-export const useResetPassword = () => {
+export const useRequestOtp = () => {
   return useMutation({
-    mutationFn: (data: ResetPasswordDto) => authService.resetPassword(data),
+    mutationFn: (data: { phone: string; countryCode: string }) => authService.requestOtp(data),
   });
 };
 
-/**
- * Hook for logout mutation
- * Rule 2: Hooks call services
- */
+export const useVerifyOtp = () => {
+  const queryClient = useQueryClient();
+  const { setUser } = useUserStore();
+  const { setToken } = useAuthStore();
+  return useMutation({
+    mutationFn: (data: { phone: string; countryCode: string; code: string; role?: string }) => authService.verifyOtp(data),
+    onSuccess: ({ user, token }) => {
+      setUser(user);
+      setToken(token);
+      queryClient.setQueryData(['user'], user);
+    },
+  });
+};
 export const useLogout = () => {
   const queryClient = useQueryClient();
   const { setUser } = useUserStore();
@@ -111,3 +120,12 @@ export const useCurrentUser = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
+
+export const useTenants = () => {
+  return useQuery({
+    queryKey: ['tenants'],
+    queryFn: () => tenantService.getAll(),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+

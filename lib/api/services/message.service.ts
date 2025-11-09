@@ -1,23 +1,62 @@
 // lib/api/services/message.service.ts
-import { MessageResponseDto, CreateMessageDto, MessageThreadResponseDto } from '@/types/api/message.dto';
-import { Message, MessageThread } from '@/types/models/message.model';
-import { messageMapper } from '@/lib/mappers/message.mapper';
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
+import { ApiResponse } from '@/types/shared/response';
+
+export interface MessageThread {
+  id: string;
+  clientId: string;
+  trainerId: string;
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: {
+    id: string;
+    content: string;
+    createdAt: string;
+    senderId: string;
+  } | null;
+  messageCount?: number;
+}
+
+export interface MessageItem {
+  id: string;
+  threadId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface ThreadsResponse {
+  data: MessageThread[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
 
 export const messageService = {
-  getThreads: async (customerId?: string): Promise<MessageThread[]> => {
-    const url = customerId ? `${endpoints.message}/threads?customer_id=${customerId}` : `${endpoints.message}/threads`;
-    const { data } = await apiClient.get<MessageThreadResponseDto[]>(url);
-    return data.map(messageMapper.toThreadModel);
+  async getThreads(params?: { page?: number; limit?: number }): Promise<ThreadsResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', String(params.page));
+    if (params?.limit) queryParams.append('limit', String(params.limit));
+    const url = `${endpoints.message}/threads?${queryParams.toString()}`;
+    const response = await apiClient.get<ApiResponse<ThreadsResponse>>(url);
+    return response.data.data;
   },
-  getAll: async (threadId: number): Promise<Message[]> => {
-    const { data } = await apiClient.get<MessageResponseDto[]>(`${endpoints.message}?thread_id=${threadId}`);
-    return data.map(messageMapper.toModel);
+
+  async getMessages(threadId: string, params?: { limit?: number }): Promise<MessageItem[]> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', String(params.limit));
+    queryParams.append('threadId', threadId);
+    const url = `${endpoints.message}?${queryParams.toString()}`;
+    const response = await apiClient.get<ApiResponse<MessageItem[]>>(url);
+    return response.data.data;
   },
-  create: async (model: Partial<Message>): Promise<Message> => {
-    const dto = messageMapper.toCreateDto(model);
-    const { data } = await apiClient.post<MessageResponseDto>(endpoints.message, dto);
-    return messageMapper.toModel(data);
+
+  async sendMessage(threadId: string, content: string): Promise<MessageItem> {
+    const response = await apiClient.post<ApiResponse<MessageItem>>(endpoints.message, { threadId, content });
+    return response.data.data;
   },
 };

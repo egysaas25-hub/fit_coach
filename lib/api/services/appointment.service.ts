@@ -1,28 +1,51 @@
 // lib/api/services/appointment.service.ts
-import { AppointmentResponseDto, CreateAppointmentDto } from '@/types/api/appointment.dto';
-import { Appointment } from '@/types/models/appointment.model';
-import { appointmentMapper } from '@/lib/mappers/appointment.mapper';
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
+import { ApiResponse } from '@/types/shared/response';
+
+export interface AppointmentItem {
+  id: string;
+  clientId: string;
+  trainerId: string;
+  date: string;
+  status: 'scheduled' | 'cancelled' | 'completed';
+  type: 'consultation' | 'training' | 'check-in' | string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AppointmentListResponse {
+  data: AppointmentItem[];
+  pagination: { page: number; limit: number; total: number; pages: number };
+}
 
 export const appointmentService = {
-  getAll: async (tenantId?: number): Promise<Appointment[]> => {
-    const url = tenantId ? `${endpoints.appointment}?tenant_id=${tenantId}` : endpoints.appointment;
-    const { data } = await apiClient.get<AppointmentResponseDto[]>(url);
-    return data.map(appointmentMapper.toModel);
+  async getAppointments(params?: { clientId?: string; trainerId?: string; status?: string; from?: string; to?: string; page?: number; limit?: number }): Promise<AppointmentListResponse> {
+    const qp = new URLSearchParams();
+    if (params?.clientId) qp.append('clientId', params.clientId);
+    if (params?.trainerId) qp.append('trainerId', params.trainerId);
+    if (params?.status) qp.append('status', params.status);
+    if (params?.from) qp.append('from', params.from);
+    if (params?.to) qp.append('to', params.to);
+    if (params?.page) qp.append('page', String(params.page));
+    if (params?.limit) qp.append('limit', String(params.limit));
+    const url = `${endpoints.appointment}?${qp.toString()}`;
+    const response = await apiClient.get<ApiResponse<AppointmentListResponse>>(url);
+    return response.data.data;
   },
-  getById: async (id: number): Promise<Appointment> => {
-    const { data } = await apiClient.get<AppointmentResponseDto>(`${endpoints.appointment}/${id}`);
-    return appointmentMapper.toModel(data);
+
+  async createAppointment(data: { clientId: string; trainerId?: string; date: string; duration?: number; type?: string; notes?: string }): Promise<AppointmentItem> {
+    const response = await apiClient.post<ApiResponse<AppointmentItem>>(endpoints.appointment, data);
+    return response.data.data;
   },
-  create: async (model: Partial<Appointment>): Promise<Appointment> => {
-    const dto = appointmentMapper.toCreateDto(model);
-    const { data } = await apiClient.post<AppointmentResponseDto>(endpoints.appointment, dto);
-    return appointmentMapper.toModel(data);
+
+  async updateAppointment(id: string, updates: Partial<AppointmentItem>): Promise<AppointmentItem> {
+    const response = await apiClient.patch<ApiResponse<AppointmentItem>>(`${endpoints.appointment}/${id}`, updates);
+    return response.data.data;
   },
-  update: async (id: number, model: Partial<Appointment>): Promise<Appointment> => {
-    const dto = appointmentMapper.toCreateDto(model);
-    const { data } = await apiClient.put<AppointmentResponseDto>(`${endpoints.appointment}/${id}`, dto);
-    return appointmentMapper.toModel(data);
+
+  async deleteAppointment(id: string): Promise<void> {
+    await apiClient.delete(`${endpoints.appointment}/${id}`);
   },
 };

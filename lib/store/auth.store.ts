@@ -11,17 +11,21 @@ import { persist } from 'zustand/middleware';
  */
 interface AuthStoreState {
   token: string | null;
+  tenantId: string | null;
   setToken: (token: string | null) => void;
+  setTenantId: (tenantId: string | null) => void;
   clearAuth: () => void;
 }
 
 export const useAuthStore = create<AuthStoreState>()(persist(
   (set) => ({
     token: null,
+    tenantId: null,
     
     setToken: (token) => set({ token }),
+    setTenantId: (tenantId) => set({ tenantId }),
     
-    clearAuth: () => set({ token: null }),
+    clearAuth: () => set({ token: null, tenantId: null }),
   }),
   {
     name: 'auth-storage',
