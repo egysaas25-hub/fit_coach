@@ -1,22 +1,36 @@
 // app/admin/dashboard/page.tsx
+'use client';
+
 import { 
   Users, TrendingUp, DollarSign, AlertCircle, UserPlus, 
   FileText, Send, Calendar, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import { AdminHeader, Tabs, TabsList, TabsTrigger, TabsContent } from './AdminClientComponents';
+import { useDashboardStats, useActivityFeed, useAlerts, useAIInsights } from '@/lib/hooks/api/useDashboard';
+import { DashboardStats } from '@/types/domain/dashboard';
 
-// Stats interface for KPICards
-interface Stats {
-  activeClients: number;
-  clientGrowth: number;
-  renewalsDue: number;
-  monthlyRevenue: number;
-  revenueGrowth: number;
-  pendingTickets: number;
-}
+/**
+ * Admin Dashboard Page
+ * Follows Architecture Rules:
+ * - Rule 1: Component calls hooks only
+ * - Uses React Query for server data
+ */
 
 // KPI Cards Component
-const KPICards: React.FC<{ stats: Stats }> = ({ stats }) => {
+const KPICards: React.FC<{ stats: DashboardStats | undefined }> = ({ stats }) => {
+  if (!stats) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-card border border-border rounded-lg p-6 animate-pulse">
+            <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+            <div className="h-8 bg-muted rounded w-1/2" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const kpis = [
     {
       title: "Active Clients",
@@ -253,20 +267,28 @@ const AIInsights: React.FC = () => {
 
 // Main Dashboard Component
 export default function EnhancedAdminDashboard() {
-  const stats: Stats = {
-    activeClients: 156,
-    clientGrowth: 12,
-    renewalsDue: 8,
-    monthlyRevenue: 24500,
-    revenueGrowth: 8,
-    pendingTickets: 3,
-  };
+  // Rule 1: Component calls hooks only
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: activityFeed } = useActivityFeed();
+  const { data: alerts } = useAlerts();
+  const { data: insights } = useAIInsights();
 
   return (
     <div className="min-h-screen bg-background">
       <AdminHeader />
       <main className="p-6 lg:p-8 space-y-8">
-        <KPICards stats={stats} />
+        {statsLoading ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-card border border-border rounded-lg p-6 animate-pulse">
+                <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                <div className="h-8 bg-muted rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <KPICards stats={stats} />
+        )}
         <QuickActions />
         <Tabs defaultValue="activity">
           <TabsList>
@@ -275,13 +297,13 @@ export default function EnhancedAdminDashboard() {
             <TabsTrigger value="insights">AI Insights</TabsTrigger>
           </TabsList>
           <TabsContent value="activity">
-            <ActivityFeed />
+            <ActivityFeed feed={activityFeed} />
           </TabsContent>
           <TabsContent value="alerts">
-            <AlertsList />
+            <AlertsList alerts={alerts} />
           </TabsContent>
           <TabsContent value="insights">
-            <AIInsights />
+            <AIInsights insights={insights} />
           </TabsContent>
         </Tabs>
       </main>

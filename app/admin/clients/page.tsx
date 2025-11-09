@@ -7,14 +7,29 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table";
 import { Plus, Search, Eye, Edit } from "lucide-react"
+import { useClients } from '@/lib/hooks/api/useClients';
+import { CustomerStatus } from '@/types/domain/client.model';
 
+/**
+ * Admin Clients Page
+ * Follows Architecture Rules:
+ * - Rule 1: Component calls hooks only
+ * - Uses React Query for server data
+ */
 export default function AdminCustomersPage() {
-  const customers = [
-    { name: "John Smith", email: "john@example.com", plan: "Premium", status: "Active", joined: "Jan 2024" },
-    { name: "Sarah Miller", email: "sarah@example.com", plan: "Basic", status: "Active", joined: "Feb 2024" },
-    { name: "Mike Johnson", email: "mike@example.com", plan: "Enterprise", status: "Active", joined: "Mar 2024" },
-    { name: "Emily Davis", email: "emily@example.com", plan: "Premium", status: "Inactive", joined: "Dec 2023" },
-  ]
+  // Rule 1: Component calls hook
+  const { data: clients, isLoading, error } = useClients();
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive">Error loading clients</p>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -36,8 +51,8 @@ export default function AdminCustomersPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Customers</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">245</div>
-              <p className="text-xs text-muted-foreground mt-1">+12 this month</p>
+              <div className="text-2xl font-bold">{isLoading ? '...' : clients?.length || 0}</div>
+              <p className="text-xs text-muted-foreground mt-1">All clients</p>
             </CardContent>
           </Card>
 
@@ -46,8 +61,8 @@ export default function AdminCustomersPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">218</div>
-              <p className="text-xs text-muted-foreground mt-1">89% of total</p>
+              <div className="text-2xl font-bold">{isLoading ? '...' : clients?.filter(c => c.status === 'active').length || 0}</div>
+              <p className="text-xs text-muted-foreground mt-1">Currently active</p>
             </CardContent>
           </Card>
 
@@ -56,8 +71,8 @@ export default function AdminCustomersPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Premium Users</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">142</div>
-              <p className="text-xs text-muted-foreground mt-1">58% of active</p>
+              <div className="text-2xl font-bold">--</div>
+              <p className="text-xs text-muted-foreground mt-1">Premium tier</p>
             </CardContent>
           </Card>
 
@@ -66,7 +81,7 @@ export default function AdminCustomersPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Churn Rate</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">3.2%</div>
+              <div className="text-2xl font-bold">--</div>
               <p className="text-xs text-muted-foreground mt-1">Last 30 days</p>
             </CardContent>
           </Card>
@@ -82,53 +97,61 @@ export default function AdminCustomersPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customers.map((customer, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src="/placeholder.svg" />
-                          <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{customer.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{customer.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{customer.plan}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={customer.status === "Active" ? "default" : "secondary"}>
-                        {customer.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{customer.joined}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading clients...</p>
+              </div>
+            ) : clients && clients.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {clients.map((client) => (
+                    <TableRow key={client.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src="/placeholder.svg" />
+                            <AvatarFallback>{client.initials}</AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{client.fullName}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{client.phone}</TableCell>
+                      <TableCell>
+                        <Badge variant={client.status === CustomerStatus.ACTIVE ? "default" : "secondary"}>
+                          {client.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No clients found</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>

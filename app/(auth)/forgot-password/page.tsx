@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -7,46 +9,54 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/lib/hooks/common/use-toast';
-import { useAuth } from '@/lib/hooks/api/useAuth'; // Assuming a forgot password mutation
-import { ForgotPasswordRequest } from '@/types/api/request/auth.dto'; // Rule 2: Import API request type
-import { ApiResponse } from '@/types/shared/response'; // Rule 3: Import shared response type
-import { forgotPasswordSchema } from '@/lib/schemas/auth/auth.schema'; // Rule 4: Use existing schema
+import { useForgotPassword } from '@/lib/hooks/api/useAuth';
+import { forgotPasswordSchema } from '@/lib/schemas/auth/auth.schema';
+import { z } from 'zod';
 
+/**
+ * ForgotPasswordPage Component
+ * Follows Architecture Rules:
+ * - Rule 1: Component calls hook (useForgotPassword) only, not services directly
+ * - Rule 4: Uses Zod schema for validation
+ */
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const { mutate: forgotPassword, isLoading } = useAuth('forgot-password'); // Assuming useAuth supports forgot password
+  
+  // Rule 1: Component calls hook
+  const { mutate: forgotPassword, isPending } = useForgotPassword();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     try {
       // Rule 4: Validate against existing schema
       const validatedData = forgotPasswordSchema.parse({ email });
-      forgotPassword(
-        validatedData as ForgotPasswordRequest, // Rule 2: Cast to existing request type
-        {
-          onSuccess: (data: ApiResponse) => {
-            toast({
-              title: 'Success',
-              description: 'Password reset link sent! Check your email.',
-            });
-            router.push('/login'); // Redirect to login after success
-          },
-          onError: (error: any) => {
-            toast({
-              title: 'Error',
-              description: error.message || 'Failed to send reset link',
-              variant: 'destructive',
-            });
-          },
-        }
-      );
-    } catch (error) {
-      toast({
-        title: 'Validation Error',
-        description: (error as Error).message || 'Please enter a valid email',
-        variant: 'destructive',
+      
+      forgotPassword(validatedData, {
+        onSuccess: () => {
+          toast({
+            title: 'Success',
+            description: 'Password reset link sent! Check your email.',
+          });
+          router.push('/login');
+        },
+        onError: (error: Error) => {
+          toast({
+            title: 'Error',
+            description: error.message || 'Failed to send reset link',
+            variant: 'destructive',
+          });
+        },
       });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Validation Error',
+          description: error.errors[0].message,
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -75,8 +85,8 @@ export default function ForgotPasswordPage() {
                 required
               />
             </div>
-            <Button className="w-full" size="lg" type="submit" disabled={isLoading}>
-              {isLoading ? 'Sending...' : 'Submit'}
+            <Button className="w-full" size="lg" type="submit" disabled={isPending}>
+              {isPending ? 'Sending...' : 'Submit'}
             </Button>
             <Link
               href="/login"

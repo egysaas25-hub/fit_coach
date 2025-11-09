@@ -1,5 +1,5 @@
-import { AuthResponseDto, LoginDto } from '@/types/api/auth.dto';
-import { User, UserType } from '@/types/models/user.model';
+import { AuthResponseDto, LoginDto } from '@/types/api/request/auth.dto';
+import { User, UserType } from '@/types/domain/user.model';
 
 export const authMapper = {
   toModel: (dto: AuthResponseDto['user']): User => ({

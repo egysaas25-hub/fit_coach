@@ -2,6 +2,20 @@
 export const endpoints = {
   auth: {
     login: '/auth/login',
+    register: '/auth/register',
+    logout: '/auth/logout',
+    forgotPassword: '/auth/forgot-password',
+    resetPassword: '/auth/reset-password',
+    currentUser: '/auth/user',
+  },
+  admin: {
+    analytics: {
+      dashboard: '/admin/analytics/dashboard',
+      clients: '/admin/analytics/clients',
+      trainers: '/admin/analytics/trainers',
+    },
+    users: '/admin/users',
+    settings: '/admin/settings',
   },
   appointment: '/appointments',
   checkIn: '/check-ins',

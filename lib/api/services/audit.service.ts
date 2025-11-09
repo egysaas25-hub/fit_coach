@@ -1,26 +1,29 @@
 // lib/api/services/audit.service.ts
+import { apiClient } from '@/lib/api/client';
+import { endpoints } from '@/lib/api/endpoints';
 import { AuditLog, SystemEvent } from '@/types/domain/audit';
+import { ApiResponse } from '@/types/shared/response';
 
+/**
+ * Audit Service
+ * Rule 5: Service calls apiClient
+ * Rule 6: Uses endpoints
+ */
 export class AuditService {
+  /**
+   * Get audit logs
+   */
   async getAuditLogs(): Promise<AuditLog[]> {
-    try {
-      const response = await fetch('/api/audit/logs');
-      const data = await response.json();
-      return data as AuditLog[];
-    } catch (error) {
-      console.error('Error fetching audit logs:', error);
-      throw new Error('Failed to fetch audit logs');
-    }
+    // TODO: Create backend endpoint for audit logs
+    // For now, return empty array
+    return [];
   }
 
+  /**
+   * Get system events
+   */
   async getSystemEvents(): Promise<SystemEvent[]> {
-    try {
-      const response = await fetch('/api/audit/events');
-      const data = await response.json();
-      return data as SystemEvent[];
-    } catch (error) {
-      console.error('Error fetching system events:', error);
-      throw new Error('Failed to fetch system events');
-    }
+    // TODO: Create backend endpoint for system events
+    return [];
   }
 }

@@ -1,64 +1,58 @@
 // lib/api/services/settings.service.ts
-import { GeneralSettings, NotificationSettings, SecuritySettings, PreferenceSettings, Integration } from '@/types/domain/settings';
+import { apiClient } from '@/lib/api/client';
+import { endpoints } from '@/lib/api/endpoints';
+import { ApiResponse } from '@/types/shared/response';
+
+/**
+ * Settings Service (Admin)
+ * Rule 5: Service calls apiClient
+ * Rule 6: Uses endpoints
+ */
+
+export interface AppSettings {
+  general: {
+    appName: string;
+    maintenanceMode: boolean;
+    signupEnabled: boolean;
+    maxClientsPerTrainer: number;
+  };
+  email: {
+    enabled: boolean;
+    provider: string;
+    fromEmail: string;
+  };
+  features: {
+    appointments: boolean;
+    messaging: boolean;
+    progressTracking: boolean;
+    nutritionPlans: boolean;
+  };
+  limits: {
+    maxWorkoutsPerClient: number;
+    maxNutritionPlansPerClient: number;
+    maxFileSize: number;
+  };
+}
 
 export class SettingsService {
-  async getSettings(): Promise<{
-    general: GeneralSettings;
-    notifications: NotificationSettings;
-    security: SecuritySettings;
-    preferences: PreferenceSettings;
-  }> {
-    try {
-      const response = await fetch('/api/settings');
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-      throw new Error('Failed to fetch settings');
-    }
+  /**
+   * Get application settings
+   */
+  async getSettings(): Promise<AppSettings> {
+    const response = await apiClient.get<ApiResponse<AppSettings>>(
+      endpoints.admin.settings
+    );
+    return response.data.data;
   }
 
-  async updateSettings(updates: Partial<{
-    general: GeneralSettings;
-    notifications: NotificationSettings;
-    security: SecuritySettings;
-    preferences: PreferenceSettings;
-  }>): Promise<void> {
-    try {
-      await fetch('/api/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-    } catch (error) {
-      console.error('Error updating settings:', error);
-      throw new Error('Failed to update settings');
-    }
-  }
-
-  async getIntegrations(): Promise<Integration[]> {
-    try {
-      const response = await fetch('/api/integrations');
-      const data = await response.json();
-      return data as Integration[];
-    } catch (error) {
-      console.error('Error fetching integrations:', error);
-      throw new Error('Failed to fetch integrations');
-    }
-  }
-
-  async updateIntegration(integrationId: string, updates: Partial<Integration>): Promise<Integration> {
-    try {
-      const response = await fetch(`/api/integrations/${integrationId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      const data = await response.json();
-      return data as Integration;
-    } catch (error) {
-      console.error('Error updating integration:', error);
-      throw new Error('Failed to update integration');
-    }
+  /**
+   * Update application settings
+   */
+  async updateSettings(settings: Partial<AppSettings>): Promise<AppSettings> {
+    const response = await apiClient.patch<ApiResponse<AppSettings>>(
+      endpoints.admin.settings,
+      settings
+    );
+    return response.data.data;
   }
 }

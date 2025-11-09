@@ -8,31 +8,35 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuthStore } from '@/lib/store/auth.store';
+import { useUserStore } from '@/lib/store/user.store';
 import { toast } from '@/lib/hooks/common/use-toast';
-import { useAuth } from '@/lib/hooks/api/useAuth';
-import { User } from '@/types/domain/user.model'; 
-import { LoginRequest } from '@/types/api/request/auth.dto'; // Rule 2: Import API request type
-import { ApiResponse } from '@/types/shared/response'; // Rule 3: Import shared response type
+import { useLogin } from '@/lib/hooks/api/useAuth';
 import { loginSchema } from '@/lib/schemas/auth/auth.schema';
+import { z } from 'zod';
+import { UserType } from '@/types/domain/user.model';
 
+/**
+ * UnifiedLoginPage Component
+ * Follows Architecture Rules:
+ * - Rule 1: Component calls hook (useLogin) only, not services directly
+ * - Rule 4: Uses Zod schema for validation
+ * - Uses Zustand store (useUserStore) for UI state access only
+ */
 export default function UnifiedLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'client' | 'trainer' | 'admin' | 'super-admin'>('client'); // Align with User.role
-  const { mutate: login, isLoading } = useAuth();
-  const { user } = useAuthStore() as { user: User | null }; // Type assertion with existing type
+  const [userType, setUserType] = useState('team_member');
+  
+  // Rule 1: Component calls hook
+  const { mutate: login, isPending } = useLogin();
+  const { user } = useUserStore();
   const router = useRouter();
 
   useEffect(() => {
     if (user) {
       const redirectPath =
-        user.role === 'admin'
+        user.type === UserType.TEAM_MEMBER
           ? '/admin/dashboard'
-          : user.role === 'super-admin'
-          ? '/super-admin/dashboard'
-          : user.role === 'trainer'
-          ? '/trainer/dashboard'
           : '/client/dashboard';
       router.push(redirectPath);
     }
@@ -40,25 +44,27 @@ export default function UnifiedLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     try {
       // Rule 4: Validate against existing schema
-      const validatedData = loginSchema.parse({ email, password, role });
+      const validatedData = loginSchema.parse({ 
+        email, 
+        password, 
+        type: userType 
+      });
+      
+      // Call hook mutation
       login(
-        validatedData as LoginRequest, // Rule 2: Cast to existing request type
         {
-          onSuccess: (data: ApiResponse) => { // Rule 3: Use existing response type
+          email: validatedData.email,
+          password: validatedData.password,
+          type: validatedData.type || 'email',
+        },
+        {
+          onSuccess: () => {
             toast({ title: 'Success', description: 'Logged in successfully' });
-            const redirectPath =
-              role === 'admin'
-                ? '/admin/dashboard'
-                : role === 'super-admin'
-                ? '/super-admin/dashboard'
-                : role === 'trainer'
-                ? '/trainer/dashboard'
-                : '/client/dashboard';
-            router.push(redirectPath);
           },
-          onError: (error: any) => {
+          onError: (error: Error) => {
             toast({
               title: 'Error',
               description: error.message || 'Invalid credentials',
@@ -68,11 +74,13 @@ export default function UnifiedLoginPage() {
         }
       );
     } catch (error) {
-      toast({
-        title: 'Validation Error',
-        description: (error as Error).message || 'Please check your input',
-        variant: 'destructive',
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Validation Error',
+          description: error.errors[0].message,
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -91,15 +99,13 @@ export default function UnifiedLoginPage() {
           <form onSubmit={handleSubmit}>
             <div className="space-y-2">
               <Label htmlFor="role">I am a</Label>
-              <Select value={role} onValueChange={setRole}>
+              <Select value={userType} onValueChange={setUserType}>
                 <SelectTrigger id="role" className="bg-background">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="client">Client</SelectItem>
-                  <SelectItem value="trainer">Trainer</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="super-admin">Super Admin</SelectItem>
+                  <SelectItem value="team_member">Team Member</SelectItem>
+                  <SelectItem value="customer">Customer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -132,8 +138,8 @@ export default function UnifiedLoginPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full mt-4" size="lg" disabled={isLoading}>
-              {isLoading ? 'Signing In...' : 'Sign In'}
+            <Button type="submit" className="w-full mt-4" size="lg" disabled={isPending}>
+              {isPending ? 'Signing In...' : 'Sign In'}
             </Button>
           </form>
           <div className="text-center text-sm text-muted-foreground">

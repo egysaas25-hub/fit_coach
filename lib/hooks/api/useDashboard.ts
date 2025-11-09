@@ -1,126 +1,63 @@
 // lib/hooks/api/useDashboard.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { DashboardService } from '@/lib/api/services/dashboard.service';
 import { DashboardStats, ActivityFeedItem, Alert, AIInsight, QuickAction } from '@/types/domain/dashboard';
 
 const dashboardService = new DashboardService();
 
+/**
+ * Hook for dashboard stats
+ * Rule 1: Component calls hook
+ * Rule 2: Hook calls service
+ */
 export function useDashboardStats() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchStats = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await dashboardService.getDashboardStats();
-      setStats(data);
-    } catch (err) {
-      setError('Failed to fetch dashboard stats');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
-
-  return { stats, loading, error, refetch: fetchStats };
+  return useQuery({
+    queryKey: ['dashboard', 'stats'],
+    queryFn: () => dashboardService.getDashboardStats(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 }
 
+/**
+ * Hook for activity feed
+ */
 export function useActivityFeed() {
-  const [feed, setFeed] = useState<ActivityFeedItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchFeed = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await dashboardService.getActivityFeed();
-      setFeed(data);
-    } catch (err) {
-      setError('Failed to fetch activity feed');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchFeed();
-  }, [fetchFeed]);
-
-  return { feed, loading, error, refetch: fetchFeed };
+  return useQuery({
+    queryKey: ['dashboard', 'activity'],
+    queryFn: () => dashboardService.getActivityFeed(),
+    staleTime: 1 * 60 * 1000, // 1 minute
+  });
 }
 
+/**
+ * Hook for alerts
+ */
 export function useAlerts() {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchAlerts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await dashboardService.getAlerts();
-      setAlerts(data);
-    } catch (err) {
-      setError('Failed to fetch alerts');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAlerts();
-  }, [fetchAlerts]);
-
-  return { alerts, loading, error, refetch: fetchAlerts };
+  return useQuery({
+    queryKey: ['dashboard', 'alerts'],
+    queryFn: () => dashboardService.getAlerts(),
+    staleTime: 1 * 60 * 1000, // 1 minute
+  });
 }
 
+/**
+ * Hook for AI insights
+ */
 export function useAIInsights() {
-  const [insights, setInsights] = useState<AIInsight[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchInsights = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await dashboardService.getAIInsights();
-      setInsights(data);
-    } catch (err) {
-      setError('Failed to fetch AI insights');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchInsights();
-  }, [fetchInsights]);
-
-  return { insights, loading, error, refetch: fetchInsights };
+  return useQuery({
+    queryKey: ['dashboard', 'insights'],
+    queryFn: () => dashboardService.getAIInsights(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 }
 
+/**
+ * Hook for quick actions
+ */
 export function useQuickActions() {
-  const [actions, setActions] = useState<QuickAction[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchActions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await dashboardService.getQuickActions();
-      setActions(data);
-    } catch (err) {
-      setError('Failed to fetch quick actions');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchActions();
-  }, [fetchActions]);
-
-  return { actions, loading, error, refetch: fetchActions };
+  return useQuery({
+    queryKey: ['dashboard', 'actions'],
+    queryFn: () => dashboardService.getQuickActions(),
+    staleTime: 10 * 60 * 1000, // 10 minutes (rarely changes)
+  });
 }

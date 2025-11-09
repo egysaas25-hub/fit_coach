@@ -1,36 +1,113 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AuthService } from '@/lib/api/services/auth.service';
 import { useUserStore } from '@/lib/store/user.store';
-import { LoginDto } from '@/types/api/request/auth.dto';
+import { useAuthStore } from '@/lib/store/auth.store';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from '@/types/api/request/auth.dto';
 import { User } from '@/types/domain/user.model';
 
+const authService = new AuthService();
+
+/**
+ * Hook for login mutation
+ * Rule 1: Components call hooks
+ * Rule 2: Hooks call services (not other hooks or stores)
+ * Uses React Query for server state management
+ */
 export const useLogin = () => {
   const queryClient = useQueryClient();
   const { setUser } = useUserStore();
-  return useMutation<{ user: User; token: string }, Error, LoginDto>({
-    mutationFn: ({ email, password, type }) => AuthService.prototype.login(email, password, type), // Updated to use AuthService
+  const { setToken } = useAuthStore();
+  
+  return useMutation({
+    mutationFn: (data: LoginDto) => authService.login(data),
     onSuccess: ({ user, token }) => {
+      // Update stores with successful login data
       setUser(user);
+      setToken(token);
+      // Cache user in React Query
       queryClient.setQueryData(['user'], user);
     },
   });
 };
 
-export const useLogout = () => {
+/**
+ * Hook for register mutation
+ * Rule 1: Components call hooks
+ * Rule 2: Hooks call services
+ */
+export const useRegister = () => {
   const queryClient = useQueryClient();
   const { setUser } = useUserStore();
-  return useMutation<void, Error, void>({
-    mutationFn: AuthService.prototype.logout, // Updated to use AuthService
-    onSuccess: () => {
-      setUser(null);
-      queryClient.removeQueries({ queryKey: ['user'] });
+  const { setToken } = useAuthStore();
+  
+  return useMutation({
+    mutationFn: (data: RegisterDto) => authService.register(data),
+    onSuccess: ({ user, token }) => {
+      setUser(user);
+      setToken(token);
+      queryClient.setQueryData(['user'], user);
     },
   });
 };
 
-// Optional: Add useAuth if needed
-export const useAuth = () => {
-  const login = useLogin();
-  const logout = useLogout();
-  return { login, logout };
+/**
+ * Hook for forgot password mutation
+ * Rule 2: Hooks call services
+ */
+export const useForgotPassword = () => {
+  return useMutation({
+    mutationFn: (data: ForgotPasswordDto) => authService.forgotPassword(data),
+  });
+};
+
+/**
+ * Hook for reset password mutation
+ * Rule 2: Hooks call services
+ */
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: (data: ResetPasswordDto) => authService.resetPassword(data),
+  });
+};
+
+/**
+ * Hook for logout mutation
+ * Rule 2: Hooks call services
+ */
+export const useLogout = () => {
+  const queryClient = useQueryClient();
+  const { setUser } = useUserStore();
+  const { clearAuth } = useAuthStore();
+  
+  return useMutation({
+    mutationFn: () => authService.logout(),
+    onSuccess: () => {
+      // Clear user state
+      setUser(null);
+      clearAuth();
+      // Clear all cached queries
+      queryClient.clear();
+    },
+  });
+};
+
+/**
+ * Hook for fetching current user (query)
+ * Rule 2: Hooks call services
+ */
+export const useCurrentUser = () => {
+  const { setUser } = useUserStore();
+  
+  return useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const user = await authService.getCurrentUser();
+      if (user) {
+        setUser(user);
+      }
+      return user;
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 };

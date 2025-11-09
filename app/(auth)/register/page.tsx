@@ -1,26 +1,36 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "@/components/ui/use-toast"
-import { ApiResponse } from "@/types/shared/response"
-import { registerSchema } from "@/lib/schemas/auth/auth.schema"
-import { useRouter } from "next/router"
-import { useAuth } from "@/lib/hooks/api/useAuth"
-import { useState } from "react"
+'use client';
 
+import { useState } from 'react';
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/components/ui/use-toast";
+import { registerSchema } from "@/lib/schemas/auth/auth.schema";
+import { useRegister } from "@/lib/hooks/api/useAuth";
+import { z } from 'zod';
+import { RegisterDto } from '@/types/api/request/auth.dto';
+
+/**
+ * RegisterPage Component
+ * Follows Architecture Rules:
+ * - Rule 1: Component calls hook (useRegister) only, not services directly
+ * - Rule 4: Uses Zod schema for validation
+ */
 export default function RegisterPage() {
-  const [formData, setFormData] = useState<Partial<RegisterRequest>>({
-    firstName: '',
-    lastName: '',
+  const [formData, setFormData] = useState<Partial<RegisterDto>>({
+    name: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
-    role: 'trainer', // Fixed to 'trainer' as per page context
+    role: 'team_member',
   });
-  const { mutate: register, isLoading } = useAuth('register'); // Assuming useAuth supports register
+  
+  // Rule 1: Component calls hook
+  const { mutate: register, isPending } = useRegister();
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,20 +40,25 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     try {
-      // Rule 4: Validate against existing schema, ensuring confirmPassword is checked
-      const validatedData = registerSchema.parse({
-        ...formData,
-        role: 'trainer', // Enforce trainer role
-      });
+      // Rule 4: Validate against existing schema
+      const validatedData = registerSchema.parse(formData);
+      
       register(
-        validatedData as RegisterRequest, // Rule 2: Cast to existing request type
         {
-          onSuccess: (data: ApiResponse) => {
-            toast({ title: 'Success', description: 'Registration successful! Redirecting...' });
-            router.push('/trainer/dashboard'); // Redirect to trainer dashboard
+          ...validatedData,
+          role: 'team_member',
+        } as RegisterDto,
+        {
+          onSuccess: () => {
+            toast({ 
+              title: 'Success', 
+              description: 'Registration successful! Redirecting...' 
+            });
+            router.push('/admin/dashboard');
           },
-          onError: (error: any) => {
+          onError: (error: Error) => {
             toast({
               title: 'Error',
               description: error.message || 'Registration failed',
@@ -53,11 +68,13 @@ export default function RegisterPage() {
         }
       );
     } catch (error) {
-      toast({
-        title: 'Validation Error',
-        description: (error as Error).message || 'Please check your input',
-        variant: 'destructive',
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Validation Error',
+          description: error.errors[0].message,
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -75,40 +92,76 @@ export default function RegisterPage() {
           <CardDescription>Join FitCoach Pro and start coaching today</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input id="firstName" placeholder="John" className="bg-background" />
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input 
+                  id="name" 
+                  name="name"
+                  placeholder="John Doe" 
+                  className="bg-background"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input id="lastName" placeholder="Doe" className="bg-background" />
+              <Label htmlFor="email">Email Address</Label>
+              <Input 
+                id="email" 
+                name="email"
+                type="email" 
+                placeholder="coach@example.com" 
+                className="bg-background"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input id="email" type="email" placeholder="coach@example.com" className="bg-background" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input id="phone" type="tel" placeholder="+1 (555) 000-0000" className="bg-background" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" placeholder="Create a strong password" className="bg-background" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="Re-enter your password"
-              className="bg-background"
-            />
-          </div>
-          <Button className="w-full" size="lg">
-            Create Account
-          </Button>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input 
+                id="phone" 
+                name="phone"
+                type="tel" 
+                placeholder="+1 (555) 000-0000" 
+                className="bg-background"
+                value={formData.phone}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input 
+                id="password" 
+                name="password"
+                type="password" 
+                placeholder="Create a strong password" 
+                className="bg-background"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                placeholder="Re-enter your password"
+                className="bg-background"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <Button className="w-full" size="lg" type="submit" disabled={isPending}>
+              {isPending ? 'Creating Account...' : 'Create Account'}
+            </Button>
+          </form>
           <div className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link href="/login" className="text-primary hover:underline font-medium">

@@ -1,47 +1,29 @@
 import { create } from 'zustand';
-import { AuthService } from '@/lib/api/services/auth.service'; // Fixed import
-import { User, AuthState } from '@/types/domain/user.model';
+import { persist } from 'zustand/middleware';
 
-const authService = new AuthService();
+/**
+ * Auth Store - UI State Only
+ * Rule 7: Stores handle only UI state and global app state
+ * This store manages:
+ * - Authentication token (for API client)
+ * - Loading states for UI feedback
+ * - No server fetching (that's done by hooks)
+ */
+interface AuthStoreState {
+  token: string | null;
+  setToken: (token: string | null) => void;
+  clearAuth: () => void;
+}
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isLoading: false,
-  error: null,
-  login: async (email: string, password: string, type: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const { user, token } = await authService.login(email, password, type);
-      set({ user, isLoading: false });
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to log in',
-        isLoading: false,
-      });
-    }
-  },
-  logout: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      await authService.logout();
-      set({ user: null, isLoading: false });
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to log out',
-        isLoading: false,
-      });
-    }
-  },
-  fetchCurrentUser: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const user = await authService.getCurrentUser();
-      set({ user, isLoading: false });
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to fetch user',
-        isLoading: false,
-      });
-    }
-  },
-}));
+export const useAuthStore = create<AuthStoreState>()(persist(
+  (set) => ({
+    token: null,
+    
+    setToken: (token) => set({ token }),
+    
+    clearAuth: () => set({ token: null }),
+  }),
+  {
+    name: 'auth-storage',
+  }
+));

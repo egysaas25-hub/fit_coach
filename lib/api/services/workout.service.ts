@@ -1,41 +1,41 @@
 // lib/api/services/workout.service.ts
-import { Program, ProgramExercise } from '@/types/domain/program';
+import { apiClient } from '@/lib/api/client';
+import { endpoints } from '@/lib/api/endpoints';
+import { ApiResponse } from '@/types/shared/response';
 
+/**
+ * Workout Service
+ * Rule 5: Service calls apiClient
+ * Rule 6: Uses endpoints
+ * TODO: Define proper Workout/Program types in types/domain/
+ */
 export class WorkoutService {
-  async getWorkouts(): Promise<Program[]> {
-    try {
-      const response = await fetch('/api/workouts');
-      const data = await response.json();
-      return data as Program[];
-    } catch (error) {
-      console.error('Error fetching workouts:', error);
-      throw new Error('Failed to fetch workouts');
-    }
+  /**
+   * Get all workouts
+   */
+  async getWorkouts(): Promise<any[]> {
+    const response = await apiClient.get<ApiResponse<any[]>>(endpoints.workout);
+    return response.data.data;
   }
 
-  async getExercises(): Promise<ProgramExercise[]> {
-    try {
-      const response = await fetch('/api/workouts/exercises');
-      const data = await response.json();
-      return data as ProgramExercise[];
-    } catch (error) {
-      console.error('Error fetching exercises:', error);
-      throw new Error('Failed to fetch exercises');
-    }
+  /**
+   * Get all exercises
+   */
+  async getExercises(): Promise<any[]> {
+    const response = await apiClient.get<ApiResponse<any[]>>(
+      `${endpoints.workout}/exercises`
+    );
+    return response.data.data;
   }
 
-  async createWorkout(workout: Partial<Program>): Promise<Program> {
-    try {
-      const response = await fetch('/api/workouts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(workout),
-      });
-      const data = await response.json();
-      return data as Program;
-    } catch (error) {
-      console.error('Error creating workout:', error);
-      throw new Error('Failed to create workout');
-    }
+  /**
+   * Create new workout
+   */
+  async createWorkout(workout: any): Promise<any> {
+    const response = await apiClient.post<ApiResponse<any>>(
+      endpoints.workout,
+      workout
+    );
+    return response.data.data;
   }
 }

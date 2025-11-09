@@ -1,43 +1,32 @@
-import { AdminSidebar } from "@/components/layouts/admin-sidebar"
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Search } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table";
+import { useAuditLogs } from '@/lib/hooks/api/useAudit';
 
+/**
+ * Audit Log Page
+ * Follows Architecture Rules:
+ * - Rule 1: Component calls hooks only
+ * - Uses React Query for server data
+ */
 export default function AuditLogPage() {
-  const logs = [
-    {
-      user: "Admin User",
-      action: "Updated user role",
-      timestamp: "2024-03-30 10:45:23",
-      details: "Changed role from Client to Trainer",
-    },
-    {
-      user: "Mike Johnson",
-      action: "Created meal plan",
-      timestamp: "2024-03-30 10:30:15",
-      details: "High Protein Weight Loss plan",
-    },
-    {
-      user: "Admin User",
-      action: "Deleted user account",
-      timestamp: "2024-03-30 10:15:42",
-      details: "Removed inactive user",
-    },
-    {
-      user: "Anna Carter",
-      action: "Updated profile",
-      timestamp: "2024-03-30 09:58:11",
-      details: "Changed contact information",
-    },
-    {
-      user: "Admin User",
-      action: "System backup",
-      timestamp: "2024-03-30 09:00:00",
-      details: "Automated daily backup",
-    },
-  ]
+  // Rule 1: Component calls hook
+  const { data: logs, isLoading, error } = useAuditLogs();
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive">Error loading audit logs</p>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -55,32 +44,44 @@ export default function AuditLogPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search audit logs..." className="pl-9 bg-background" />
               </div>
-              <CardTitle className="text-base">Recent Events ({logs.length})</CardTitle>
+              <CardTitle className="text-base">Recent Events ({logs?.length || 0})</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>Details</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logs.map((log, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">{log.user}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{log.action}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{log.timestamp}</TableCell>
-                    <TableCell className="text-muted-foreground">{log.details}</TableCell>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading audit logs...</p>
+              </div>
+            ) : logs && logs.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Timestamp</TableHead>
+                    <TableHead>Details</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {logs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="font-medium">{log.userId || 'System'}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{log.action}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(log.timestamp).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{log.message || 'N/A'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No audit logs found</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>

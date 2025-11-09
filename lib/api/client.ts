@@ -3,11 +3,21 @@ import axios from 'axios';
 import { env } from '@/lib/config/env';
 import { useAuthStore } from '@/lib/store/auth.store';
 
+/**
+ * API Client - HTTP Layer
+ * Rule 5: Services use this client for all HTTP requests
+ * Handles:
+ * - Base URL configuration
+ * - Request/response interceptors
+ * - Authentication token injection
+ * - Error handling
+ */
 export const apiClient = axios.create({
   baseURL: env.API_BASE_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Request interceptor: Inject auth token
 apiClient.interceptors.request.use(config => {
   const { token } = useAuthStore.getState();
   if (token) {
@@ -16,11 +26,13 @@ apiClient.interceptors.request.use(config => {
   return config;
 });
 
+// Response interceptor: Handle errors globally
 apiClient.interceptors.response.use(
   response => response,
   error => {
     if (error.response?.status === 401) {
-      useAuthStore.getState().logout();
+      // Clear auth on 401 Unauthorized
+      useAuthStore.getState().clearAuth();
     }
     throw error.response?.data || { message: 'Unknown error' };
   }

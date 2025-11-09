@@ -1,60 +1,88 @@
 // lib/api/services/auth.service.ts
-import { loginSchema } from '@/lib/schemas/auth/auth.schema';
-import { z } from 'zod';
-
-export interface User {
-  id: string;
-  email: string;
-  role: string;
-  name: string;
-}
+import { apiClient } from '@/lib/api/client';
+import { endpoints } from '@/lib/api/endpoints';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, AuthResponseDto } from '@/types/api/request/auth.dto';
+import { User } from '@/types/domain/user.model';
+import { authMapper } from '@/lib/mappers/auth.mapper';
+import { ApiResponse } from '@/types/shared/response';
 
 export class AuthService {
-  async login(email: string, password: string, type: string): Promise<{ user: User; token: string }> {
-    try {
-      // Validate input using auth.schema.ts
-      const loginData = loginSchema.parse({ email, password, type });
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginData),
-      });
-      if (!response.ok) {
-        throw new Error('Invalid credentials');
-      }
-      const data = await response.json();
-      return data as { user: User; token: string };
-    } catch (error) {
-      console.error('Error logging in:', error);
-      throw error instanceof z.ZodError ? new Error(JSON.stringify(error.errors)) : new Error('Failed to log in');
-    }
+  /**
+   * Login user
+   * Rule 5: Service calls apiClient (lib/api/client.ts)
+   * Rule 6: Uses endpoints from lib/api/endpoints.ts
+   * Rule 3: Uses mapper to transform DTO to domain model
+   */
+  async login(data: LoginDto): Promise<{ user: User; token: string }> {
+    const response = await apiClient.post<ApiResponse<AuthResponseDto>>(
+      endpoints.auth.login,
+      data
+    );
+    const { token, user: userDto } = response.data.data;
+    const user = authMapper.toModel(userDto);
+    return { user, token };
   }
 
+  /**
+   * Register new user
+   * Rule 5: Service calls apiClient
+   * Rule 6: Uses endpoints
+   * Rule 3: Uses mapper
+   */
+  async register(data: RegisterDto): Promise<{ user: User; token: string }> {
+    const response = await apiClient.post<ApiResponse<AuthResponseDto>>(
+      endpoints.auth.register,
+      data
+    );
+    const { token, user: userDto } = response.data.data;
+    const user = authMapper.toModel(userDto);
+    return { user, token };
+  }
+
+  /**
+   * Request password reset
+   * Rule 5: Service calls apiClient
+   */
+  async forgotPassword(data: ForgotPasswordDto): Promise<{ message: string }> {
+    const response = await apiClient.post<ApiResponse<{ message: string }>>(
+      endpoints.auth.forgotPassword,
+      data
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Reset password with token
+   * Rule 5: Service calls apiClient
+   */
+  async resetPassword(data: ResetPasswordDto): Promise<{ message: string }> {
+    const response = await apiClient.post<ApiResponse<{ message: string }>>(
+      endpoints.auth.resetPassword,
+      data
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Logout user
+   * Rule 5: Service calls apiClient
+   */
   async logout(): Promise<void> {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to log out');
-      }
-    } catch (error) {
-      console.error('Error logging out:', error);
-      throw new Error('Failed to log out');
-    }
+    await apiClient.post(endpoints.auth.logout);
   }
 
+  /**
+   * Get current authenticated user
+   * Rule 5: Service calls apiClient
+   * Rule 3: Uses mapper
+   */
   async getCurrentUser(): Promise<User | null> {
     try {
-      const response = await fetch('/api/auth/user');
-      if (!response.ok) {
-        return null;
-      }
-      const data = await response.json();
-      return data as User | null;
+      const response = await apiClient.get<ApiResponse<AuthResponseDto['user']>>(
+        endpoints.auth.currentUser
+      );
+      return authMapper.toModel(response.data.data);
     } catch (error) {
-      console.error('Error fetching current user:', error);
       return null;
     }
   }
