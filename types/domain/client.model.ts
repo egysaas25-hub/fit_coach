@@ -27,3 +27,4 @@ export interface ClientState {
   setSelectedClient: (client: Client | null) => void;
   setFilters: (filters: { status?: string; search?: string }) => void;
   clearFilters: () => void;
+}
