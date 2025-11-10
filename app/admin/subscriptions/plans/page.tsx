@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import DataTable from "@/components/workspace/data-table"
-import Modal from "@/components/workspace/modal"
 import { Plus, Edit2, Eye, Trash2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 interface Plan {
   id: string
@@ -173,14 +173,13 @@ export default function PlansPage() {
         />
       </div>
 
-      {/* Create/Edit Plan Modal */}
-      <Modal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title={editingPlan ? "Edit Plan" : "Create Plan"}
-        size="lg"
-      >
-        <div className="space-y-4">
+      {/* Create/Edit Plan Dialog */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingPlan ? "Edit Plan" : "Create Plan"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Plan Name</label>
@@ -228,17 +227,18 @@ export default function PlansPage() {
               </select>
             </div>
           </div>
+          </div>
 
-          <div className="flex gap-3 justify-end pt-4 border-t border-border">
+          <DialogFooter className="flex gap-3">
             <button onClick={() => setShowModal(false)} className="btn-secondary">
               Cancel
             </button>
             <button onClick={handleCreatePlan} className="btn-primary">
               {editingPlan ? "Update Plan" : "Create Plan"}
             </button>
-          </div>
-        </div>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import DataTable from "@/components/workspace/data-table"
-import Modal from "@/components/workspace/modal"
 import { Download, Eye, RotateCcw, Search } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 interface Invoice {
   id: string
@@ -197,10 +197,14 @@ export default function InvoicesPage() {
         />
       </div>
 
-      {/* Invoice Preview Modal */}
-      <Modal isOpen={showPreview} onClose={() => setShowPreview(false)} title="Invoice Preview" size="lg">
-        {selectedInvoice && (
-          <div className="space-y-4">
+      {/* Invoice Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Invoice Preview</DialogTitle>
+          </DialogHeader>
+          {selectedInvoice && (
+            <div className="space-y-4">
             <div className="bg-background p-8 rounded-lg border border-border">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold font-poppins text-foreground">INVOICE</h2>
@@ -235,7 +239,7 @@ export default function InvoicesPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 justify-end pt-4 border-t border-border">
+            <DialogFooter className="flex gap-3">
               <button onClick={() => setShowPreview(false)} className="btn-secondary">
                 Close
               </button>
@@ -243,10 +247,11 @@ export default function InvoicesPage() {
                 <Download size={16} />
                 Download PDF
               </button>
-            </div>
+            </DialogFooter>
           </div>
-        )}
-      </Modal>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

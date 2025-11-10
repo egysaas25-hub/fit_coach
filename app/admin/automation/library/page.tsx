@@ -3,8 +3,8 @@
 import { useState } from "react"
 import KPICard from "@/components/workspace/kpi-card"
 import DataTable from "@/components/workspace/data-table"
-import Modal from "@/components/workspace/modal"
 import { Plus, Play, Edit2, Trash2, Bell, AlertCircle } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 interface Workflow {
   id: string
@@ -211,9 +211,13 @@ export default function AutomationOverviewPage() {
         </div>
       </div>
 
-      {/* Create Workflow Modal */}
-      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Create Workflow" size="md">
-        <div className="space-y-4">
+      {/* Create Workflow Dialog */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Workflow</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Workflow Name</label>
             <input
@@ -234,16 +238,17 @@ export default function AutomationOverviewPage() {
               className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary resize-none"
             />
           </div>
-          <div className="flex gap-3 justify-end pt-4 border-t border-border">
+          </div>
+          <DialogFooter className="flex gap-3">
             <button onClick={() => setShowCreateModal(false)} className="btn-secondary">
               Cancel
             </button>
             <button onClick={handleCreateWorkflow} className="btn-primary">
               Create Workflow
             </button>
-          </div>
-        </div>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

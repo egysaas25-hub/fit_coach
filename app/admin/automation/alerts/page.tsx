@@ -3,7 +3,7 @@
 import { useState } from "react"
 import DataTable from "@/components/workspace/data-table"
 import { Plus, Play, Edit2, Trash2, AlertCircle } from "lucide-react"
-import Modal from "@/components/workspace/modal"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 interface Alert {
   id: string
@@ -147,9 +147,13 @@ export default function AIAlertsPage() {
         />
       </div>
 
-      {/* Create Alert Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create AI Alert" size="lg">
-        <div className="space-y-4">
+      {/* Create Alert Dialog */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create AI Alert</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Alert Type</label>
             <select
@@ -187,17 +191,18 @@ export default function AIAlertsPage() {
               className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary resize-none"
             />
           </div>
+          </div>
 
-          <div className="flex gap-3 justify-end pt-4 border-t border-border">
+          <DialogFooter className="flex gap-3">
             <button onClick={() => setShowModal(false)} className="btn-secondary">
               Cancel
             </button>
             <button onClick={handleCreateAlert} className="btn-primary">
               Create Alert
             </button>
-          </div>
-        </div>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

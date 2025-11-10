@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import DataTable from "@/components/workspace/data-table"
-import Modal from "@/components/workspace/modal"
 import { Plus, Play, Edit2, Trash2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 interface Trigger {
   id: string
@@ -145,9 +145,13 @@ export default function TriggersPage() {
         />
       </div>
 
-      {/* Create Trigger Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create Trigger" size="md">
-        <div className="space-y-4">
+      {/* Create Trigger Dialog */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Trigger</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Trigger Name</label>
             <input
@@ -194,17 +198,17 @@ export default function TriggersPage() {
               className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
             />
           </div>
-
-          <div className="flex gap-3 justify-end pt-4 border-t border-border">
+          </div>
+          <DialogFooter className="flex gap-3">
             <button onClick={() => setShowModal(false)} className="btn-secondary">
               Cancel
             </button>
             <button onClick={handleCreateTrigger} className="btn-primary">
               Create Trigger
             </button>
-          </div>
-        </div>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
