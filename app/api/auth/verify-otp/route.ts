@@ -51,7 +51,7 @@ export const POST = withLogging(async (req: NextRequest) => {
 
     if (!valid) {
       // Lockout after 5 failed attempts for 5 minutes
-      if (entry.attempts >= 5) {
+      if (entry.attempts >= 3) {
         entry.lockedUntil = now + 5 * 60 * 1000;
       }
       otpStore.set(key, entry);

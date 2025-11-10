@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Phone, MessageSquare, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { useRequestOtp, useVerifyOtp, useTenants } from '@/lib/hooks/api/useAuth';
 import { useAuthStore } from '@/lib/store/auth.store';
-
+import { useSettings } from '@/lib/hooks/api/useSettings';
 const COUNTRY_CODES = [
   { code: '+1', country: 'US/Canada', flag: '🇺🇸' },
   { code: '+20', country: 'Egypt', flag: '🇪🇬' },
@@ -39,11 +39,37 @@ export default function WhatsAppLogin() {
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [language, setLanguage] = useState<'en' | 'ar'>('en');
-  const { data: tenants } = useTenants();
-  const { setTenantId } = useAuthStore();
+  const { data: settings, refetch: refetchSettings } = useSettings();
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
 
-  const fullPhone = `${countryCode}${phoneNumber}`;
+  const { setTenantId } = useAuthStore();
+  const { data: tenants } = useTenants();
+  useEffect(() => {
+    try {
+      const savedLang = localStorage.getItem('lang');
+      if (savedLang === 'en' || savedLang === 'ar') setLanguage(savedLang as 'en' | 'ar');
+    } catch {}
+    const navLang = (navigator.language || '').toLowerCase();
+    const langMap: Record<string, string> = {
+      'en-us': '+1', 'en-gb': '+44', 'de': '+49', 'fr': '+33', 'ja': '+81', 'zh-cn': '+86', 'hi': '+91', 'ar': '+20', 'ar-eg': '+20', 'ar-sa': '+966', 'ar-ae': '+971'
+    };
+    const match = Object.keys(langMap).find(k => navLang.startsWith(k));
+    if (match) setCountryCode(langMap[match]);
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem('lang', language); } catch {}
+    document.documentElement.lang = language;
+  }, [language]);
+
+  // Format phone for display while keeping digits-only state
+  const formatPhone = (raw: string) => {
+    const d = raw.replace(/\D/g, '');
+    if (d.length <= 3) return d;
+    if (d.length <= 7) return `${d.slice(0,3)}-${d.slice(3)}`;
+    return `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7,11)}`;
+  };
+
+  const fullPhone = `${countryCode}${phoneNumber.replace(/\D/g,'')}`;
   const isValidPhone = /^\+[0-9]{1,3}[0-9]{6,14}$/.test(fullPhone);
 
   // Send OTP
@@ -60,11 +86,12 @@ export default function WhatsAppLogin() {
       setOtpSent(true);
       setStep('otp');
       setIsOtpModalOpen(true);
-      setStatusMessage('Code sent via WhatsApp');
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({ event: 'EVT-AUTH-REQ', phone: fullPhone });
       const ttl = res?.ttlSeconds ?? 60;
       setResendTimer(ttl);
       const interval = setInterval(() => {
-        setResendTimer(prev => {
+        setResendTimer((prev: number) => {
           if (prev <= 1) {
             clearInterval(interval);
             return 0;
@@ -74,7 +101,13 @@ export default function WhatsAppLogin() {
       }, 1000);
     } catch (e: any) {
       setIsLoading(false);
-      setError(e?.response?.data?.error?.message || 'Failed to send OTP');
+      const msg = e?.response?.data?.error?.message || 'Failed to send OTP';
+      setError(msg);
+      const status = e?.response?.status;
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      if (status === 429) {
+        (window as any).dataLayer.push({ event: 'EVT-AUTH-LOCK', phone: fullPhone });
+      }
     }
   };
 
@@ -96,6 +129,18 @@ export default function WhatsAppLogin() {
     // Auto-verify when all filled
     if (newOtp.every(digit => digit !== '') && index === 5) {
       handleVerifyOTP(newOtp.join(''));
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
+    if (text.length) {
+      e.preventDefault();
+      const arr = text.split('');
+      const filled = [...otp];
+      for (let i=0;i<6;i++) filled[i] = arr[i] || '';
+      setOtp(filled);
+      if (text.length === 6) handleVerifyOTP(text);
     }
   };
 
@@ -151,8 +196,12 @@ export default function WhatsAppLogin() {
         <CardHeader className="space-y-1">
       <div className="flex items-center gap-2 mb-4 justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#00C26A]" />
-              <span className="text-2xl font-bold">VTrack</span>
+              {settings?.branding?.logoUrl ? (
+                <img src={settings.branding.logoUrl} alt="Brand Logo" className="h-6 w-auto rounded-sm" />
+              ) : (
+                <div className="w-3 h-3 rounded-full bg-[#00C26A]" />
+              )}
+              <span className="text-2xl font-bold">{settings?.branding?.title || settings?.general?.appName || 'VTrack'}</span>
             </div>
             <div className="w-28">
               <Select value={language} onValueChange={(val) => setLanguage(val as 'en' | 'ar')}>
@@ -216,8 +265,8 @@ export default function WhatsAppLogin() {
                     type="tel"
                     placeholder="123456789"
                     className="bg-background flex-1"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    value={formatPhone(phoneNumber)}
+                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g,''))}
                     onKeyDown={(e) => e.key === 'Enter' && handleSendOTP()}
                   />
                 </div>
@@ -277,7 +326,7 @@ export default function WhatsAppLogin() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="flex justify-center gap-2">
-                    {otp.map((digit, index) => (
+                    {otp.map((digit: string, index: number) => (
                       <Input
                         key={index}
                         id={`otp-${index}`}
@@ -289,7 +338,7 @@ export default function WhatsAppLogin() {
                         onChange={(e) => handleOtpChange(index, e.target.value)}
                         onKeyDown={(e) => handleOtpKeyDown(index, e)}
                         autoFocus={index === 0}
-                        aria-label={`OTP digit ${index + 1}`}
+                        onPaste={index === 0 ? handleOtpPaste : undefined}
                       />
                     ))}
                   </div>
@@ -359,7 +408,7 @@ export default function WhatsAppLogin() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="w-full bg-[#00C26A] hover:bg-[#00C26A]/90" size="lg" onClick={() => { if (selectedTenantId) setTenantId(selectedTenantId); setStep('role'); }} disabled={!selectedTenantId}>
+              <Button className="w-full bg-[#00C26A] hover:bg-[#00C26A]/90" size="lg" onClick={() => { if (selectedTenantId) { setTenantId(selectedTenantId); refetchSettings(); } setStep('role'); }} disabled={!selectedTenantId}>
                 Continue
               </Button>
             </>
@@ -443,9 +492,8 @@ export default function WhatsAppLogin() {
               </DialogHeader>
               <div className="text-sm text-muted-foreground">
                 <ul className="list-disc pl-4">
-                  <li>Ensure WhatsApp is installed and connected.</li>
-                  <li>Check network connectivity.</li>
-                  <li>Verify your country code and number.</li>
+                  <li>Email us: <a href="mailto:support@vtrack.example" className="text-[#00C26A]">support@vtrack.example</a></li>
+                  <li>WhatsApp: <a href="https://wa.me/200100000000" target="_blank" rel="noreferrer" className="text-[#00C26A]">Open WhatsApp</a></li>
                 </ul>
               </div>
             </DialogContent>

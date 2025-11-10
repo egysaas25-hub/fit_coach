@@ -32,6 +32,10 @@ export interface AppSettings {
     maxNutritionPlansPerClient: number;
     maxFileSize: number;
   };
+  branding?: {
+    logoUrl?: string;
+    title?: string;
+  };
 }
 
 export class SettingsService {

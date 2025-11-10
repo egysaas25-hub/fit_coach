@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { Inter, Poppins } from "next/font/google";
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const poppins = Poppins({ subsets: ["latin"], weight: ["600","700"], variable: "--font-poppins" });
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import { Providers } from "@/components/providers";
@@ -20,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark h-full">
       <body
-        className={`h-full bg-background text-foreground font-sans ${GeistSans.variable} ${GeistMono.variable}`}
+        className={`h-full bg-background text-foreground font-sans ${inter.variable} ${poppins.variable}`}
       >
         <Providers>
           <Suspense fallback={null}>
