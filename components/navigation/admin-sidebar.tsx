@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useState } from "react"
 import {
   LayoutDashboard,
   Users,
@@ -39,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils/cn"
+import { useAuthStore } from "@/lib/store/auth.store"
 
 const navigation = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, section: "Overview" },
@@ -46,32 +48,47 @@ const navigation = [
   
   { name: "Customers", href: "/admin/clients", icon: ShoppingCart, section: "Users" },
   { name: "Team Dashboard", href: "/admin/teams", icon: Users2, section: "Users" },
-  { name: "Workout", href: "/admin/workouts", icon: Dumbbell, section: "plans" },
-  {name : "Nutrition", href: "/admin/nutrition", icon: Target, section: "plans" },
-  { name: "programs", href: "/admin/programs/new", icon: Table, section: "plans" },
+  { name: "Team Members", href: "/admin/teams/members", icon: Users, section: "Users" },
+  { name: "Team Analytics", href: "/admin/teams/analytics", icon: BarChart3, section: "Users" },
+  { name: "Roles & Permissions", href: "/admin/teams/roles", icon: Shield, section: "Users" },
   
-  { name: "WhatsApp", href: "/admin/communication/whatsapp", icon: MessageSquare, section: "Communication" },
-  { name: "Email", href: "/admin/communication/email", icon: MessageSquare, section: "Communication" },
-  { name: "Conversations", href: "/admin/communication/conversations", icon: MessageSquare, section: "Communication" },
-  { name: "Message Templates", href: "/admin/communication/templates", icon: MessageSquare, section: "Communication" },
+  { name: "Workout", href: "/admin/workouts", icon: Dumbbell, section: "plans" },
+  { name: "Nutrition", href: "/admin/nutrition", icon: Target, section: "plans" },
+  { name: "Custom Exercises", href: "/admin/exercises/custom", icon: Table, section: "plans" },
+  { name: "Exercise AI", href: "/admin/exercises/ai", icon: Sparkles, section: "plans" },
+  { name: "Meal Templates", href: "/admin/nutrition/templates", icon: Table, section: "plans" },
+  { name: "Ingredients", href: "/admin/nutrition/ingredients", icon: Table, section: "plans" },
+  { name: "AI Meal Builder", href: "/admin/nutrition/ai", icon: Sparkles, section: "plans" },
+  { name: "Client Meal Logs", href: "/admin/nutrition/logs", icon: ScrollText, section: "plans" },
+  { name: "Programs", href: "/admin/programs", icon: Table, section: "plans" },
+  { name: "Goal Templates", href: "/admin/programs/goals", icon: Target, section: "plans" },
   
   { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard, section: "Business" },
+  { name: "Plans & Pricing", href: "/admin/subscriptions/plans", icon: CreditCard, section: "Business" },
+  { name: "Invoices & Payments", href: "/admin/subscriptions/invoices", icon: FileText, section: "Business" },
+  { name: "Renewal Automation", href: "/admin/subscriptions/renewals", icon: Zap, section: "Business" },
   { name: "Referrals", href: "/admin/referrals", icon: UserPlus, section: "Business" },
   
-  { name: "AI Templates", href: "/admin/ai/templates", icon: Sparkles, section: "AI Tools" },
-  { name: "AI Logs", href: "/admin/ai/logs", icon: ScrollText, section: "AI Tools" },
+  { name: "Automation Library", href: "/admin/automation/library", icon: ScrollText, section: "Automation" },
+  { name: "Triggers & Events", href: "/admin/automation/triggers", icon: Zap, section: "Automation" },
+  { name: "AI Alerts", href: "/admin/automation/alerts", icon: Bell, section: "Automation" },
   
   { name: "System Monitor", href: "/admin/system", icon: Activity, section: "System" },
   { name: "Audit Log", href: "/admin/audit", icon: FileText, section: "System" },
   { name: "Error Queue", href: "/admin/errors", icon: AlertCircle, section: "System" },
   { name: "Notifications", href: "/admin/notifications", icon: Bell, section: "System" },
   { name: "Integrations", href: "/admin/settings/integrations", icon: Zap, section: "System" },
+  { name: "Branding", href: "/admin/settings/branding", icon: Settings, section: "System" },
+  { name: "Account Settings", href: "/admin/settings/account", icon: User, section: "System" },
+  { name: "Billing & Usage", href: "/admin/settings/billing", icon: CreditCard, section: "System" },
   { name: "Support", href: "/admin/support", icon: HelpCircle, section: "System" },
   { name: "Settings", href: "/admin/settings/general", icon: Settings, section: "System" },
 ]
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const [openSection, setOpenSection] = useState<string>("Overview")
+  const { tenantId } = useAuthStore.getState()
 
   return (
     <aside className="w-64 border-r border-border bg-card flex flex-col">
@@ -92,17 +109,18 @@ export function AdminSidebar() {
             }, {} as Record<string, typeof navigation>)
           ).map(([section, items]) => (
             <div key={section} className="mb-4">
-              <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <button type="button" className="w-full px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between" onClick={() => setOpenSection(openSection === section ? '' : section)}>
                 {section}
-              </div>
-              {items.map((item) => {
+                <span className="text-muted-foreground">{openSection === section ? '−' : '+'}</span>
+              </button>
+              {openSection === section && items.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                 const Icon = item.icon
 
                 return (
                   <Link
                     key={item.name}
-                    href={item.href}
+                    href={tenantId ? `/t/${tenantId}${item.href}` : item.href}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                       isActive
