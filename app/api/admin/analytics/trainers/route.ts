@@ -3,13 +3,12 @@ import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
 import { database } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
-import { withLogging } from '@/lib/middleware/logging.middleware';
 
 /**
  * GET /api/admin/analytics/trainers
  * Get trainer analytics (Admin only)
  */
-const getHandler = async (req: NextRequest) => {
+export async function GET(req: NextRequest) {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -72,6 +71,4 @@ completedAppointments: trainerAppointments.filter(
     console.error('Failed to fetch trainer analytics:', err);
     return error('Failed to fetch trainer analytics', 500);
   }
-};
-
-export const GET = withLogging(getHandler);
+}
