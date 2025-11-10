@@ -98,7 +98,6 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
       metric: ProgressMetric.Weight,
       value,
       date: date ? new Date(date) : new Date(),
-      notes,
     });
 
     return success(newEntry, 201);

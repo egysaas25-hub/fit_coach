@@ -108,7 +108,7 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
     });
 
     // Update thread's updatedAt
-    database.update('messageThreads', threadId, {
+    database.update<any>('messageThreads', threadId, {
       updatedAt: new Date(),
     });
 

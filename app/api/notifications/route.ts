@@ -85,7 +85,6 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
     const newNotification = database.create<Notification>('notifications', {
       userId,
       message,
-      type: type || 'info',
       read: false,
     });
 

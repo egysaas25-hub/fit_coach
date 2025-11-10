@@ -129,8 +129,6 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
       trainerId: finalTrainerId,
       date: appointmentDate,
       status: AppointmentStatus.Scheduled,
-      type: type || 'training',
-      notes,
     });
 
     return success(newAppointment, 201);

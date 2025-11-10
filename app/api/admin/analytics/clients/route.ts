@@ -37,7 +37,7 @@ const getHandler = async (req: NextRequest) => {
         progressEntries: clientProgress.length,
         lastActivity:
           clientWorkouts.length > 0
-            ? clientWorkouts[clientWorkouts.length - 1].createdAt
+            ? (clientWorkouts[clientWorkouts.length - 1] as any).createdAt
             : null,
       };
     });

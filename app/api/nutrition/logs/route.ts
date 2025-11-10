@@ -111,7 +111,6 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
       clientId: finalClientId,
       dateLogged: dateLogged ? new Date(dateLogged) : new Date(),
       adherence: adherence || 'medium',
-      notes,
     });
 
     return success(newLog, 201);

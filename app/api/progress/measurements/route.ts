@@ -85,10 +85,9 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
 
     const newEntry = database.create<ProgressEntry>('progressEntries', {
       clientId: finalClientId,
-      metric: 'measurements',
+      metric: ProgressMetric.Measurements,
       value: measurements, // Store as object
       date: date ? new Date(date) : new Date(),
-      notes,
     });
 
     return success(newEntry, 201);
