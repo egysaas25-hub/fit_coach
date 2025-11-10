@@ -3,7 +3,6 @@ import { requireAuth } from '@/lib/middleware/auth.middleware';
 import { database, Notification } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
-import { withLogging } from '@/lib/middleware/logging.middleware';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { z } from 'zod';
 
@@ -17,7 +16,7 @@ const createNotificationSchema = z.object({
  * GET /api/notifications
  * Get notifications for current user
  */
-const getHandler = async (req: NextRequest) => {
+export async function GET(req: NextRequest) {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -59,9 +58,7 @@ const getHandler = async (req: NextRequest) => {
     console.error('Failed to fetch notifications:', err);
     return error('Failed to fetch notifications', 500);
   }
-};
-
-export const GET = withLogging(getHandler);
+}
 
 /**
  * POST /api/notifications

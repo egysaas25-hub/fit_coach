@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware/auth.middleware';
-import { database, ProgressEntry, ProgressMetric } from '@/lib/mock-db/database';
+import { database, ProgressEntry } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
-import { withLogging } from '@/lib/middleware/logging.middleware';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { z } from 'zod';
 
@@ -85,7 +84,7 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
 
     const newEntry = database.create<ProgressEntry>('progressEntries', {
       clientId: finalClientId,
-      metric: ProgressMetric.Measurements,
+      metric: 'measurements' as any,
       value: measurements, // Store as object
       date: date ? new Date(date) : new Date(),
     });

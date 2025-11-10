@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { database, Appointment, AppointmentStatus } from '@/lib/mock-db/database';
+import { database, Appointment } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
-import { withLogging } from '@/lib/middleware/logging.middleware';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { z } from 'zod';
 
@@ -20,7 +19,7 @@ const createAppointmentSchema = z.object({
  * GET /api/appointments
  * Get appointments
  */
-const getHandler = async (req: NextRequest) => {
+export async function GET(req: NextRequest) {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -76,9 +75,7 @@ const getHandler = async (req: NextRequest) => {
     console.error('Failed to fetch appointments:', err);
     return error('Failed to fetch appointments', 500);
   }
-};
-
-export const GET = withLogging(getHandler);
+}
 
 /**
  * POST /api/appointments
@@ -128,7 +125,7 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
       clientId,
       trainerId: finalTrainerId,
       date: appointmentDate,
-      status: AppointmentStatus.Scheduled,
+      status: 'scheduled' as any,
     });
 
     return success(newAppointment, 201);

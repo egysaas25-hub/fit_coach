@@ -1,9 +1,9 @@
-import { PrismaClient, customer_status, subscription_status, payment_gateway, payment_status, region, language, gender, role, source, ticket_category, ticket_priority, ticket_status, integration_type, auth_type, webhook_status, outbound_message_status, job_status, media_type } from '@prisma/client'
 import { faker } from '@faker-js/faker'
 import fs from 'fs'
 import path from 'path'
 
-const prisma = new PrismaClient()
+// NOTE: Prisma is not configured in this project. This file is kept for reference.
+// The project uses a mock database instead.
 
 export function resetMockDbFiles() {
   try {
@@ -18,6 +18,11 @@ export function resetMockDbFiles() {
     console.error('Failed to reset mock DB files', err)
   }
 }
+
+/* Prisma seed code commented out - Prisma not configured
+import { PrismaClient, customer_status, subscription_status, payment_gateway, payment_status, region, language, gender, role, source, ticket_category, ticket_priority, ticket_status, integration_type, auth_type, webhook_status, outbound_message_status, job_status, media_type } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌱 Starting full seed...')
@@ -87,7 +92,7 @@ async function main() {
   )
 
   // ---- Customer Profiles & Health ----
-  await Promise.all(customers.map(async (c) => {
+  await Promise.all(customers.map(async (c: any) => {
     await prisma.customer_profiles.create({
       data: {
         customer_id: c.id,
@@ -105,7 +110,7 @@ async function main() {
   }))
 
   // ---- Subscriptions & Payments ----
-  const subs = await Promise.all(customers.map(async (c) =>
+  const subs = await Promise.all(customers.map(async (c: any) =>
     prisma.subscriptions.create({
       data: {
         tenant_id: tenant.id,
@@ -122,7 +127,7 @@ async function main() {
     })
   ))
 
-  await Promise.all(subs.map(async (s) =>
+  await Promise.all(subs.map(async (s: any) =>
     prisma.payments.create({
       data: {
         tenant_id: tenant.id,
@@ -342,3 +347,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
+*/

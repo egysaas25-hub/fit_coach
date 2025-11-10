@@ -3,9 +3,6 @@ import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
 import { database, Trainer } from '@/lib/mock-db/database';
 import { success, error, notFound } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
-import { withValidation } from '@/lib/middleware/validate.middleware';
-import { withLogging } from '@/lib/middleware/logging.middleware';
-import { z } from 'zod';
 
 interface RouteParams {
   params: { id: string };
@@ -14,7 +11,7 @@ interface RouteParams {
 /**
  * GET /api/trainers/:id
  */
-const getHandler = async (req: NextRequest, { params }: RouteParams) => {
+export async function GET(req: NextRequest, { params }: RouteParams) {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -29,23 +26,12 @@ const getHandler = async (req: NextRequest, { params }: RouteParams) => {
     console.error('Failed to fetch trainer:', err);
     return error('Failed to fetch trainer', 500);
   }
-};
-
-export const GET = withLogging(getHandler);
+}
 
 /**
  * PATCH /api/trainers/:id
  */
-const updateTrainerSchema = z.object({
-  name: z.string().min(2).max(100).optional(),
-  email: z.string().email().optional(),
-});
-
-const patchHandler = async (
-  req: NextRequest,
-  validatedBody: any,
-  { params }: RouteParams
-) => {
+export async function PATCH(req: NextRequest, { params }: RouteParams) {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -57,28 +43,23 @@ const patchHandler = async (
     const trainer = database.get<Trainer>('trainers', params.id);
     if (!trainer) return notFound('Trainer');
 
-    // Only allow editable fields
-    const updates: Partial<Trainer> = {};
-    if (validatedBody.name !== undefined) updates.name = validatedBody.name;
-    if (validatedBody.email !== undefined) updates.email = validatedBody.email;
+    const body = await req.json();
+    const updated = database.update('trainers', params.id, body);
 
-    const updated = database.update('trainers', params.id, updates);
     if (!updated) return error('Failed to update trainer', 500);
 
-    const { passwordHash, ...trainerResponse } = updated;
+    const { passwordHash, ...trainerResponse } = updated as any;
     return success(trainerResponse);
   } catch (err) {
     console.error('Failed to update trainer:', err);
     return error('Failed to update trainer', 500);
   }
-};
-
-export const PATCH = withLogging(withValidation(updateTrainerSchema, patchHandler));
+}
 
 /**
  * DELETE /api/trainers/:id
  */
-const deleteHandler = async (req: NextRequest, { params }: RouteParams) => {
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -98,6 +79,4 @@ const deleteHandler = async (req: NextRequest, { params }: RouteParams) => {
     console.error('Failed to delete trainer:', err);
     return error('Failed to delete trainer', 500);
   }
-};
-
-export const DELETE = withLogging(deleteHandler);
+}

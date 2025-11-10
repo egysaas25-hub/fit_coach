@@ -3,16 +3,13 @@ import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
 import { database, User } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
-import { withValidation } from '@/lib/middleware/validate.middleware';
-import { withLogging } from '@/lib/middleware/logging.middleware';
-import { z } from 'zod';
 import { hashPassword } from '@/lib/auth/password';
 
 /**
  * GET /api/admin/users
  * Get all users (Admin only)
  */
-const getHandler = async (req: NextRequest) => {
+export async function GET(req: NextRequest) {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -53,15 +50,13 @@ const getHandler = async (req: NextRequest) => {
     console.error('Failed to fetch users:', err);
     return error('Failed to fetch users', 500);
   }
-};
-
-export const GET = withLogging(getHandler);
+}
 
 /**
  * POST /api/admin/users
  * Create a new user (Admin only)
  */
-const postHandler = async (req: NextRequest) => {
+export async function POST(req: NextRequest) {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -97,29 +92,13 @@ const postHandler = async (req: NextRequest) => {
     console.error('Failed to create user:', err);
     return error('Failed to create user', 500);
   }
-};
-
-export const POST = withLogging(postHandler);
+}
 
 /**
  * PATCH /api/admin/users
  * Bulk update users (Admin only)
  */
-const bulkUpdateUsersSchema = z.object({
-  userIds: z.array(z.string().min(1)).min(1),
-  updates: z
-    .object({
-      name: z.string().min(2).max(100).optional(),
-      email: z.string().email().optional(),
-      role: z.enum(['client', 'trainer', 'admin', 'super-admin']).optional(),
-    })
-    .strict(),
-});
-
-const patchHandler = async (
-  req: NextRequest,
-  validatedBody: any
-) => {
+export async function PATCH(req: NextRequest) {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -128,13 +107,22 @@ const patchHandler = async (
   if (roleCheck) return roleCheck;
 
   try {
-    const { userIds, updates } = validatedBody;
+    const body = await req.json();
+    const { userIds, updates } = body;
+
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return error('userIds array is required', 400);
+    }
+
+    if (!updates) {
+      return error('updates object is required', 400);
+    }
 
     // Don't allow password changes via bulk update
     delete updates.passwordHash;
     delete updates.password;
 
-    const updated: any[] = [];
+    const updated = [];
     for (const id of userIds) {
       const result = database.update('users', id, updates);
       if (result) {
@@ -148,6 +136,4 @@ const patchHandler = async (
     console.error('Failed to bulk update users:', err);
     return error('Failed to bulk update users', 500);
   }
-};
-
-export const PATCH = withLogging(withValidation(bulkUpdateUsersSchema, patchHandler));
+}

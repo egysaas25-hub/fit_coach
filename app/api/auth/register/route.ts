@@ -6,7 +6,6 @@ import { success, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { registerSchema } from '@/lib/schemas/auth/auth.schema';
-import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
 
 /**
  * POST /api/auth/register
@@ -45,11 +44,11 @@ const registerHandler = async (req: NextRequest, validatedBody: any) => {
       database.create('trainers', newUser);
     }
 
-    const created = newUser as any;
-    const token = await generateToken(created.id, created.role);
+    // Generate token
+    const token = await generateToken((newUser as any).id, (newUser as any).role);
 
     // Exclude sensitive data
-    const { passwordHash, ...userResponse } = created;
+    const { passwordHash, ...userResponse } = newUser as any;
 
     return success({ user: userResponse, token }, 201);
   } catch (err) {
@@ -58,4 +57,4 @@ const registerHandler = async (req: NextRequest, validatedBody: any) => {
   }
 };
 
-export const POST = withRateLimit(withValidation(registerSchema, registerHandler), 5, 15 * 60 * 1000);
+export const POST = withValidation(registerSchema, registerHandler);
