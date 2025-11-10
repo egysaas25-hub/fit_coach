@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware/auth.middleware';
-import { database, ProgressEntry } from '@/lib/mock-db/database';
+import { database, ProgressEntry, ProgressMetric } from '@/lib/mock-db/database';
 import { success, error, forbidden } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
+import { withLogging } from '@/lib/middleware/logging.middleware';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { z } from 'zod';
 
@@ -17,7 +18,7 @@ const createWeightLogSchema = z.object({
  * GET /api/progress/weight
  * Get weight progress entries
  */
-export async function GET(req: NextRequest) {
+const getHandler = async (req: NextRequest) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -66,7 +67,9 @@ export async function GET(req: NextRequest) {
     console.error('Failed to fetch weight progress:', err);
     return error('Failed to fetch weight progress', 500);
   }
-}
+};
+
+export const GET = withLogging(getHandler);
 
 /**
  * POST /api/progress/weight
@@ -92,7 +95,7 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
 
     const newEntry = database.create<ProgressEntry>('progressEntries', {
       clientId: finalClientId,
-      metric: 'weight',
+      metric: ProgressMetric.Weight,
       value,
       date: date ? new Date(date) : new Date(),
       notes,

@@ -3,12 +3,13 @@ import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
 import { database } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
+import { withLogging } from '@/lib/middleware/logging.middleware';
 
 /**
  * GET /api/admin/analytics/clients
  * Get client analytics (Admin only)
  */
-export async function GET(req: NextRequest) {
+const getHandler = async (req: NextRequest) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -62,4 +63,6 @@ export async function GET(req: NextRequest) {
     console.error('Failed to fetch client analytics:', err);
     return error('Failed to fetch client analytics', 500);
   }
-}
+};
+
+export const GET = withLogging(getHandler);

@@ -1,49 +1,61 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { database } from '@/lib/mock-db/database';
 import { comparePassword } from '@/lib/auth/password';
-import { generateToken } from '@/lib/auth/jwt';
-import { success, unauthorized, error } from '@/lib/utils/response';
+import { generateToken, generateRefreshToken } from '@/lib/auth/jwt';
+import { unauthorized, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
 import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
+import { withValidation } from '@/lib/middleware/validate.middleware';
+import { loginSchema } from '@/lib/schemas/auth/auth.schema';
 
 /**
- * Handles user login.
- * @param req - The Next.js request object.
- * @returns A success response with a JWT token or an error response.
+ * Handles user login with HTTP-only cookie session creation.
  */
-async function loginHandler(req: NextRequest) {
+const handler = async (req: NextRequest) => {
   ensureDbInitialized();
   try {
     const { email, password } = await req.json();
 
-    if (!email || !password) {
-      return unauthorized('Email and password are required.');
-    }
+    const user = database.query<any>('users', (u) => u.email === email)[0];
+    if (!user) return unauthorized('Invalid credentials.');
 
-    const user = database.query('users', (u) => u.email === email)[0];
-
-    if (!user) {
-      return unauthorized('Invalid credentials.');
-    }
-
-    // Use the mock password comparison function with the user's stored hash
     const isPasswordValid = comparePassword(password, user.passwordHash);
+    if (!isPasswordValid) return unauthorized('Invalid credentials.');
 
-    if (!isPasswordValid) {
-      return unauthorized('Invalid credentials.');
-    }
+    const accessToken = await generateToken(user.id, user.role, 15 * 60 * 1000);
+    const refreshToken = await generateRefreshToken(user.id, user.role, 7 * 24 * 60 * 60 * 1000);
 
-    const token = await generateToken(user.id, user.role);
+    // Persist session
+    database.create('sessions', {
+      userId: user.id,
+      refreshToken,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
 
-    // Exclude sensitive data from the response
-    const { passwordHash, ...userWithoutPassword } = user;
+    const { passwordHash, ...userWithoutPassword } = user as any;
 
-    return success({ user: userWithoutPassword, token });
+    const res = NextResponse.json({ success: true, data: { user: userWithoutPassword } }, { status: 200 });
+    res.cookies.set('access_token', accessToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: true,
+      maxAge: 15 * 60, // 15 minutes
+      path: '/',
+    });
+    res.cookies.set('refresh_token', refreshToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: true,
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: '/',
+    });
+
+    return res;
   } catch (err) {
     console.error('Login error:', err);
     return error('An unexpected error occurred during login.', 500);
   }
-}
+};
 
-// Apply rate limiting: max 5 attempts per 15 minutes
-export const POST = withRateLimit(loginHandler, 5, 15 * 60 * 1000);
+// Apply validation and rate limiting: max 5 attempts per 15 minutes
+export const POST = withRateLimit(withValidation(loginSchema, handler), 5, 15 * 60 * 1000);

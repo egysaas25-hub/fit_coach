@@ -1,7 +1,23 @@
 import { PrismaClient, customer_status, subscription_status, payment_gateway, payment_status, region, language, gender, role, source, ticket_category, ticket_priority, ticket_status, integration_type, auth_type, webhook_status, outbound_message_status, job_status, media_type } from '@prisma/client'
 import { faker } from '@faker-js/faker'
+import fs from 'fs'
+import path from 'path'
 
 const prisma = new PrismaClient()
+
+export function resetMockDbFiles() {
+  try {
+    const dataDir = path.join(process.cwd(), 'data')
+    if (fs.existsSync(dataDir)) {
+      fs.rmSync(dataDir, { recursive: true, force: true })
+      console.log('🧹 Mock DB files removed (data directory cleared)')
+    } else {
+      console.log('ℹ️ No mock DB data directory found to reset')
+    }
+  } catch (err) {
+    console.error('Failed to reset mock DB files', err)
+  }
+}
 
 async function main() {
   console.log('🌱 Starting full seed...')

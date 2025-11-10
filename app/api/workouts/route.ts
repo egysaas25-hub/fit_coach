@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
 import { database, Workout } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
+import { withLogging } from '@/lib/middleware/logging.middleware';
 import { z } from 'zod';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 
@@ -16,7 +17,7 @@ const createWorkoutSchema = z.object({
  * - All authenticated users can view workouts.
  * - Filters can be applied.
  */
-export async function GET(req: NextRequest) {
+const getHandler = async (req: NextRequest) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) {
@@ -46,7 +47,9 @@ export async function GET(req: NextRequest) {
     console.error('Failed to fetch workouts:', err);
     return error('An unexpected error occurred while fetching workouts.', 500);
   }
-}
+};
+
+export const GET = withLogging(getHandler);
 
 /**
  * POST /api/workouts

@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { database, Trainer } from '@/lib/mock-db/database';
+import { database, Trainer, RoleType } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
 import { hashPassword } from '@/lib/auth/password';
 import { ensureDbInitialized } from '@/lib/db/init';
+import { withLogging } from '@/lib/middleware/logging.middleware';
 
 /**
  * GET /api/trainers
  * Get all trainers (Admin/Trainer access)
  */
-export async function GET(req: NextRequest) {
+const getHandler = async (req: NextRequest) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -41,13 +42,15 @@ export async function GET(req: NextRequest) {
     console.error('Failed to fetch trainers:', err);
     return error('Failed to fetch trainers', 500);
   }
-}
+};
+
+export const GET = withLogging(getHandler);
 
 /**
  * POST /api/trainers
  * Create a new trainer (Admin only)
  */
-export async function POST(req: NextRequest) {
+const postHandler = async (req: NextRequest) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -73,7 +76,7 @@ export async function POST(req: NextRequest) {
     const newTrainer = database.create<Trainer>('trainers', {
       name,
       email,
-      role: 'trainer',
+      role: RoleType.Trainer,
       passwordHash: hashPassword(password),
     });
 
@@ -83,4 +86,6 @@ export async function POST(req: NextRequest) {
     console.error('Failed to create trainer:', err);
     return error('Failed to create trainer', 500);
   }
-}
+};
+
+export const POST = withLogging(postHandler);

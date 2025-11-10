@@ -3,6 +3,9 @@ import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
 import { database, NutritionPlan } from '@/lib/mock-db/database';
 import { success, error, notFound, forbidden } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
+import { withValidation } from '@/lib/middleware/validate.middleware';
+import { withLogging } from '@/lib/middleware/logging.middleware';
+import { z } from 'zod';
 
 interface RouteParams {
   params: { id: string };
@@ -12,7 +15,7 @@ interface RouteParams {
  * GET /api/nutrition/:id
  * Get a specific nutrition plan
  */
-export async function GET(req: NextRequest, { params }: RouteParams) {
+const getHandler = async (req: NextRequest, { params }: RouteParams) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -39,13 +42,29 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     console.error('Failed to fetch nutrition plan:', err);
     return error('Failed to fetch nutrition plan', 500);
   }
-}
+};
+
+export const GET = withLogging(getHandler);
 
 /**
  * PATCH /api/nutrition/:id
  * Update a nutrition plan
  */
-export async function PATCH(req: NextRequest, { params }: RouteParams) {
+const updateNutritionPlanSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  description: z.string().max(1000).optional(),
+  calories: z.number().min(0).optional(),
+  protein: z.number().min(0).optional(),
+  carbs: z.number().min(0).optional(),
+  fats: z.number().min(0).optional(),
+  meals: z.array(z.any()).optional(),
+});
+
+const patchHandler = async (
+  req: NextRequest,
+  validatedBody: any,
+  { params }: RouteParams
+) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -57,14 +76,12 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const plan = database.get<NutritionPlan>('nutritionPlans', params.id);
     if (!plan) return notFound('Nutrition plan');
 
-    const body = await req.json();
-
     // Don't allow changing creator
-    if (body.creatorId) {
-      delete body.creatorId;
+    if (validatedBody.creatorId) {
+      delete validatedBody.creatorId;
     }
 
-    const updated = database.update('nutritionPlans', params.id, body);
+    const updated = database.update('nutritionPlans', params.id, validatedBody);
     if (!updated) return error('Failed to update nutrition plan', 500);
 
     return success(updated);
@@ -72,13 +89,15 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     console.error('Failed to update nutrition plan:', err);
     return error('Failed to update nutrition plan', 500);
   }
-}
+};
+
+export const PATCH = withLogging(withValidation(updateNutritionPlanSchema, patchHandler));
 
 /**
  * DELETE /api/nutrition/:id
  * Delete a nutrition plan
  */
-export async function DELETE(req: NextRequest, { params }: RouteParams) {
+const deleteHandler = async (req: NextRequest, { params }: RouteParams) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -98,4 +117,6 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     console.error('Failed to delete nutrition plan:', err);
     return error('Failed to delete nutrition plan', 500);
   }
-}
+};
+
+export const DELETE = withLogging(deleteHandler);

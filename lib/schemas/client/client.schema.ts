@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { emailValidation, phoneValidation, idSchema } from '@/lib/schemas/common/common.schema';
+import { emailValidation, phoneValidation } from '@/lib/schemas/common/validation-rules';
+import { idSchema } from '@/lib/schemas/common/common.schema';
 import { ProgramGoal } from '@/types/domain/program';
 
 export const createClientSchema = z.object({

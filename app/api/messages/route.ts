@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/middleware/auth.middleware';
 import { database, Message, MessageThread } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
+import { withLogging } from '@/lib/middleware/logging.middleware';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { z } from 'zod';
 
@@ -15,7 +16,7 @@ const createMessageSchema = z.object({
  * GET /api/messages
  * Get messages for a specific thread
  */
-export async function GET(req: NextRequest) {
+const getHandler = async (req: NextRequest) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -65,7 +66,9 @@ export async function GET(req: NextRequest) {
     console.error('Failed to fetch messages:', err);
     return error('Failed to fetch messages', 500);
   }
-}
+};
+
+export const GET = withLogging(getHandler);
 
 /**
  * POST /api/messages

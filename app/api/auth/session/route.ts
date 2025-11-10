@@ -3,13 +3,9 @@ import { requireAuth } from '@/lib/middleware/auth.middleware';
 import { success } from '@/lib/utils/response';
 import { NextResponse } from 'next/server';
 import { ensureDbInitialized } from '@/lib/db/init';
+import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
 
-/**
- * Retrieves the current user's session data.
- * @param req - The Next.js request object.
- * @returns A success response with the user data or an error response.
- */
-export async function GET(req: NextRequest) {
+export const GET = withRateLimit(async (req: NextRequest) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
 
@@ -18,8 +14,6 @@ export async function GET(req: NextRequest) {
   }
 
   const { user } = authResult;
-  // Exclude sensitive data from the response
   const { passwordHash, ...userWithoutPassword } = user;
-
   return success({ user: userWithoutPassword });
-}
+}, 30, 60 * 1000);

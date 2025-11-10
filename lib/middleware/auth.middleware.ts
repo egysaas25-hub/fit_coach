@@ -17,13 +17,16 @@ export async function requireAuth(
   req: NextRequest
 ): Promise<{ user: User } | NextResponse> {
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return unauthorized('Authorization header is missing or invalid.');
+  let token: string | null = null;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
   }
-
-  const token = authHeader.split(' ')[1];
+  // Fallback to HTTP-only cookie
   if (!token) {
-    return unauthorized('Token is missing.');
+    token = req.cookies.get('access_token')?.value || null;
+  }
+  if (!token) {
+    return unauthorized('Authorization header or session cookie is missing.');
   }
 
   const payload = await verifyToken(token);
@@ -52,4 +55,22 @@ export function requireRole(user: User, roles: Role[]): NextResponse | null {
     return forbidden('You do not have permission to access this resource.');
   }
   return null;
+}
+
+export async function requireSession(req: NextRequest): Promise<{ user: User } | NextResponse> {
+  const access = req.cookies.get('access_token')?.value;
+  const refresh = req.cookies.get('refresh_token')?.value;
+  if (!access || !refresh) {
+    return unauthorized('Missing session cookies');
+  }
+  // Validate access token
+  const payload = await verifyToken(access);
+  if (!payload) {
+    return unauthorized('Invalid or expired session');
+  }
+  const user = database.get<User>('users', payload.userId);
+  if (!user) {
+    return unauthorized('User not found');
+  }
+  return { user };
 }

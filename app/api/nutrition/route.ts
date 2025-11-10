@@ -4,6 +4,7 @@ import { database, NutritionPlan } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { ensureDbInitialized } from '@/lib/db/init';
+import { withLogging } from '@/lib/middleware/logging.middleware';
 import { z } from 'zod';
 
 const createNutritionPlanSchema = z.object({
@@ -20,7 +21,7 @@ const createNutritionPlanSchema = z.object({
  * GET /api/nutrition
  * Retrieves a list of nutrition plans.
  */
-export async function GET(req: NextRequest) {
+const getHandler = async (req: NextRequest) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -62,7 +63,9 @@ export async function GET(req: NextRequest) {
     console.error('Failed to fetch nutrition plans:', err);
     return error('Failed to fetch nutrition plans', 500);
   }
-}
+};
+
+export const GET = withLogging(getHandler);
 
 /**
  * POST /api/nutrition

@@ -3,6 +3,9 @@ import { requireAuth } from '@/lib/middleware/auth.middleware';
 import { database, Appointment } from '@/lib/mock-db/database';
 import { success, error, notFound, forbidden } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
+import { withValidation } from '@/lib/middleware/validate.middleware';
+import { withLogging } from '@/lib/middleware/logging.middleware';
+import { z } from 'zod';
 
 interface RouteParams {
   params: { id: string };
@@ -11,7 +14,7 @@ interface RouteParams {
 /**
  * GET /api/appointments/:id
  */
-export async function GET(req: NextRequest, { params }: RouteParams) {
+const getHandler = async (req: NextRequest, { params }: RouteParams) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -36,12 +39,24 @@ const isAdmin = user.role === 'admin' || user.role === 'super-admin';
     console.error('Failed to fetch appointment:', err);
     return error('Failed to fetch appointment', 500);
   }
-}
+};
+
+export const GET = withLogging(getHandler);
 
 /**
  * PATCH /api/appointments/:id
  */
-export async function PATCH(req: NextRequest, { params }: RouteParams) {
+const updateAppointmentSchema = z.object({
+  status: z.enum(['scheduled', 'completed', 'cancelled']).optional(),
+  date: z.string().datetime().optional(),
+  notes: z.string().max(500).optional(),
+});
+
+const patchHandler = async (
+  req: NextRequest,
+  validatedBody: any,
+  { params }: RouteParams
+) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -61,20 +76,19 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return forbidden("You don't have permission to update this appointment.");
     }
 
-    const body = await req.json();
-
     // Clients can only cancel, not change details
-    if (user.role === 'client' && Object.keys(body).length > 1) {
-      if (!body.status || body.status !== 'cancelled') {
+    const keys = Object.keys(validatedBody || {});
+    if (user.role === 'client' && keys.length > 1) {
+      if (!validatedBody.status || validatedBody.status !== 'cancelled') {
         return forbidden('Clients can only cancel appointments.');
       }
     }
 
     // Don't allow changing client or trainer
-    delete body.clientId;
-    delete body.trainerId;
+    delete validatedBody.clientId;
+    delete validatedBody.trainerId;
 
-    const updated = database.update('appointments', params.id, body);
+    const updated = database.update('appointments', params.id, validatedBody);
     if (!updated) return error('Failed to update appointment', 500);
 
     return success(updated);
@@ -82,12 +96,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     console.error('Failed to update appointment:', err);
     return error('Failed to update appointment', 500);
   }
-}
+};
+
+export const PATCH = withLogging(withValidation(updateAppointmentSchema, patchHandler));
 
 /**
  * DELETE /api/appointments/:id
  */
-export async function DELETE(req: NextRequest, { params }: RouteParams) {
+const deleteHandler = async (req: NextRequest, { params }: RouteParams) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
@@ -114,4 +130,6 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     console.error('Failed to delete appointment:', err);
     return error('Failed to delete appointment', 500);
   }
-}
+};
+
+export const DELETE = withLogging(deleteHandler);

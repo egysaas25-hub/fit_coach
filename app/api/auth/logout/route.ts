@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware/auth.middleware';
 import { success } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
+import { database } from '@/lib/mock-db/database';
 
 // In-memory blacklist for logged out tokens (in production, use Redis)
 const tokenBlacklist = new Set<string>();
@@ -27,17 +28,33 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Get token from header
+    // Get tokens from header and cookies
     const authHeader = req.headers.get('Authorization');
+    let bearerToken: string | null = null;
     if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      // Add token to blacklist
-      addToBlacklist(token);
+      bearerToken = authHeader.split(' ')[1];
+    }
+    const refreshToken = req.cookies.get('refresh_token')?.value || null;
+
+    if (bearerToken) addToBlacklist(bearerToken);
+    if (refreshToken) {
+      addToBlacklist(refreshToken);
+      // Remove session
+      const sessions = database.query<any>('sessions', (s) => s.refreshToken === refreshToken);
+      sessions.forEach((s) => database.delete('sessions', s.id));
     }
 
-    return success({ message: 'Logged out successfully' });
+    const res = NextResponse.json({ success: true, data: { message: 'Logged out successfully' } }, { status: 200 });
+    // Clear cookies
+    res.cookies.set('access_token', '', { httpOnly: true, sameSite: 'strict', secure: true, maxAge: 0, path: '/' });
+    res.cookies.set('refresh_token', '', { httpOnly: true, sameSite: 'strict', secure: true, maxAge: 0, path: '/' });
+
+    return res;
   } catch (err) {
     console.error('Logout error:', err);
-    return success({ message: 'Logged out successfully' }); // Always succeed
+    const res = NextResponse.json({ success: true, data: { message: 'Logged out successfully' } }, { status: 200 });
+    res.cookies.set('access_token', '', { httpOnly: true, sameSite: 'strict', secure: true, maxAge: 0, path: '/' });
+    res.cookies.set('refresh_token', '', { httpOnly: true, sameSite: 'strict', secure: true, maxAge: 0, path: '/' });
+    return res; // Always succeed
   }
 }

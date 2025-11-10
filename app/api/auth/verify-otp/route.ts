@@ -4,6 +4,7 @@ import { ensureDbInitialized } from '@/lib/db/init';
 import { database } from '@/lib/mock-db/database';
 import { generateToken } from '@/lib/auth/jwt';
 import { withLogging, logAuthAttempt } from '@/lib/middleware/logging.middleware';
+import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
 
 // Use same store as request-otp (module-level for simplicity)
 const otpStore = new Map<string, { hash: string; expiresAt: number; attempts: number; lockedUntil?: number }>();
@@ -17,7 +18,7 @@ function hashOtp(code: string): string {
   return String(hash);
 }
 
-export const POST = withLogging(async (req: NextRequest) => {
+export const POST = withRateLimit(withLogging(async (req: NextRequest) => {
   ensureDbInitialized();
   try {
     const body = await req.json();
@@ -50,7 +51,7 @@ export const POST = withLogging(async (req: NextRequest) => {
     entry.attempts += 1;
 
     if (!valid) {
-      // Lockout after 5 failed attempts for 5 minutes
+      // Lockout after 3 failed attempts for 5 minutes
       if (entry.attempts >= 3) {
         entry.lockedUntil = now + 5 * 60 * 1000;
       }
@@ -96,4 +97,4 @@ export const POST = withLogging(async (req: NextRequest) => {
     } catch {}
     return error('Failed to verify OTP', 500);
   }
-});
+}), 5, 5 * 60 * 1000);

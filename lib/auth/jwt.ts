@@ -18,11 +18,11 @@ const MOCK_SECRET = 'your-super-secret-key-that-is-not-secret';
  * @param role - The role of the user.
  * @returns A mock JWT token.
  */
-export async function generateToken(userId: string, role: string): Promise<string> {
+export async function generateToken(userId: string, role: string, ttlMs: number = 60 * 60 * 1000): Promise<string> {
   const payload: TokenPayload = {
     userId,
     role,
-    exp: Date.now() + 60 * 60 * 1000, // Expires in 1 hour
+    exp: Date.now() + ttlMs, // Expires in ttlMs
   };
 
   // Simple base64 encoding to simulate a token
@@ -75,11 +75,6 @@ export async function verifyToken(token: string): Promise<TokenPayload | null> {
  * @param token - The refresh token.
  * @returns A new mock access token.
  */
-export async function refreshToken(token: string): Promise<string> {
-  // For simplicity, we'll just re-use the verify logic and generate a new token
-  const payload = await verifyToken(token);
-  if (!payload) {
-    throw new Error('Invalid refresh token');
-  }
-  return generateToken(payload.userId, payload.role);
+export async function generateRefreshToken(userId: string, role: string, ttlMs: number = 7 * 24 * 60 * 60 * 1000): Promise<string> {
+  return generateToken(userId, role, ttlMs);
 }
