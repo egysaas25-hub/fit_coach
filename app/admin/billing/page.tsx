@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -7,11 +6,28 @@ import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { AdminSidebar } from "@/components/navigation/admin-sidebar"
+import { useSubscriptions, useInvoices } from '@/lib/hooks/api/useBilling'
+import { Subscription, Invoice } from '@/types/domain/billing'
 
 export const dynamic = "force-dynamic";
 
 export default function BillingPage() {
   const [activeTab, setActiveTab] = useState<"subscriptions" | "invoices" | "payment-history">("subscriptions")
+  const { data: subscriptions, isLoading: subscriptionsLoading, error: subscriptionsError } = useSubscriptions()
+  const { data: invoices, isLoading: invoicesLoading, error: invoicesError } = useInvoices()
+
+  if (subscriptionsError || invoicesError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive">Error loading billing data</p>
+          <p className="text-sm text-muted-foreground">
+            {subscriptionsError?.message || invoicesError?.message}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -59,19 +75,59 @@ export default function BillingPage() {
             <div className="space-y-8">
               <div>
                 <h2 className="mb-4 text-xl font-semibold text-foreground">Active Subscriptions</h2>
-                <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-12">
-                  <div className="mb-4 h-32 w-32 overflow-hidden rounded-lg bg-muted">
-                    <img src="/empty-cardboard-box.jpg" alt="Empty box" className="h-full w-full object-cover" />
+                {subscriptionsLoading ? (
+                  <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-12">
+                    <div className="mb-4 h-32 w-32 overflow-hidden rounded-lg bg-muted animate-pulse" />
+                    <div className="h-6 w-48 bg-muted rounded mb-4 animate-pulse" />
+                    <div className="h-4 w-64 bg-muted rounded mb-6 animate-pulse" />
+                    <div className="h-10 w-40 bg-muted rounded animate-pulse" />
                   </div>
-                  <h3 className="mb-2 text-lg font-semibold text-foreground">No active subscriptions</h3>
-                  <p className="mb-6 max-w-md text-center text-sm text-muted-foreground">
-                    You don't have any active subscriptions yet. Create a subscription for your clients to manage their
-                    payments.
-                  </p>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                    Create Subscription
-                  </Button>
-                </div>
+                ) : subscriptions && subscriptions.length > 0 ? (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {subscriptions.map((subscription) => (
+                      <div key={subscription.id} className="border border-border rounded-lg p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <h3 className="font-semibold">{subscription.id}</h3>
+                          <Badge 
+                            variant={
+                              subscription.status === 'active' ? 'default' : 
+                              subscription.status === 'paused' ? 'secondary' : 
+                              subscription.status === 'cancelled' ? 'destructive' : 'outline'
+                            }
+                          >
+                            {subscription.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Plan: {subscription.planId}
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Client: {subscription.clientId}
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Amount: ${subscription.amount} {subscription.currency}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Next billing: {new Date(subscription.nextBillingDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-12">
+                    <div className="mb-4 h-32 w-32 overflow-hidden rounded-lg bg-muted">
+                      <img src="/empty-cardboard-box.jpg" alt="Empty box" className="h-full w-full object-cover" />
+                    </div>
+                    <h3 className="mb-2 text-lg font-semibold text-foreground">No active subscriptions</h3>
+                    <p className="mb-6 max-w-md text-center text-sm text-muted-foreground">
+                      You don't have any active subscriptions yet. Create a subscription for your clients to manage their
+                      payments.
+                    </p>
+                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                      Create Subscription
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -128,60 +184,49 @@ export default function BillingPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border bg-card">
-                    {[
-                      {
-                        id: "INV-2024-001",
-                        date: "July 20, 2024",
-                        client: "Alex Johnson",
-                        amount: "$150.00",
-                        status: "Paid",
-                      },
-                      {
-                        id: "INV-2024-002",
-                        date: "August 20, 2024",
-                        client: "Maria Garcia",
-                        amount: "$150.00",
-                        status: "Paid",
-                      },
-                      {
-                        id: "INV-2024-003",
-                        date: "September 20, 2024",
-                        client: "James Smith",
-                        amount: "$150.00",
-                        status: "Paid",
-                      },
-                      {
-                        id: "INV-2024-004",
-                        date: "October 20, 2024",
-                        client: "Emma Wilson",
-                        amount: "$150.00",
-                        status: "Paid",
-                      },
-                      {
-                        id: "INV-2024-005",
-                        date: "November 20, 2024",
-                        client: "Ben Wilson",
-                        amount: "$120.00",
-                        status: "Overdue",
-                      },
-                    ].map((invoice) => (
-                      <tr key={invoice.id} className="hover:bg-muted/50">
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-foreground">
-                          {invoice.id}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">{invoice.date}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">{invoice.client}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">{invoice.amount}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm">
-                          <Badge
-                            variant={invoice.status === "Paid" ? "default" : "destructive"}
-                            className={invoice.status === "Paid" ? "bg-primary text-primary-foreground" : ""}
-                          >
-                            {invoice.status}
-                          </Badge>
+                    {invoicesLoading ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center text-muted-foreground">
+                          Loading invoices...
                         </td>
                       </tr>
-                    ))}
+                    ) : invoices && invoices.length > 0 ? (
+                      invoices.map((invoice) => (
+                        <tr key={invoice.id} className="hover:bg-muted/50">
+                          <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-foreground">
+                            {invoice.id}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
+                            {new Date(invoice.issuedDate).toLocaleDateString()}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
+                            {invoice.clientId}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
+                            ${invoice.amount} {invoice.currency}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm">
+                            <Badge
+                              variant={
+                                invoice.status === "paid" ? "default" : 
+                                invoice.status === "overdue" ? "destructive" : "secondary"
+                              }
+                              className={
+                                invoice.status === "paid" ? "bg-primary text-primary-foreground" : ""
+                              }
+                            >
+                              {invoice.status}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center text-muted-foreground">
+                          No invoices found
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

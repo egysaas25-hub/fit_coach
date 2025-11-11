@@ -1,37 +1,36 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table";
 import { Plus, Search, MessageSquare, Clock, CheckCircle } from "lucide-react";
+import { useSupportTickets } from '@/lib/hooks/api/useSupport';
+import { SupportTicket } from '@/types/domain/support';
 
 export default function AdminSupportPage() {
-  const tickets = [
-    {
-      id: "TKT-001",
-      subject: "Cannot access workout plans",
-      user: "Anna Carter",
-      priority: "High",
-      status: "Open",
-      created: "2 hours ago",
-    },
-    {
-      id: "TKT-002",
-      subject: "Billing question",
-      user: "John Smith",
-      priority: "Medium",
-      status: "In Progress",
-      created: "5 hours ago",
-    },
-    {
-      id: "TKT-003",
-      subject: "Feature request",
-      user: "Sarah Lee",
-      priority: "Low",
-      status: "Open",
-      created: "1 day ago",
-    },
-  ];
+  const { data: tickets, isLoading, error } = useSupportTickets();
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive">Error loading support tickets</p>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate stats from tickets
+  const openTickets = tickets?.filter(t => t.status === 'open').length || 0;
+  const inProgressTickets = tickets?.filter(t => t.status === 'in-progress').length || 0;
+  const resolvedToday = tickets?.filter(t => 
+    t.status === 'resolved' && 
+    t.resolvedAt && 
+    new Date(t.resolvedAt).toDateString() === new Date().toDateString()
+  ).length || 0;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -54,7 +53,7 @@ export default function AdminSupportPage() {
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
+              <div className="text-2xl font-bold">{isLoading ? '...' : openTickets}</div>
               <p className="text-xs text-muted-foreground mt-1">Awaiting response</p>
             </CardContent>
           </Card>
@@ -65,7 +64,7 @@ export default function AdminSupportPage() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-500">8</div>
+              <div className="text-2xl font-bold text-blue-500">{isLoading ? '...' : inProgressTickets}</div>
               <p className="text-xs text-muted-foreground mt-1">Being handled</p>
             </CardContent>
           </Card>
@@ -76,7 +75,7 @@ export default function AdminSupportPage() {
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-emerald-500">15</div>
+              <div className="text-2xl font-bold text-emerald-500">{isLoading ? '...' : resolvedToday}</div>
               <p className="text-xs text-muted-foreground mt-1">Closed tickets</p>
             </CardContent>
           </Card>
@@ -103,58 +102,70 @@ export default function AdminSupportPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Ticket ID</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tickets.map((ticket) => (
-                  <TableRow key={ticket.id}>
-                    <TableCell className="font-mono text-sm">{ticket.id}</TableCell>
-                    <TableCell className="font-medium">{ticket.subject}</TableCell>
-                    <TableCell className="text-muted-foreground">{ticket.user}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          ticket.priority === "High"
-                            ? "destructive"
-                            : ticket.priority === "Medium"
-                            ? "secondary"
-                            : "outline"
-                        }
-                      >
-                        {ticket.priority}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          ticket.status === "Open"
-                            ? "default"
-                            : ticket.status === "In Progress"
-                            ? "secondary"
-                            : "outline"
-                        }
-                      >
-                        {ticket.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{ticket.created}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">View</Button>
-                    </TableCell>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading tickets...</p>
+              </div>
+            ) : tickets && tickets.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ticket ID</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {tickets.map((ticket) => (
+                    <TableRow key={ticket.id}>
+                      <TableCell className="font-mono text-sm">{ticket.id}</TableCell>
+                      <TableCell className="font-medium">{ticket.subject}</TableCell>
+                      <TableCell className="text-muted-foreground">{ticket.userId}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            ticket.priority === "high" || ticket.priority === "urgent"
+                              ? "destructive"
+                              : ticket.priority === "medium"
+                              ? "secondary"
+                              : "outline"
+                          }
+                        >
+                          {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            ticket.status === "open"
+                              ? "default"
+                              : ticket.status === "in-progress"
+                              ? "secondary"
+                              : "outline"
+                          }
+                        >
+                          {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1).replace('-', ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(ticket.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">View</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No support tickets found</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>

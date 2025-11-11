@@ -1,65 +1,56 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Eye, Download, TrendingUp, Users, DollarSign, CreditCard } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table"
+'use client';
+
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, Eye, Download, TrendingUp, Users, DollarSign, CreditCard } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table";
+import { useSubscriptions } from '@/lib/hooks/api/useSubscriptions';
+import { Subscription, SubscriptionPlan, BillingCycle } from '@/types/domain/subscription';
 
 export default function AdminSubscriptionsPage() {
-  const subscriptions = [
-    {
-      id: "SUB-001",
-      client: "Anna Carter",
-      plan: "Premium Monthly",
-      amount: "$49.99",
-      status: "Active",
-      nextBilling: "Apr 15, 2024",
-      startDate: "Jan 15, 2024",
-    },
-    {
-      id: "SUB-002",
-      client: "John Smith",
-      plan: "Basic Monthly",
-      amount: "$29.99",
-      status: "Active",
-      nextBilling: "Apr 18, 2024",
-      startDate: "Feb 18, 2024",
-    },
-    {
-      id: "SUB-003",
-      client: "Sarah Lee",
-      plan: "Premium Annual",
-      amount: "$499.99",
-      status: "Active",
-      nextBilling: "Dec 10, 2024",
-      startDate: "Dec 10, 2023",
-    },
-    {
-      id: "SUB-004",
-      client: "Mike Brown",
-      plan: "Premium Monthly",
-      amount: "$49.99",
-      status: "Cancelled",
-      nextBilling: "N/A",
-      startDate: "Jan 5, 2024",
-    },
-    {
-      id: "SUB-005",
-      client: "Emily Davis",
-      plan: "Basic Monthly",
-      amount: "$29.99",
-      status: "Past Due",
-      nextBilling: "Mar 30, 2024",
-      startDate: "Nov 30, 2023",
-    },
-  ]
+  const { subscriptions, loading, error } = useSubscriptions();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  
+  // Filter subscriptions based on search term and status
+  const filteredSubscriptions = subscriptions.filter(sub => {
+    const matchesSearch = sub.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          sub.clientId.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || sub.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+  
+  // Mock data for plans (these would come from API in a real implementation)
+  const plans: SubscriptionPlan[] = [
+    { id: "1", name: "Basic Monthly", price: 29.99, activeCount: 42, billingCycle: BillingCycle.Monthly },
+    { id: "2", name: "Premium Monthly", price: 49.99, activeCount: 68, billingCycle: BillingCycle.Monthly },
+    { id: "3", name: "Premium Annual", price: 499.99, activeCount: 25, billingCycle: BillingCycle.Annual },
+  ];
+  
+  // Calculate stats from actual data
+  const totalSubscriptions = subscriptions.length;
+  const activeSubscriptions = subscriptions.filter(s => s.status === "Active").length;
+  const mrr = subscriptions
+    .filter(s => s.status === "Active")
+    .reduce((sum, s) => sum + s.amount, 0);
+  const churnRate = totalSubscriptions > 0 
+    ? Math.round((subscriptions.filter(s => s.status === "Cancelled").length / totalSubscriptions) * 100)
+    : 0;
 
-  const plans = [
-    { name: "Basic Monthly", price: "$29.99", active: 42 },
-    { name: "Premium Monthly", price: "$49.99", active: 68 },
-    { name: "Premium Annual", price: "$499.99", active: 25 },
-  ]
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive">Error loading subscriptions</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -82,7 +73,7 @@ export default function AdminSubscriptionsPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{subscriptions.length}</div>
+              <div className="text-2xl font-bold">{loading ? '...' : totalSubscriptions}</div>
               <p className="text-xs text-muted-foreground mt-1">+12% from last month</p>
             </CardContent>
           </Card>
@@ -94,7 +85,7 @@ export default function AdminSubscriptionsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-emerald-500">
-                {subscriptions.filter(s => s.status === "Active").length}
+                {loading ? '...' : activeSubscriptions}
               </div>
               <p className="text-xs text-muted-foreground mt-1">60% of total</p>
             </CardContent>
@@ -106,7 +97,7 @@ export default function AdminSubscriptionsPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$4,250</div>
+              <div className="text-2xl font-bold">{loading ? '...' : `$${mrr.toFixed(2)}`}</div>
               <p className="text-xs text-muted-foreground mt-1">Monthly recurring revenue</p>
             </CardContent>
           </Card>
@@ -117,21 +108,21 @@ export default function AdminSubscriptionsPage() {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">3.2%</div>
+              <div className="text-2xl font-bold">{loading ? '...' : `${churnRate}%`}</div>
               <p className="text-xs text-muted-foreground mt-1">Last 30 days</p>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3 mb-8">
-          {plans.map((plan, i) => (
-            <Card key={i}>
+          {plans.map((plan) => (
+            <Card key={plan.id}>
               <CardHeader>
                 <CardTitle className="text-lg">{plan.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold mb-2">{plan.price}</div>
-                <p className="text-sm text-muted-foreground mb-4">{plan.active} active subscriptions</p>
+                <div className="text-3xl font-bold mb-2">${plan.price.toFixed(2)}</div>
+                <p className="text-sm text-muted-foreground mb-4">{plan.activeCount} active subscriptions</p>
                 <Button variant="outline" className="w-full">View Details</Button>
               </CardContent>
             </Card>
@@ -145,17 +136,22 @@ export default function AdminSubscriptionsPage() {
               <div className="flex gap-2">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search subscriptions..." className="pl-9 w-64" />
+                  <Input 
+                    placeholder="Search subscriptions..." 
+                    className="pl-9 w-64" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
-                <Select defaultValue="all">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="past-due">Past Due</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                    <SelectItem value="Past Due">Past Due</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button variant="outline">
@@ -166,52 +162,58 @@ export default function AdminSubscriptionsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Next Billing</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {subscriptions.map((sub) => (
-                  <TableRow key={sub.id}>
-                    <TableCell className="font-mono text-sm">{sub.id}</TableCell>
-                    <TableCell className="font-medium">{sub.client}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{sub.plan}</Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{sub.amount}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          sub.status === "Active"
-                            ? "default"
-                            : sub.status === "Cancelled"
-                            ? "secondary"
-                            : "destructive"
-                        }
-                      >
-                        {sub.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{sub.nextBilling}</TableCell>
-                    <TableCell className="text-muted-foreground">{sub.startDate}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading subscriptions...</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Next Billing</TableHead>
+                    <TableHead>Start Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredSubscriptions.map((sub) => (
+                    <TableRow key={sub.id}>
+                      <TableCell className="font-mono text-sm">{sub.id}</TableCell>
+                      <TableCell className="font-medium">{sub.clientId}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">Plan #{sub.planId}</Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">${sub.amount.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            sub.status === "Active"
+                              ? "default"
+                              : sub.status === "Cancelled"
+                              ? "secondary"
+                              : "destructive"
+                          }
+                        >
+                          {sub.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{sub.nextBilling}</TableCell>
+                      <TableCell className="text-muted-foreground">{sub.startDate}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </main>

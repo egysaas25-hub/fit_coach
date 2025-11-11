@@ -1,12 +1,12 @@
 // lib/hooks/api/useProgram.ts
 import { useState, useEffect, useCallback } from 'react';
 import { ProgramService } from '@/lib/api/services/program.service';
-import { Program, ProgramWeek, ProgramExercise } from '@/types/domain/program';
+import { Workout } from '@/types/domain/workout.model';
 
 const programService = new ProgramService();
 
 export function usePrograms() {
-  const [programs, setPrograms] = useState<Program[]>([]);
+  const [programs, setPrograms] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +33,7 @@ export function useCreateProgram() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createProgram = useCallback(async (program: Partial<Program>) => {
+  const createProgram = useCallback(async (program: Partial<Workout>) => {
     setLoading(true);
     try {
       const newProgram = await programService.createProgram(program);
@@ -53,7 +53,7 @@ export function useUpdateProgram() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const updateProgram = useCallback(async (programId: string, updates: Partial<Program>) => {
+  const updateProgram = useCallback(async (programId: string, updates: Partial<Workout>) => {
     setLoading(true);
     try {
       const updatedProgram = await programService.updateProgram(programId, updates);
@@ -70,7 +70,7 @@ export function useUpdateProgram() {
 }
 
 export function useProgramWeeks(programId: string) {
-  const [weeks, setWeeks] = useState<ProgramWeek[]>([]);
+  const [weeks, setWeeks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +94,7 @@ export function useProgramWeeks(programId: string) {
 }
 
 export function useProgramExercises(programId: string, weekId: string) {
-  const [exercises, setExercises] = useState<ProgramExercise[]>([]);
+  const [exercises, setExercises] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

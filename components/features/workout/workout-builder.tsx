@@ -6,16 +6,7 @@ import { Plus, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
-const exerciseLibrary = [
-  { id: "squat", name: "Squats", category: "Lower Body" },
-  { id: "deadlift", name: "Deadlifts", category: "Lower Body" },
-  { id: "bench", name: "Bench Press", category: "Upper Body" },
-  { id: "lunge", name: "Lunges", category: "Lower Body" },
-  { id: "yoga", name: "Yoga", category: "Flexibility" },
-  { id: "pilates", name: "Pilates", category: "Core" },
-  { id: "aerobics", name: "Aerobics", category: "Cardio" },
-]
+import { useExercises } from '@/lib/hooks/api/useExercises'
 
 interface Exercise {
   id: string
@@ -29,6 +20,7 @@ interface DayPlan {
 }
 
 export function WorkoutPlanBuilder() {
+  const { data: exercises, isLoading, error } = useExercises()
   const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null)
   const [dayPlans, setDayPlans] = useState<DayPlan[]>([
     { day: 1, exercises: [] },
@@ -85,24 +77,39 @@ export function WorkoutPlanBuilder() {
         <Card className="bg-card flex-1">
           <CardContent className="p-4">
             <h3 className="font-semibold mb-3">Exercise Library</h3>
-            <ScrollArea className="h-full min-h-[300px] max-h-[calc(100vh-20rem)]">
-              <div className="space-y-2">
-                {exerciseLibrary.map((exercise) => (
-                  <div
-                    key={exercise.id}
-                    draggable
-                    onDragStart={() => handleDragStart(exercise)}
-                    className="flex items-center gap-2 p-2 rounded-lg bg-accent hover:bg-accent/80 cursor-move transition-colors"
-                  >
-                    <GripVertical className="h-4 w-4 text-muted-foreground" />
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{exercise.name}</div>
-                      <div className="text-xs text-muted-foreground">{exercise.category}</div>
-                    </div>
-                  </div>
-                ))}
+            {isLoading ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">Loading exercises...</p>
               </div>
-            </ScrollArea>
+            ) : error ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-destructive">Error loading exercises</p>
+                <p className="text-xs text-muted-foreground">{error.message}</p>
+              </div>
+            ) : exercises && exercises.length > 0 ? (
+              <ScrollArea className="h-full min-h-[300px] max-h-[calc(100vh-20rem)]">
+                <div className="space-y-2">
+                  {exercises.map((exercise) => (
+                    <div
+                      key={exercise.id}
+                      draggable
+                      onDragStart={() => handleDragStart(exercise)}
+                      className="flex items-center gap-2 p-2 rounded-lg bg-accent hover:bg-accent/80 cursor-move transition-colors"
+                    >
+                      <GripVertical className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{exercise.name}</div>
+                        <div className="text-xs text-muted-foreground">{exercise.category}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">No exercises available</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -5,6 +5,23 @@ import { NextResponse } from 'next/server';
 import { ensureDbInitialized } from '@/lib/db/init';
 import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
 
+/**
+ * Maps user role to user type
+ * @param role - The role from the database
+ * @returns The corresponding user type
+ */
+function mapRoleToType(role: string): string {
+  switch (role) {
+    case 'admin':
+    case 'trainer':
+      return 'team_member';
+    case 'client':
+      return 'customer';
+    default:
+      return 'customer';
+  }
+}
+
 export const GET = withRateLimit(async (req: NextRequest) => {
   ensureDbInitialized();
   const authResult = await requireAuth(req);
@@ -14,6 +31,14 @@ export const GET = withRateLimit(async (req: NextRequest) => {
   }
 
   const { user } = authResult;
-  const { passwordHash, ...userWithoutPassword } = user;
-  return success({ user: userWithoutPassword });
+  const { passwordHash, role, ...userWithoutPassword } = user as any;
+  
+  // Add type field based on role
+  const userWithMappedType = {
+    ...userWithoutPassword,
+    type: mapRoleToType(role),
+    role: role // Keep role for token generation
+  };
+  
+  return success({ user: userWithMappedType });
 }, 30, 60 * 1000);

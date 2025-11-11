@@ -1,33 +1,72 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, Search } from "lucide-react"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+'use client';
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTrainers, useDeleteTrainer } from '@/lib/hooks/api/useTrainers';
+import { useClients } from '@/lib/hooks/api/useClients';
+import { Trainer } from '@/types/domain/trainer.model';
+import { Client } from '@/types/domain/client.model';
+
+// Create a unified user type for display purposes
+type DisplayUser = {
+  id: string;
+  name: string;
+  role: string;
+  email?: string;
+  phone?: string;
+  status: string;
+  initials: string;
+};
 
 export default function ManagementPage() {
-  // Data from User Management
-  const users = [
-    { name: "Anna Carter", role: "Client", email: "anna@example.com", status: "Active", avatar: "AC" },
-    { name: "Mike Johnson", role: "Trainer", email: "mike@example.com", status: "Active", avatar: "MJ" },
-    { name: "John Smith", role: "Client", email: "john@example.com", status: "Active", avatar: "JS" },
-    { name: "Sarah Lee", role: "Trainer", email: "sarah@example.com", status: "Active", avatar: "SL" },
-    { name: "Admin User", role: "Admin", email: "admin@example.com", status: "Active", avatar: "AU" },
-    { name: "Tom Martinez", role: "Client", email: "tom@example.com", status: "Inactive", avatar: "TM" },
-  ]
+  const { data: trainers = [], isLoading: trainersLoading, error: trainersError } = useTrainers();
+  const { data: clients = [], isLoading: clientsLoading, error: clientsError } = useClients();
+  const { mutate: deleteTrainer } = useDeleteTrainer();
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Transform trainers and clients into a unified format
+  const displayUsers: DisplayUser[] = [
+    ...trainers.map(trainer => ({
+      id: trainer.id,
+      name: trainer.fullName,
+      role: trainer.role,
+      email: trainer.email,
+      status: "Active",
+      initials: trainer.initials
+    })),
+    ...clients.map(client => ({
+      id: client.id,
+      name: client.fullName,
+      role: "Client",
+      phone: client.phone,
+      status: client.status,
+      initials: client.initials
+    }))
+  ];
+  
+  // Filter users based on search term
+  const filteredUsers = displayUsers.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (user.phone && user.phone.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
-  // Data from Role Management
+  // Mock data for roles and permissions (these would come from API in a real implementation)
   const roles = [
     { name: "Super Admin", permissions: 25, users: 2, description: "Full system access" },
     { name: "Admin", permissions: 18, users: 3, description: "Administrative access" },
-    { name: "Trainer", permissions: 12, users: 28, description: "Trainer capabilities" },
-    { name: "Client", permissions: 8, users: 86, description: "Client access" },
-  ]
+    { name: "Trainer", permissions: 12, users: trainers.length, description: "Trainer capabilities" },
+    { name: "Client", permissions: 8, users: clients.length, description: "Client access" },
+  ];
 
-  // Data from Permission Management
   const permissions = [
     { name: "View Users", category: "Users", roles: ["Admin", "Super Admin"] },
     { name: "Create Users", category: "Users", roles: ["Admin", "Super Admin"] },
@@ -39,15 +78,34 @@ export default function ManagementPage() {
     { name: "Export Data", category: "Analytics", roles: ["Admin", "Super Admin"] },
     { name: "System Settings", category: "System", roles: ["Super Admin"] },
     { name: "Manage Roles", category: "System", roles: ["Super Admin"] },
-  ]
+  ];
 
-  // Data from Team Dashboard
+  // Mock data for teams (these would come from API in a real implementation)
   const teams = [
     { name: "Team Alpha", members: 12, revenue: "$8,420", growth: "+15%", status: "Active" },
     { name: "Team Beta", members: 8, revenue: "$6,230", growth: "+8%", status: "Active" },
     { name: "Team Gamma", members: 15, revenue: "$12,150", growth: "+22%", status: "Active" },
     { name: "Team Delta", members: 6, revenue: "$4,890", growth: "+5%", status: "Active" },
-  ]
+  ];
+
+  const handleDeleteTrainer = (id: string) => {
+    if (confirm("Are you sure you want to delete this trainer?")) {
+      deleteTrainer(id);
+    }
+  };
+
+  if (trainersError || clientsError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive">Error loading data</p>
+          <p className="text-sm text-muted-foreground">
+            {trainersError?.message || clientsError?.message}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -69,7 +127,7 @@ export default function ManagementPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>All Users ({users.length})</CardTitle>
+                  <CardTitle>All Users ({filteredUsers.length})</CardTitle>
                   <Button>
                     <Plus className="mr-2 h-4 w-4" />
                     Add User
@@ -77,53 +135,70 @@ export default function ManagementPage() {
                 </div>
                 <div className="relative mt-4">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search users..." className="pl-9 bg-background" />
+                  <Input 
+                    placeholder="Search users..." 
+                    className="pl-9 bg-background" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((user, i) => (
-                      <TableRow key={i}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarImage src="/placeholder.svg?height=40&width=40" alt={user.name} />
-                              <AvatarFallback>{user.avatar}</AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{user.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{user.role}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant={user.status === "Active" ? "default" : "secondary"}>{user.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                {trainersLoading || clientsLoading ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Loading users...</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Contact</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar>
+                                <AvatarImage src="/placeholder.svg?height=40&width=40" alt={user.name} />
+                                <AvatarFallback>{user.initials}</AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{user.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{user.role}</Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {user.email || user.phone || "N/A"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="default">{user.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button variant="ghost" size="icon">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleDeleteTrainer(user.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

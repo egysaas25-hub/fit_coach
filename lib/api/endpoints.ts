@@ -19,6 +19,16 @@ export const endpoints = {
     },
     users: '/admin/users',
     settings: '/admin/settings',
+    billing: {
+      subscriptions: '/admin/billing/subscriptions',
+      invoices: '/admin/billing/invoices',
+      payments: '/admin/billing/payments',
+      plans: '/admin/billing/plans',
+    },
+    support: {
+      tickets: '/admin/support/tickets',
+      categories: '/admin/support/categories',
+    },
   },
   client: '/clients',
   clientActivities: (id: string) => `/clients/${id}/activities`,
@@ -38,5 +48,6 @@ export const endpoints = {
   reports: '/reports',
   trainer: '/trainers',
   workout: '/workouts',
-  support: '/support',
+  exercise: '/exercises',
+  support: '/support'
 };

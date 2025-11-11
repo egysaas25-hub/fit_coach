@@ -8,6 +8,23 @@ import { withValidation } from '@/lib/middleware/validate.middleware';
 import { registerSchema } from '@/lib/schemas/auth/auth.schema';
 
 /**
+ * Maps user role to user type
+ * @param role - The role from the database
+ * @returns The corresponding user type
+ */
+function mapRoleToType(role: string): string {
+  switch (role) {
+    case 'admin':
+    case 'trainer':
+      return 'team_member';
+    case 'client':
+      return 'customer';
+    default:
+      return 'customer';
+  }
+}
+
+/**
  * POST /api/auth/register
  * Register a new user
  */
@@ -47,10 +64,17 @@ const registerHandler = async (req: NextRequest, validatedBody: any) => {
     // Generate token
     const token = await generateToken((newUser as any).id, (newUser as any).role);
 
-    // Exclude sensitive data
-    const { passwordHash, ...userResponse } = newUser as any;
+    // Exclude sensitive data and add type field
+    const { passwordHash, role: userRole, ...userWithoutPassword } = newUser as any;
+    
+    // Add type field based on role
+    const userWithMappedType = {
+      ...userWithoutPassword,
+      type: mapRoleToType(userRole),
+      role: userRole // Keep role for token generation
+    };
 
-    return success({ user: userResponse, token }, 201);
+    return success({ user: userWithMappedType, token }, 201);
   } catch (err) {
     console.error('Registration error:', err);
     return error('An unexpected error occurred during registration', 500);

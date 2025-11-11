@@ -1,90 +1,58 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { AdminSidebar } from "@/components/navigation/admin-sidebar"
 import { ExerciseCard } from "@/components/features/exercise-card"
+import { useExercises } from '@/lib/hooks/api/useExercises'
+import { Exercise } from '@/types/domain/exercise'
 
-const categories = ["All", "Chest", "Back", "Legs", "Shoulders", "Arms", "Core", "Cardio"]
-
-const exercises = [
-  {
-    id: 1,
-    name: "Bench Press",
-    category: "Chest",
-    difficulty: "Intermediate",
-    equipment: "Barbell",
-    muscleGroup: "Chest, Triceps",
-  },
-  {
-    id: 2,
-    name: "Squats",
-    category: "Legs",
-    difficulty: "Beginner",
-    equipment: "Barbell",
-    muscleGroup: "Quads, Glutes",
-  },
-  {
-    id: 3,
-    name: "Deadlift",
-    category: "Back",
-    difficulty: "Advanced",
-    equipment: "Barbell",
-    muscleGroup: "Back, Hamstrings",
-  },
-  {
-    id: 4,
-    name: "Pull-ups",
-    category: "Back",
-    difficulty: "Intermediate",
-    equipment: "Pull-up Bar",
-    muscleGroup: "Lats, Biceps",
-  },
-  {
-    id: 5,
-    name: "Shoulder Press",
-    category: "Shoulders",
-    difficulty: "Beginner",
-    equipment: "Dumbbells",
-    muscleGroup: "Shoulders, Triceps",
-  },
-  {
-    id: 6,
-    name: "Bicep Curls",
-    category: "Arms",
-    difficulty: "Beginner",
-    equipment: "Dumbbells",
-    muscleGroup: "Biceps",
-  },
-  {
-    id: 7,
-    name: "Plank",
-    category: "Core",
-    difficulty: "Beginner",
-    equipment: "Bodyweight",
-    muscleGroup: "Core, Abs",
-  },
-  {
-    id: 8,
-    name: "Running",
-    category: "Cardio",
-    difficulty: "Beginner",
-    equipment: "None",
-    muscleGroup: "Full Body",
-  },
-]
+// Helper function to convert difficulty to proper case
+const formatDifficulty = (difficulty: 'beginner' | 'intermediate' | 'advanced'): "Beginner" | "Intermediate" | "Advanced" => {
+  const mapping: Record<'beginner' | 'intermediate' | 'advanced', "Beginner" | "Intermediate" | "Advanced"> = {
+    'beginner': 'Beginner',
+    'intermediate': 'Intermediate',
+    'advanced': 'Advanced'
+  }
+  return mapping[difficulty]
+}
 
 export default function ExercisesPage() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [searchQuery, setSearchQuery] = useState("")
+  const { data: exercises, isLoading, error } = useExercises()
 
-  const filteredExercises = exercises.filter((exercise) => {
-    const matchesCategory = selectedCategory === "All" || exercise.category === selectedCategory
-    const matchesSearch = exercise.name.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
+  // Filter exercises based on category and search query
+  const filteredExercises = useMemo(() => {
+    if (!exercises) return []
+    
+    return exercises.filter((exercise) => {
+      const matchesCategory = selectedCategory === "All" || exercise.category === selectedCategory
+      const matchesSearch = exercise.name.toLowerCase().includes(searchQuery.toLowerCase())
+      return matchesCategory && matchesSearch
+    })
+  }, [exercises, selectedCategory, searchQuery])
+
+  // Extract unique categories from exercises
+  const categories = useMemo(() => {
+    if (!exercises) return ["All"]
+    
+    const uniqueCategories = Array.from(new Set(exercises.map(ex => ex.category)))
+    return ["All", ...uniqueCategories]
+  }, [exercises])
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-foreground mb-2">Error loading exercises</h2>
+          <p className="text-muted-foreground">{error.message}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -155,20 +123,42 @@ export default function ExercisesPage() {
         {/* Exercise Count */}
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-400">
-            {filteredExercises.length} {filteredExercises.length === 1 ? "exercise" : "exercises"} found
+            {isLoading ? 'Loading...' : `${filteredExercises.length} ${filteredExercises.length === 1 ? "exercise" : "exercises"} found`}
           </p>
         </div>
 
         {/* Exercise List */}
-        <div className="space-y-3">
-          {filteredExercises.map((exercise) => (
-            <Link key={exercise.id} href={`/exercises/${exercise.id}`}>
-              <ExerciseCard {...exercise} />
-            </Link>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-card border border-border rounded-lg p-4 animate-pulse">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-muted rounded-lg" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-muted rounded w-1/2" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredExercises.map((exercise) => (
+              <Link key={exercise.id} href={`/admin/exercises/${exercise.id}`}>
+                <ExerciseCard 
+                  name={exercise.name}
+                  category={exercise.category}
+                  difficulty={formatDifficulty(exercise.difficulty)}
+                  equipment={exercise.equipment.join(', ')}
+                  muscleGroup={exercise.muscleGroup.join(', ')}
+                />
+              </Link>
+            ))}
+          </div>
+        )}
 
-        {filteredExercises.length === 0 && (
+        {!isLoading && filteredExercises.length === 0 && (
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,7 +175,6 @@ export default function ExercisesPage() {
           </div>
         )}
       </div>
-
     </div>
   )
 }
