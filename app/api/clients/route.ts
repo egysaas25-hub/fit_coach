@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { database, Client } from '@/lib/mock-db/database';
+import { database } from '@/lib/mock-db/database';
+import { Client } from '@/types/lib/mock-db/types';
 import { success, paginatedSuccess, error, unauthorized, forbidden } from '@/lib/utils/response';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { createClientSchema } from '@/lib/schemas/client/client.schema';
@@ -75,7 +76,7 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
     }
 
     try {
-        const existingClient = database.query('clients', c => c.email === validatedBody.email)[0];
+        const existingClient = database.query<Client>('clients', (c: Client) => c.email === validatedBody.email)[0];
         if (existingClient) {
         return error('A client with this email already exists.', 409); // 409 Conflict
         }

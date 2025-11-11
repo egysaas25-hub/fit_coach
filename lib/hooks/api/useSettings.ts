@@ -1,6 +1,7 @@
 // lib/hooks/api/useSettings.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { SettingsService, AppSettings } from '@/lib/api/services/settings.service';
+import { SettingsService } from '@/lib/api/services/settings.service';
+import { AppSettings } from '@/types/lib/api/services/settings.types';
 
 const settingsService = new SettingsService();
 

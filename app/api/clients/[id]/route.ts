@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { database, Client } from '@/lib/mock-db/database';
+import { database } from '@/lib/mock-db/database';
+import { Client } from '@/types/lib/mock-db/types';
 import { success, error, notFound, forbidden } from '@/lib/utils/response';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { updateClientSchema } from '@/lib/schemas/client/client.schema';
@@ -81,9 +82,13 @@ const patchHandler = async (req: NextRequest, validatedBody: any, { params }: Ro
             return forbidden("Clients cannot change their assigned trainer.");
         }
 
-        const updatedClient = database.update('clients', id, validatedBody);
-        const { passwordHash, ...clientResponse } = updatedClient!;
-        return success(clientResponse);
+        const updatedClient = database.update<Client>('clients', id, validatedBody);
+        if (updatedClient) {
+          const { passwordHash, ...clientResponse } = updatedClient;
+          return success(clientResponse);
+        } else {
+          return error('Failed to update client', 500);
+        }
     } catch (err) {
         console.error('Failed to update client:', err);
         return error('An unexpected error occurred while updating the client.', 500);

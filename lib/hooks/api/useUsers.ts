@@ -1,6 +1,7 @@
 // lib/hooks/api/useUsers.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { UserService, CreateUserDto, BulkUpdateUsersDto } from '@/lib/api/services/user.service';
+import { UserService } from '@/lib/api/services/user.service';
+import { CreateUserDto, BulkUpdateUsersDto } from '@/types/lib/api/services/user.types';
 
 const userService = new UserService();
 

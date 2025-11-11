@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { database, Appointment } from '@/lib/mock-db/database';
+import { database } from '@/lib/mock-db/database';
+import { Appointment } from '@/types/lib/mock-db/types';
 import { success, error } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
 import { withValidation } from '@/lib/middleware/validate.middleware';

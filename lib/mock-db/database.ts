@@ -25,6 +25,30 @@ import {
   Database
 } from '@/types/lib/mock-db/types';
 
+// Re-export types so existing imports continue to work
+export type {
+  User,
+  Client,
+  Trainer,
+  RoleType,
+  AppointmentStatus,
+  ProgressMetric,
+  WebhookStatus,
+  Workout,
+  WorkoutLog,
+  NutritionPlan,
+  NutritionLog,
+  ProgressEntry,
+  Appointment,
+  Message,
+  MessageThread,
+  Notification,
+  Webhook,
+  AuthAttempt,
+  Session,
+  Database
+};
+
 const nanoid = () => Math.random().toString(36).slice(2);
 
 let db: Database = {

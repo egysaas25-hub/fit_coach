@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { database, Trainer, RoleType } from '@/lib/mock-db/database';
+import { database } from '@/lib/mock-db/database';
+import { Trainer, RoleType } from '@/types/lib/mock-db/types';
 import { success, error } from '@/lib/utils/response';
 import { hashPassword } from '@/lib/auth/password';
 import { ensureDbInitialized } from '@/lib/db/init';
