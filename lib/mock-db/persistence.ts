@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { Database } from './database.ts';
+import { Database } from './database';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'database.json');

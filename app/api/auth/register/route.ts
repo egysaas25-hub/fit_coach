@@ -32,7 +32,7 @@ const registerHandler = async (req: NextRequest, validatedBody: any) => {
   ensureDbInitialized();
 
   try {
-    const { email, password, name, role = 'client' } = validatedBody;
+    const { email, password, name, role = 'client', phone } = validatedBody;
 
     // Check if user already exists
     const existingUser = database.query('users', (u: any) => u.email === email)[0];
@@ -44,6 +44,7 @@ const registerHandler = async (req: NextRequest, validatedBody: any) => {
     const newUser = database.create('users', {
       email,
       name,
+      phone,
       role,
       passwordHash: hashPassword(password),
     });
@@ -56,8 +57,8 @@ const registerHandler = async (req: NextRequest, validatedBody: any) => {
       });
     }
 
-    // If role is trainer, create trainer entry
-    if (role === 'trainer') {
+    // If role is trainer or admin, create trainer entry
+    if (role === 'trainer' || role === 'admin') {
       database.create('trainers', newUser);
     }
 

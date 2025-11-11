@@ -82,19 +82,18 @@ export default function UnifiedLoginPage() {
         return;
       }
       
-      // Rule 4: Validate against existing schema
+      // Rule 4: Validate against existing schema (removed invalid 'type: userType')
       const validatedData = loginSchema.parse({ 
         email, 
-        password, 
-        type: userType 
+        password,
       });
       
-      // Call hook mutation
+      // Call hook mutation (hardcode type to 'email' since this is email login)
       login(
         {
           email: validatedData.email,
           password: validatedData.password,
-          type: validatedData.type || 'email',
+          type: 'email',
         },
         {
           onSuccess: () => {
@@ -124,20 +123,6 @@ export default function UnifiedLoginPage() {
         });
       }
     }
-  };
-
-  // Function to fill admin credentials
-  const fillAdminCredentials = () => {
-    setEmail('admin1@example.com');
-    setPassword('password123');
-    setUserType('team_member');
-  };
-
-  // Function to fill client credentials
-  const fillClientCredentials = () => {
-    setEmail('client1@example.com');
-    setPassword('password123');
-    setUserType('customer');
   };
 
   return (
@@ -201,27 +186,6 @@ export default function UnifiedLoginPage() {
               />
             </div>
             
-            <div className="flex items-center space-x-2 mt-3">
-              <input
-                type="checkbox"
-                id="bypass-validation"
-                checked={bypassValidation}
-                onChange={(e) => setBypassValidation(e.target.checked)}
-                className="rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <Label htmlFor="bypass-validation" className="text-sm">
-                Bypass validation (dev only)
-              </Label>
-            </div>
-            
-            <div className="flex gap-2 mt-3">
-              <Button type="button" variant="outline" size="sm" onClick={fillAdminCredentials}>
-                Fill Admin
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={fillClientCredentials}>
-                Fill Client
-              </Button>
-            </div>
             
             <Button type="submit" className="w-full mt-4" size="lg" disabled={isPending}>
               {isPending ? 'Signing In...' : 'Sign In'}

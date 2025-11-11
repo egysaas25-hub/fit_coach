@@ -12,6 +12,7 @@ import { registerSchema } from "@/lib/schemas/auth/auth.schema";
 import { useRegister } from "@/lib/hooks/api/useAuth";
 import { z } from 'zod';
 import { RegisterDto } from '@/types/api/request/auth.dto';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 /**
  * RegisterPage Component
@@ -26,7 +27,7 @@ export default function RegisterPage() {
     phone: '',
     password: '',
     confirmPassword: '',
-    role: 'team_member',
+    role: 'admin',
   });
   
   // Rule 1: Component calls hook
@@ -44,11 +45,12 @@ export default function RegisterPage() {
     try {
       // Rule 4: Validate against existing schema
       const validatedData = registerSchema.parse(formData);
+      const { confirmPassword, ...registerData } = validatedData;
       
       register(
         {
-          ...validatedData,
-          role: 'team_member',
+          ...registerData,
+          role: formData.role,
         } as RegisterDto,
         {
           onSuccess: () => {
@@ -88,24 +90,38 @@ export default function RegisterPage() {
             </div>
             <span className="text-xl font-bold">FitCoach Pro</span>
           </div>
-          <CardTitle className="text-2xl font-bold">Create Your Trainer Account</CardTitle>
-          <CardDescription>Join FitCoach Pro and start coaching today</CardDescription>
+          <CardTitle className="text-2xl font-bold">Create Your Account</CardTitle>
+          <CardDescription>Join FitCoach Pro and start today</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input 
-                  id="name" 
-                  name="name"
-                  placeholder="John Doe" 
-                  className="bg-background"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select 
+                value={formData.role} 
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}
+              >
+                <SelectTrigger id="role" className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="trainer">Trainer</SelectItem>
+                  <SelectItem value="client">Client</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input 
+                id="name" 
+                name="name"
+                placeholder="John Doe" 
+                className="bg-background"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
