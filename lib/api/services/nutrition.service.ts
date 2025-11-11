@@ -1,21 +1,5 @@
 // lib/api/services/nutrition.service.ts
-import { Meal, Food } from '@/types/domain/nutrition';
-
-export interface Meal {
-  id: string;
-  name: string;
-  foods: Food[];
-}
-
-export interface Food {
-  id: string;
-  name: string;
-  quantity: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-}
+import { Meal, Food } from '@/types/lib/api/services/nutrition.types';
 
 export class NutritionService {
   async getMeals(): Promise<Meal[]> {

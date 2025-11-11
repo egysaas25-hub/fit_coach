@@ -22,8 +22,13 @@ export default function SupportPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 overflow-auto p-4">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <main className="flex-1 p-6 lg:p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Support Center</h1>
+          <p className="text-muted-foreground">Get help and submit support tickets</p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
           <Card>
             <CardHeader>
               <CardTitle>Ticket Stats</CardTitle>
@@ -49,7 +54,6 @@ export default function SupportPage() {
                 <Label htmlFor="message">Message</Label>
                 <Input id="message" value={message} onChange={(e) => setMessage(e.target.value)} />
                 <Button
-                  className="bg-[#00C26A] hover:bg-[#00C26A]/90"
                   disabled={isPending || !subject || !message}
                   onClick={() => createTicket({ subject, category: TicketCategory.General, priority: TicketPriority.Medium })}
                 >

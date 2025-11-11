@@ -2,41 +2,13 @@
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { ApiResponse } from '@/types/shared/response';
+import { AppSettings } from '@/types/lib/api/services/settings.types';
 
 /**
  * Settings Service (Admin)
  * Rule 5: Service calls apiClient
  * Rule 6: Uses endpoints
  */
-
-export interface AppSettings {
-  general: {
-    appName: string;
-    maintenanceMode: boolean;
-    signupEnabled: boolean;
-    maxClientsPerTrainer: number;
-  };
-  email: {
-    enabled: boolean;
-    provider: string;
-    fromEmail: string;
-  };
-  features: {
-    appointments: boolean;
-    messaging: boolean;
-    progressTracking: boolean;
-    nutritionPlans: boolean;
-  };
-  limits: {
-    maxWorkoutsPerClient: number;
-    maxNutritionPlansPerClient: number;
-    maxFileSize: number;
-  };
-  branding?: {
-    logoUrl?: string;
-    title?: string;
-  };
-}
 
 export class SettingsService {
   /**

@@ -52,7 +52,7 @@ export default function AccountSettingsPage() {
         {/* Profile Section */}
         <div className="lg:col-span-2 space-y-6">
           {/* Profile Info */}
-          <div className="bg-[#1a1d1b] border border-[#2a2d2b] rounded-lg p-6">
+          <div className="bg-card border border-border rounded-lg p-6">
             <h3 className="text-lg font-poppins font-bold text-foreground mb-6">Profile Information</h3>
 
             <div className="flex items-center gap-6 mb-6">
@@ -85,7 +85,7 @@ export default function AccountSettingsPage() {
                     type="email"
                     value={settings.email}
                     readOnly
-                    className="w-full bg-[#0B0E0C] border border-[#2a2d2b] rounded-lg px-4 py-2 text-secondary opacity-60"
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 text-secondary opacity-60"
                   />
                 </div>
                 <div>
@@ -102,13 +102,13 @@ export default function AccountSettingsPage() {
           </div>
 
           {/* Security Section */}
-          <div className="bg-[#1a1d1b] border border-[#2a2d2b] rounded-lg p-6">
+          <div className="bg-card border border-border rounded-lg p-6">
             <h3 className="text-lg font-poppins font-bold text-foreground mb-6">Security</h3>
 
             <div className="space-y-4">
               <button
                 onClick={() => setShowPasswordForm(!showPasswordForm)}
-                className="w-full text-left px-4 py-3 bg-[#0B0E0C] border border-[#2a2d2b] rounded-lg hover:border-primary transition-colors"
+                className="w-full text-left px-4 py-3 bg-background border border-border rounded-lg hover:border-primary transition-colors"
               >
                 <span className="font-medium text-foreground">Change Password</span>
                 <span className="float-right text-secondary">{showPasswordForm ? "▼" : "▶"}</span>
@@ -143,7 +143,7 @@ export default function AccountSettingsPage() {
                     </button>
                     <button
                       onClick={() => setShowPasswordForm(false)}
-                      className="flex-1 bg-[#2a2d2b] text-foreground px-4 py-2 rounded-lg font-semibold hover:bg-[#3a3d3b] transition-colors"
+                      className="flex-1 bg-muted text-foreground px-4 py-2 rounded-lg font-semibold hover:bg-accent transition-colors"
                     >
                       Cancel
                     </button>
@@ -151,7 +151,7 @@ export default function AccountSettingsPage() {
                 </div>
               )}
 
-              <div className="mt-4 flex items-center justify-between p-4 bg-[#0B0E0C] border border-[#2a2d2b] rounded-lg">
+              <div className="mt-4 flex items-center justify-between p-4 bg-background border border-border rounded-lg">
                 <span className="text-foreground font-medium">Two-Factor Authentication</span>
                 <button className="bg-primary text-black px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
                   Enable
@@ -168,7 +168,7 @@ export default function AccountSettingsPage() {
 
         {/* Preferences Sidebar */}
         <div className="lg:col-span-1">
-          <div className="bg-[#1a1d1b] border border-[#2a2d2b] rounded-lg p-6 sticky top-6">
+          <div className="bg-card border border-border rounded-lg p-6 sticky top-6">
             <h3 className="text-lg font-poppins font-bold text-foreground mb-6">Preferences</h3>
 
             <div className="space-y-4">
@@ -177,7 +177,7 @@ export default function AccountSettingsPage() {
                 <select
                   value={settings.timezone}
                   onChange={(e) => handleChange("timezone", e.target.value)}
-                  className="w-full bg-[#0B0E0C] border border-[#2a2d2b] rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary"
                 >
                   <option value="America/New_York">Eastern Time</option>
                   <option value="America/Chicago">Central Time</option>
@@ -228,7 +228,7 @@ export default function AccountSettingsPage() {
                 <select
                   value={settings.alertFrequency}
                   onChange={(e) => handleChange("alertFrequency", e.target.value as any)}
-                  className="w-full bg-[#0B0E0C] border border-[#2a2d2b] rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary text-sm"
+                  className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary text-sm"
                 >
                   <option value="immediate">Immediate</option>
                   <option value="daily">Daily Digest</option>

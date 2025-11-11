@@ -166,7 +166,7 @@ export default function ClientDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{client.stats.currentWeight} lbs</div>
-              <p className="text-sm text-[#00C26A]">
+              <p className="text-sm text-primary">
                 -{client.stats.startWeight - client.stats.currentWeight} lbs from start
               </p>
               <div className="mt-2 text-xs text-muted-foreground">
@@ -183,7 +183,7 @@ export default function ClientDetailPage() {
               <div className="text-2xl font-bold">{client.adherence.workout}%</div>
               <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-[#00C26A]" 
+                  className="h-full bg-primary" 
                   style={{ width: `${client.adherence.workout}%` }}
                 />
               </div>
@@ -201,7 +201,7 @@ export default function ClientDetailPage() {
               <div className="text-2xl font-bold">{client.adherence.nutrition}%</div>
               <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-[#00C26A]" 
+                  className="h-full bg-primary" 
                   style={{ width: `${client.adherence.nutrition}%` }}
                 />
               </div>
@@ -320,7 +320,7 @@ export default function ClientDetailPage() {
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-[#00C26A]" 
+                            className="h-full bg-primary" 
                             style={{ width: `${program.completion}%` }}
                           />
                         </div>
@@ -347,7 +347,7 @@ export default function ClientDetailPage() {
                       <div key={i} className="flex-1 flex flex-col items-center gap-2">
                         <div className="text-xs font-medium">{data.weight}</div>
                         <div 
-                          className="w-full bg-[#00C26A] rounded-t hover:bg-[#00C26A]/80 cursor-pointer transition-colors" 
+                          className="w-full bg-primary rounded-t hover:bg-primary/80 cursor-pointer transition-colors" 
                           style={{ height: `${height}%` }}
                         />
                         <div className="text-xs text-muted-foreground">{data.date}</div>

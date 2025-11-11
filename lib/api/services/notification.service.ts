@@ -2,22 +2,7 @@
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { ApiResponse } from '@/types/shared/response';
-
-export interface NotificationItem {
-  id: string;
-  userId: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  read: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface NotificationsResponse {
-  notifications: NotificationItem[];
-  unreadCount: number;
-  total: number;
-}
+import { NotificationItem, NotificationsResponse } from '@/types/lib/api/services/notification.types';
 
 export const notificationService = {
   async getNotifications(params?: { unreadOnly?: boolean; limit?: number }): Promise<NotificationsResponse> {

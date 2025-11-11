@@ -87,14 +87,14 @@ export default function ExercisesPage() {
   })
 
   return (
-    <div className="min-h-screen bg-[#1e1e1e] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <AdminSidebar />
       {/* Header */}
-      <header className="border-b border-[#2a2a2a] bg-[#1e1e1e] sticky top-0 z-50">
+      <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold">Exercises</h1>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-[#2a2a2a]">
+            <Button variant="ghost" size="icon" className="hover:bg-accent">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
@@ -126,7 +126,7 @@ export default function ExercisesPage() {
               placeholder="Search exercises..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-[#2a2a2a] border-[#3a3a3a] text-white placeholder:text-gray-400"
+              className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground"
             />
           </div>
         </div>
@@ -143,8 +143,8 @@ export default function ExercisesPage() {
               onClick={() => setSelectedCategory(category)}
               className={
                 selectedCategory === category
-                  ? "bg-[#21ee43] text-black hover:bg-[#21ee43]/90 whitespace-nowrap"
-                  : "bg-[#2a2a2a] border-[#3a3a3a] text-white hover:bg-[#3a3a3a] whitespace-nowrap"
+                  ? "whitespace-nowrap"
+                  : "bg-muted border-border text-foreground hover:bg-accent whitespace-nowrap"
               }
             >
               {category}
@@ -170,7 +170,7 @@ export default function ExercisesPage() {
 
         {filteredExercises.length === 0 && (
           <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-[#2a2a2a] flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"

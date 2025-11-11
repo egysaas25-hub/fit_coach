@@ -2,12 +2,7 @@
 // For this mock backend, we'll use simple base64 encoding to simulate tokens.
 
 import { isBlacklisted } from '@/app/api/auth/logout/route';
-
-export interface TokenPayload {
-  userId: string;
-  role: string;
-  exp: number; // Expiration timestamp
-}
+import { TokenPayload } from '@/types/lib/auth/types';
 
 // Mock secret key
 const MOCK_SECRET = 'your-super-secret-key-that-is-not-secret';

@@ -10,7 +10,7 @@ export default function TeamMembersPage() {
         <CardHeader><CardTitle>Team Members</CardTitle></CardHeader>
         <CardContent className="space-y-2">
           {loading && <div>Loading...</div>}
-          {error && <div className="text-[#F14A4A]">{error}</div>}
+          {error && <div className="text-destructive">{error}</div>}
           {members.map((m) => (
             <div key={m.id} className="border border-border rounded-md p-3">
               <div className="font-medium">{m.name}</div>

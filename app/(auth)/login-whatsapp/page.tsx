@@ -191,7 +191,7 @@ export default function WhatsAppLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0B0E0C] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md border-border/50 bg-card">
         <CardHeader className="space-y-1">
       <div className="flex items-center gap-2 mb-4 justify-between">
@@ -199,7 +199,7 @@ export default function WhatsAppLogin() {
               {settings?.branding?.logoUrl ? (
                 <img src={settings.branding.logoUrl} alt="Brand Logo" className="h-6 w-auto rounded-sm" />
               ) : (
-                <div className="w-3 h-3 rounded-full bg-[#00C26A]" />
+                <div className="w-3 h-3 rounded-full bg-primary" />
               )}
               <span className="text-2xl font-bold">{settings?.branding?.title || settings?.general?.appName || 'VTrack'}</span>
             </div>
@@ -271,7 +271,7 @@ export default function WhatsAppLogin() {
                   />
                 </div>
                 {error && (
-                  <div className="flex items-center gap-2 text-sm text-[#F14A4A]">
+                  <div className="flex items-center gap-2 text-sm text-destructive">
                     <AlertCircle className="w-4 h-4" />
                     <span>{error}</span>
                   </div>
@@ -280,7 +280,7 @@ export default function WhatsAppLogin() {
 
               <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <MessageSquare className="w-4 h-4 text-[#00C26A]" />
+                  <MessageSquare className="w-4 h-4 text-primary" />
                   <span>WhatsApp Verification</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -289,7 +289,7 @@ export default function WhatsAppLogin() {
               </div>
 
               <Button 
-                className="w-full bg-[#00C26A] hover:bg-[#00C26A]/90" 
+                className="w-full" 
                 size="lg"
                 disabled={!isValidPhone || isLoading}
                 onClick={handleSendOTP}
@@ -309,7 +309,7 @@ export default function WhatsAppLogin() {
 
               <div className="text-center text-sm text-muted-foreground">
                 Don't have an account?{' '}
-                <a href="/register" className="text-[#00C26A] hover:underline font-medium">
+                <a href="/register" className="text-primary hover:underline font-medium">
                   Create Account
                 </a>
               </div>
@@ -344,7 +344,7 @@ export default function WhatsAppLogin() {
                   </div>
 
                   {error && (
-                    <div className="flex items-center gap-2 text-sm text-[#F14A4A]">
+                    <div className="flex items-center gap-2 text-sm text-destructive">
                       <AlertCircle className="w-4 h-4" />
                       <span>{error}</span>
                     </div>
@@ -361,11 +361,11 @@ export default function WhatsAppLogin() {
                     {resendTimer > 0 ? (
                       <span className="text-muted-foreground">Resend code in {resendTimer}s</span>
                     ) : (
-                      <button onClick={() => { (window as any).dataLayer = (window as any).dataLayer || []; (window as any).dataLayer.push({ event: 'EVT-AUTH-RESEND', phone: fullPhone }); handleSendOTP(); }} className="text-[#00C26A] hover:underline font-medium">Resend via WhatsApp</button>
+                      <button onClick={() => { (window as any).dataLayer = (window as any).dataLayer || []; (window as any).dataLayer.push({ event: 'EVT-AUTH-RESEND', phone: fullPhone }); handleSendOTP(); }} className="text-primary hover:underline font-medium">Resend via WhatsApp</button>
                     )}
                   </div>
 
-                  <Button className="w-full bg-[#00C26A] hover:bg-[#00C26A]/90" size="lg" onClick={() => handleVerifyOTP(otp.join(''))} disabled={isLoading || !otp.every(d => d)}>
+                  <Button className="w-full" size="lg" onClick={() => handleVerifyOTP(otp.join(''))} disabled={isLoading || !otp.every(d => d)}>
                     Verify
                   </Button>
 
@@ -383,7 +383,7 @@ export default function WhatsAppLogin() {
                   </Button>
 
                   <div className="text-center pt-2 border-t border-border">
-                    <button className="text-sm text-muted-foreground hover:text-[#00C26A]" onClick={() => setIsHelpOpen(true)}>
+                    <button className="text-sm text-muted-foreground hover:text-primary" onClick={() => setIsHelpOpen(true)}>
                       Lost access to WhatsApp?
                     </button>
                   </div>
@@ -408,7 +408,7 @@ export default function WhatsAppLogin() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="w-full bg-[#00C26A] hover:bg-[#00C26A]/90" size="lg" onClick={() => { if (selectedTenantId) { setTenantId(selectedTenantId); refetchSettings(); } setStep('role'); }} disabled={!selectedTenantId}>
+              <Button className="w-full" size="lg" onClick={() => { if (selectedTenantId) { setTenantId(selectedTenantId); refetchSettings(); } setStep('role'); }} disabled={!selectedTenantId}>
                 Continue
               </Button>
             </>
@@ -416,8 +416,8 @@ export default function WhatsAppLogin() {
           {/* Step 4: Role Selection */}
           {step === 'role' && (
             <>
-              <div className="flex items-center justify-center p-4 bg-[#00C26A]/10 border border-[#00C26A]/20 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-[#00C26A] mr-2" />
+              <div className="flex items-center justify-center p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-primary mr-2" />
                 <span className="text-sm font-medium">Phone verified successfully</span>
               </div>
 
@@ -457,7 +457,7 @@ export default function WhatsAppLogin() {
               </div>
 
               <Button
-                className="w-full bg-[#00C26A] hover:bg-[#00C26A]/90"
+                className="w-full"
                 size="lg"
                 onClick={handleLogin}
                 disabled={isLoading}
@@ -492,8 +492,8 @@ export default function WhatsAppLogin() {
               </DialogHeader>
               <div className="text-sm text-muted-foreground">
                 <ul className="list-disc pl-4">
-                  <li>Email us: <a href="mailto:support@vtrack.example" className="text-[#00C26A]">support@vtrack.example</a></li>
-                  <li>WhatsApp: <a href="https://wa.me/200100000000" target="_blank" rel="noreferrer" className="text-[#00C26A]">Open WhatsApp</a></li>
+                  <li>Email us: <a href="mailto:support@vtrack.example" className="text-primary">support@vtrack.example</a></li>
+                  <li>WhatsApp: <a href="https://wa.me/200100000000" target="_blank" rel="noreferrer" className="text-primary">Open WhatsApp</a></li>
                 </ul>
               </div>
             </DialogContent>

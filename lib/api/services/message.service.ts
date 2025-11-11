@@ -2,39 +2,7 @@
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { ApiResponse } from '@/types/shared/response';
-
-export interface MessageThread {
-  id: string;
-  clientId: string;
-  trainerId: string;
-  createdAt: string;
-  updatedAt: string;
-  lastMessage?: {
-    id: string;
-    content: string;
-    createdAt: string;
-    senderId: string;
-  } | null;
-  messageCount?: number;
-}
-
-export interface MessageItem {
-  id: string;
-  threadId: string;
-  senderId: string;
-  content: string;
-  createdAt: string;
-}
-
-export interface ThreadsResponse {
-  data: MessageThread[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
-}
+import { MessageThread, MessageItem, ThreadsResponse } from '@/types/lib/api/services/message.types';
 
 export const messageService = {
   async getThreads(params?: { page?: number; limit?: number }): Promise<ThreadsResponse> {

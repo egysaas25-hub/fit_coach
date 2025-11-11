@@ -2,23 +2,7 @@
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { ApiResponse } from '@/types/shared/response';
-
-export interface AppointmentItem {
-  id: string;
-  clientId: string;
-  trainerId: string;
-  date: string;
-  status: 'scheduled' | 'cancelled' | 'completed';
-  type: 'consultation' | 'training' | 'check-in' | string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AppointmentListResponse {
-  data: AppointmentItem[];
-  pagination: { page: number; limit: number; total: number; pages: number };
-}
+import { AppointmentItem, AppointmentListResponse } from '@/types/lib/api/services/appointment.types';
 
 export const appointmentService = {
   async getAppointments(params?: { clientId?: string; trainerId?: string; status?: string; from?: string; to?: string; page?: number; limit?: number }): Promise<AppointmentListResponse> {

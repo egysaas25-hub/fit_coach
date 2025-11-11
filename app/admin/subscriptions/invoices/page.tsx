@@ -1,9 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import DataTable from "@/components/workspace/data-table"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { Download, Eye, RotateCcw, Search } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table"
 
 interface Invoice {
   id: string
@@ -78,180 +83,169 @@ export default function InvoicesPage() {
   )
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold font-poppins text-foreground mb-2">Invoices & Payments</h1>
-        <p className="text-muted-foreground">Manage transactions and payment status</p>
-      </div>
-
-      {/* Filters */}
-      <div className="card">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="relative md:col-span-2">
-            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search by invoice ID or client..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-            />
+    <div className="flex min-h-screen bg-background">
+      <main className="flex-1 p-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-balance mb-2">Invoices & Payments</h1>
+            <p className="text-muted-foreground">Manage transactions and payment status</p>
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary"
-          >
-            <option>All</option>
-            <option>Paid</option>
-            <option>Pending</option>
-            <option>Overdue</option>
-          </select>
         </div>
 
-        <button className="btn-primary flex items-center gap-2">
-          <Download size={16} />
-          Export CSV
-        </button>
-      </div>
-
-      {/* Invoices Table */}
-      <div className="card">
-        <DataTable<Invoice>
-          columns={[
-            {
-              key: "invoiceId",
-              label: "Invoice ID",
-              sortable: true,
-            },
-            {
-              key: "client",
-              label: "Client",
-              sortable: true,
-            },
-            {
-              key: "amount",
-              label: "Amount",
-              sortable: true,
-              render: (amount) => `$${amount.toLocaleString()}`,
-            },
-            {
-              key: "date",
-              label: "Date",
-              sortable: true,
-            },
-            {
-              key: "dueDate",
-              label: "Due Date",
-              sortable: true,
-            },
-            {
-              key: "status",
-              label: "Status",
-              render: (status) => (
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    status === "Paid"
-                      ? "bg-primary/20 text-primary"
-                      : status === "Pending"
-                        ? "bg-warning/20 text-warning"
-                        : "bg-destructive/20 text-destructive"
-                  }`}
-                >
-                  {status}
-                </span>
-              ),
-            },
-            {
-              key: "id",
-              label: "Actions",
-              render: (id) => {
-                const invoice = invoices.find((i) => i.id === id)
-                return (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedInvoice(invoice || null)
-                        setShowPreview(true)
-                      }}
-                      className="p-1 hover:bg-border rounded transition-colors"
-                      title="View PDF"
-                    >
-                      <Eye size={16} className="text-primary" />
-                    </button>
-                    {invoice?.status === "Overdue" && (
-                      <button className="p-1 hover:bg-border rounded transition-colors" title="Retry Payment">
-                        <RotateCcw size={16} className="text-yellow-500" />
-                      </button>
-                    )}
-                    <button className="p-1 hover:bg-border rounded transition-colors" title="Resend">
-                      <Download size={16} className="text-muted-foreground hover:text-foreground" />
-                    </button>
-                  </div>
-                )
-              },
-            },
-          ]}
-          data={filteredInvoices}
-        />
-      </div>
-
-      {/* Invoice Preview Dialog */}
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Invoice Preview</DialogTitle>
-          </DialogHeader>
-          {selectedInvoice && (
-            <div className="space-y-4">
-            <div className="bg-background p-8 rounded-lg border border-border">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold font-poppins text-foreground">INVOICE</h2>
-                <p className="text-secondary text-sm">{selectedInvoice.invoiceId}</p>
+        {/* Filters */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="relative md:col-span-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search by invoice ID or client..." 
+                  className="pl-9" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-
-              <div className="grid grid-cols-2 gap-8 mb-8">
-                <div>
-                  <p className="text-secondary text-sm mb-2">Bill To:</p>
-                  <p className="font-semibold text-foreground">{selectedInvoice.client}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-secondary text-sm mb-2">Invoice Details:</p>
-                  <p className="text-foreground">Date: {selectedInvoice.date}</p>
-                  <p className="text-foreground">Due: {selectedInvoice.dueDate}</p>
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-8">
-                <p className="text-2xl font-bold text-primary">Amount: ${selectedInvoice.amount.toLocaleString()}</p>
-                <p
-                  className={`text-sm font-semibold mt-2 ${
-                    selectedInvoice.status === "Paid"
-                      ? "text-primary"
-                      : selectedInvoice.status === "Pending"
-                        ? "text-warning"
-                        : "text-destructive"
-                  }`}
-                >
-                  Status: {selectedInvoice.status}
-                </p>
-              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="Paid">Paid</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
+            <Button>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Invoices Table */}
+        <Card>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice ID</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInvoices.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell>{invoice.invoiceId}</TableCell>
+                    <TableCell>{invoice.client}</TableCell>
+                    <TableCell>${invoice.amount.toLocaleString()}</TableCell>
+                    <TableCell>{invoice.date}</TableCell>
+                    <TableCell>{invoice.dueDate}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          invoice.status === "Paid"
+                            ? "default"
+                            : invoice.status === "Pending"
+                              ? "secondary"
+                              : "destructive"
+                        }
+                      >
+                        {invoice.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          title="View PDF"
+                          onClick={() => {
+                            setSelectedInvoice(invoice)
+                            setShowPreview(true)
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {invoice.status === "Overdue" && (
+                          <Button variant="ghost" size="icon" title="Retry Payment">
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" title="Resend">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Invoice Preview Dialog */}
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Invoice Preview</DialogTitle>
+            </DialogHeader>
+            {selectedInvoice && (
+              <div className="space-y-4">
+                <div className="bg-background p-8 rounded-lg border border-border">
+                  <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold text-foreground">INVOICE</h2>
+                    <p className="text-muted-foreground text-sm">{selectedInvoice.invoiceId}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-8 mb-8">
+                    <div>
+                      <p className="text-muted-foreground text-sm mb-2">Bill To:</p>
+                      <p className="font-semibold text-foreground">{selectedInvoice.client}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-muted-foreground text-sm mb-2">Invoice Details:</p>
+                      <p className="text-foreground">Date: {selectedInvoice.date}</p>
+                      <p className="text-foreground">Due: {selectedInvoice.dueDate}</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border pt-8">
+                    <p className="text-2xl font-bold text-primary">Amount: ${selectedInvoice.amount.toLocaleString()}</p>
+                    <p
+                      className={`text-sm font-semibold mt-2 ${
+                        selectedInvoice.status === "Paid"
+                          ? "text-primary"
+                          : selectedInvoice.status === "Pending"
+                            ? "text-yellow-500"
+                            : "text-destructive"
+                      }`}
+                    >
+                      Status: {selectedInvoice.status}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <DialogFooter className="flex gap-3">
-              <button onClick={() => setShowPreview(false)} className="btn-secondary">
+              <Button variant="secondary" onClick={() => setShowPreview(false)}>
                 Close
-              </button>
-              <button className="btn-primary flex items-center gap-2">
-                <Download size={16} />
+              </Button>
+              <Button>
+                <Download className="mr-2 h-4 w-4" />
                 Download PDF
-              </button>
+              </Button>
             </DialogFooter>
-          </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </main>
     </div>
   )
 }

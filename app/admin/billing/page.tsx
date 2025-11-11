@@ -60,7 +60,7 @@ export default function BillingPage() {
               <div>
                 <h2 className="mb-4 text-xl font-semibold text-foreground">Active Subscriptions</h2>
                 <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-12">
-                  <div className="mb-4 h-32 w-32 overflow-hidden rounded-lg bg-[#f5e6d3]">
+                  <div className="mb-4 h-32 w-32 overflow-hidden rounded-lg bg-muted">
                     <img src="/empty-cardboard-box.jpg" alt="Empty box" className="h-full w-full object-cover" />
                   </div>
                   <h3 className="mb-2 text-lg font-semibold text-foreground">No active subscriptions</h3>
@@ -77,7 +77,7 @@ export default function BillingPage() {
               <div>
                 <h2 className="mb-4 text-xl font-semibold text-foreground">Past Subscriptions</h2>
                 <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-12">
-                  <div className="mb-4 h-32 w-32 overflow-hidden rounded-lg bg-[#f5e6d3]">
+                  <div className="mb-4 h-32 w-32 overflow-hidden rounded-lg bg-muted">
                     <img src="/cardboard-package-with-label.jpg" alt="Package" className="h-full w-full object-cover" />
                   </div>
                   <h3 className="mb-2 text-lg font-semibold text-foreground">No past subscriptions</h3>

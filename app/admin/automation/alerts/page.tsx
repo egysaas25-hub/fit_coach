@@ -1,9 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import DataTable from "@/components/workspace/data-table"
-import { Plus, Play, Edit2, Trash2, AlertCircle } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { AlertCircle, Plus, Play, Edit, Trash2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table"
 
 interface Alert {
   id: string
@@ -65,144 +72,134 @@ export default function AIAlertsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold font-poppins text-foreground mb-2">AI Alerts Configuration</h1>
-        <p className="text-muted-foreground">Setup AI-driven WhatsApp alerts for your clients</p>
-      </div>
-
-      {/* Info Banner */}
-      <div className="flex gap-3 p-4 rounded-lg border border-blue-500/30 bg-blue-500/10">
-        <AlertCircle size={20} className="text-blue-400 flex-shrink-0 mt-0.5" />
-        <p className="text-sm text-blue-300">WhatsApp integration is active. All alerts will be sent via WhatsApp.</p>
-      </div>
-
-      {/* Alerts Table */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold font-poppins text-foreground">Active Alerts</h2>
-          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
-            <Plus size={16} />
+    <div className="flex min-h-screen bg-background">
+      <main className="flex-1 p-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-balance mb-2">AI Alerts Configuration</h1>
+            <p className="text-muted-foreground">Setup AI-driven WhatsApp alerts for your clients</p>
+          </div>
+          <Button onClick={() => setShowModal(true)}>
+            <Plus className="mr-2 h-4 w-4" />
             Create Alert
-          </button>
+          </Button>
         </div>
 
-        <DataTable<Alert>
-          columns={[
-            {
-              key: "type",
-              label: "Alert Type",
-              sortable: true,
-              render: (type) => (
-                <span className="px-2 py-1 bg-primary/20 text-primary rounded text-xs font-semibold">{type}</span>
-              ),
-            },
-            {
-              key: "threshold",
-              label: "Threshold",
-            },
-            {
-              key: "channel",
-              label: "Channel",
-              render: () => "WhatsApp",
-            },
-            {
-              key: "messageTemplate",
-              label: "Message Template",
-              render: (template) => <div className="max-w-xs truncate text-muted-foreground text-sm">{template}</div>,
-            },
-            {
-              key: "status",
-              label: "Status",
-              render: (status) => (
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    status === "Active" ? "bg-primary/20 text-primary" : "bg-muted/50 text-muted-foreground"
-                  }`}
+        {/* Info Banner */}
+        <Card className="mb-8 bg-primary/10 border-primary/30">
+          <CardContent className="flex items-center gap-3 p-4">
+            <AlertCircle size={20} className="text-primary flex-shrink-0" />
+            <p className="text-sm text-primary">WhatsApp integration is active. All alerts will be sent via WhatsApp.</p>
+          </CardContent>
+        </Card>
+
+        {/* Alerts Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Active Alerts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Alert Type</TableHead>
+                  <TableHead>Threshold</TableHead>
+                  <TableHead>Channel</TableHead>
+                  <TableHead>Message Template</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {alerts.map((alert) => (
+                  <TableRow key={alert.id}>
+                    <TableCell>
+                      <Badge variant="secondary">{alert.type}</Badge>
+                    </TableCell>
+                    <TableCell>{alert.threshold}</TableCell>
+                    <TableCell>{alert.channel}</TableCell>
+                    <TableCell className="max-w-xs truncate text-muted-foreground text-sm">{alert.messageTemplate}</TableCell>
+                    <TableCell>
+                      <Badge variant={alert.status === "Active" ? "default" : "secondary"}>
+                        {alert.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon" title="Test">
+                          <Play className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Edit">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Delete">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Create Alert Dialog */}
+        <Dialog open={showModal} onOpenChange={setShowModal}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Create AI Alert</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className="block text-sm font-medium mb-2">Alert Type</Label>
+                <Select
+                  value={newAlert.type}
+                  onValueChange={(value) => setNewAlert({ ...newAlert, type: value as "Inactivity" | "Renewal" | "Anomaly" })}
                 >
-                  {status}
-                </span>
-              ),
-            },
-            {
-              key: "id",
-              label: "Actions",
-              render: (id) => (
-                <div className="flex gap-2">
-                  <button className="p-1 hover:bg-border rounded transition-colors" title="Test">
-                    <Play size={16} className="text-primary" />
-                  </button>
-                  <button className="p-1 hover:bg-border rounded transition-colors" title="Edit">
-                    <Edit2 size={16} className="text-muted-foreground hover:text-foreground" />
-                  </button>
-                  <button className="p-1 hover:bg-border rounded transition-colors" title="Delete">
-                    <Trash2 size={16} className="text-destructive" />
-                  </button>
-                </div>
-              ),
-            },
-          ]}
-          data={alerts}
-        />
-      </div>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Inactivity">Inactivity</SelectItem>
+                    <SelectItem value="Renewal">Renewal</SelectItem>
+                    <SelectItem value="Anomaly">Anomaly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-      {/* Create Alert Dialog */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create AI Alert</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Alert Type</label>
-            <select
-              value={newAlert.type}
-              onChange={(e) => setNewAlert({ ...newAlert, type: e.target.value as any })}
-              className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary"
-            >
-              <option>Inactivity</option>
-              <option>Renewal</option>
-              <option>Anomaly</option>
-            </select>
-          </div>
+              <div>
+                <Label className="block text-sm font-medium mb-2">Threshold</Label>
+                <Input
+                  type="text"
+                  value={newAlert.threshold}
+                  onChange={(e) => setNewAlert({ ...newAlert, threshold: e.target.value })}
+                  placeholder="e.g., No login for 7 days"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Threshold</label>
-            <input
-              type="text"
-              value={newAlert.threshold}
-              onChange={(e) => setNewAlert({ ...newAlert, threshold: e.target.value })}
-              placeholder="e.g., No login for 7 days"
-              className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-            />
-          </div>
+              <div>
+                <Label className="block text-sm font-medium mb-2">Message Template</Label>
+                <Textarea
+                  value={newAlert.messageTemplate}
+                  onChange={(e) => setNewAlert({ ...newAlert, messageTemplate: e.target.value })}
+                  placeholder="e.g., Hi {{name}}, we noticed..."
+                  rows={4}
+                />
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Message Template</label>
-            <p className="text-xs text-muted-foreground mb-2">
-              {/* Use {{ name }} and {{ client_name }} as variables */}
-            </p>
-            <textarea
-              value={newAlert.messageTemplate}
-              onChange={(e) => setNewAlert({ ...newAlert, messageTemplate: e.target.value })}
-              placeholder="e.g., Hi {{name}}, we noticed..."
-              rows={4}
-              className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary resize-none"
-            />
-          </div>
-          </div>
-
-          <DialogFooter className="flex gap-3">
-            <button onClick={() => setShowModal(false)} className="btn-secondary">
-              Cancel
-            </button>
-            <button onClick={handleCreateAlert} className="btn-primary">
-              Create Alert
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter className="flex gap-3">
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateAlert}>
+                Create Alert
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </main>
     </div>
   )
 }

@@ -194,7 +194,7 @@ export default function FileUploadComponent() {
                 <div>
                   <p className="text-lg font-medium">
                     Drop files here or{' '}
-                    <label htmlFor="file-upload" className="text-[#00C26A] hover:underline cursor-pointer">
+                    <label htmlFor="file-upload" className="text-primary hover:underline cursor-pointer">
                       browse
                     </label>
                   </p>
@@ -281,7 +281,7 @@ export default function FileUploadComponent() {
 
                         {/* Success Message */}
                         {file.status === 'success' && (
-                          <div className="flex items-center gap-2 mt-2 text-sm text-[#00C26A]">
+                          <div className="flex items-center gap-2 mt-2 text-sm text-primary">
                             <CheckCircle className="w-4 h-4" />
                             <span>Upload complete</span>
                           </div>
@@ -289,7 +289,7 @@ export default function FileUploadComponent() {
 
                         {/* Error Message */}
                         {file.status === 'error' && (
-                          <div className="flex items-center gap-2 mt-2 text-sm text-[#F14A4A]">
+                          <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
                             <AlertCircle className="w-4 h-4" />
                             <span>{file.error}</span>
                           </div>
@@ -302,10 +302,10 @@ export default function FileUploadComponent() {
                           <Loader2 className="w-5 h-5 animate-spin text-primary" />
                         )}
                         {file.status === 'success' && (
-                          <CheckCircle className="w-5 h-5 text-[#00C26A]" />
+                          <CheckCircle className="w-5 h-5 text-primary" />
                         )}
                         {file.status === 'error' && (
-                          <AlertCircle className="w-5 h-5 text-[#F14A4A]" />
+                          <AlertCircle className="w-5 h-5 text-destructive" />
                         )}
                       </div>
 

@@ -2,43 +2,18 @@
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { ApiResponse } from '@/types/shared/response';
+import {
+  AdminUser,
+  UserListResponse,
+  CreateUserDto,
+  BulkUpdateUsersDto
+} from '@/types/lib/api/services/user.types';
 
 /**
  * User Service (Admin)
  * Rule 5: Service calls apiClient
  * Rule 6: Uses endpoints
  */
-
-export interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface UserListResponse {
-  data: AdminUser[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
-}
-
-export interface CreateUserDto {
-  name: string;
-  email: string;
-  role: string;
-  password?: string;
-}
-
-export interface BulkUpdateUsersDto {
-  userIds: string[];
-  updates: Partial<AdminUser>;
-}
 
 export class UserService {
   /**

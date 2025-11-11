@@ -11,7 +11,7 @@ export default function ProgramsListPage() {
         <CardHeader><CardTitle>Programs</CardTitle></CardHeader>
         <CardContent className="space-y-2">
           {loading && <div>Loading...</div>}
-          {error && <div className="text-[#F14A4A]">{error}</div>}
+          {error && <div className="text-destructive">{error}</div>}
           {programs.map((p) => (
             <div key={p.id} className="flex items-center justify-between border border-border rounded-md p-3">
               <div>

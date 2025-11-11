@@ -32,19 +32,19 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
   const exercise = exerciseDetails[1] // Default to bench press for demo
 
   const difficultyColors = {
-    Beginner: "text-[#21ee43]",
+    Beginner: "text-primary",
     Intermediate: "text-yellow-500",
-    Advanced: "text-red-500",
+    Advanced: "text-destructive",
   }
 
   return (
-    <div className="min-h-screen bg-[#1e1e1e] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="border-b border-[#2a2a2a] bg-[#1e1e1e] sticky top-0 z-50">
+      <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Link href="/exercises">
-              <Button variant="ghost" size="icon" className="text-white hover:bg-[#2a2a2a]">
+              <Button variant="ghost" size="icon" className="hover:bg-accent">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
@@ -57,8 +57,8 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
 
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Exercise Image Placeholder */}
-        <Card className="bg-[#2a2a2a] border-[#3a3a3a] p-0 overflow-hidden">
-          <div className="aspect-video bg-[#1e1e1e] flex items-center justify-center">
+        <Card className="p-0 overflow-hidden">
+          <div className="aspect-video bg-muted flex items-center justify-center">
             <svg className="w-24 h-24 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -75,33 +75,33 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
           <div>
             <h2 className="text-3xl font-bold mb-2">{exercise.name}</h2>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 rounded-full bg-[#2a2a2a] text-sm">{exercise.category}</span>
-              <span className={`px-3 py-1 rounded-full bg-[#2a2a2a] text-sm ${difficultyColors[exercise.difficulty]}`}>
+              <span className="px-3 py-1 rounded-full bg-muted text-sm">{exercise.category}</span>
+              <span className={`px-3 py-1 rounded-full bg-muted text-sm ${difficultyColors[exercise.difficulty]}`}>
                 {exercise.difficulty}
               </span>
-              <span className="px-3 py-1 rounded-full bg-[#2a2a2a] text-sm">{exercise.equipment}</span>
+              <span className="px-3 py-1 rounded-full bg-muted text-sm">{exercise.equipment}</span>
             </div>
           </div>
 
           {/* Description */}
-          <Card className="bg-[#2a2a2a] border-[#3a3a3a] p-4">
+          <Card className="p-4">
             <h3 className="font-semibold mb-2">Description</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">{exercise.description}</p>
+            <p className="text-muted-foreground text-sm leading-relaxed">{exercise.description}</p>
           </Card>
 
           {/* Target Muscles */}
-          <Card className="bg-[#2a2a2a] border-[#3a3a3a] p-4">
+          <Card className="p-4">
             <h3 className="font-semibold mb-2">Target Muscles</h3>
-            <p className="text-gray-400 text-sm">{exercise.muscleGroup}</p>
+            <p className="text-muted-foreground text-sm">{exercise.muscleGroup}</p>
           </Card>
 
           {/* Instructions */}
-          <Card className="bg-[#2a2a2a] border-[#3a3a3a] p-4">
+          <Card className="p-4">
             <h3 className="font-semibold mb-3">How to Perform</h3>
             <ol className="space-y-2">
               {exercise.instructions.map((instruction, index) => (
-                <li key={index} className="flex gap-3 text-sm text-gray-400">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#21ee43]/20 text-[#21ee43] flex items-center justify-center text-xs font-semibold">
+                <li key={index} className="flex gap-3 text-sm text-muted-foreground">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-semibold">
                     {index + 1}
                   </span>
                   <span className="leading-relaxed">{instruction}</span>
@@ -111,19 +111,19 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
           </Card>
 
           {/* Recommended Sets/Reps */}
-          <Card className="bg-[#2a2a2a] border-[#3a3a3a] p-4">
+          <Card className="p-4">
             <h3 className="font-semibold mb-3">Recommended</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <p className="text-gray-400 text-xs mb-1">Sets</p>
+                <p className="text-muted-foreground text-xs mb-1">Sets</p>
                 <p className="text-lg font-semibold">{exercise.sets}</p>
               </div>
               <div>
-                <p className="text-gray-400 text-xs mb-1">Reps</p>
+                <p className="text-muted-foreground text-xs mb-1">Reps</p>
                 <p className="text-lg font-semibold">{exercise.reps}</p>
               </div>
               <div>
-                <p className="text-gray-400 text-xs mb-1">Rest</p>
+                <p className="text-muted-foreground text-xs mb-1">Rest</p>
                 <p className="text-lg font-semibold">{exercise.rest}</p>
               </div>
             </div>
@@ -132,8 +132,8 @@ export default function ExerciseDetailPage({ params }: { params: Promise<{ id: s
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          <Button className="flex-1 bg-[#21ee43] text-black hover:bg-[#21ee43]/90 font-semibold">Add to Workout</Button>
-          <Button variant="outline" className="bg-[#2a2a2a] border-[#3a3a3a] text-white hover:bg-[#3a3a3a]">
+          <Button className="flex-1" variant="default">Add to Workout</Button>
+          <Button variant="outline">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"

@@ -2,53 +2,18 @@
 import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { ApiResponse } from '@/types/shared/response';
+import {
+  ProgressEntry,
+  ProgressData,
+  Activity,
+  ActivityData
+} from '@/types/lib/api/services/progress.types';
 
 /**
  * Progress Service
  * Rule 5: Service calls apiClient
  * Rule 6: Uses endpoints
  */
-
-export interface ProgressEntry {
-  id: string;
-  clientId: string;
-  metric: string;
-  value: number | string;
-  date: string;
-  notes?: string;
-  createdAt: string;
-}
-
-export interface ProgressData {
-  clientId: string;
-  total: number;
-  byMetric: {
-    weight: ProgressEntry[];
-    bodyfat: ProgressEntry[];
-    measurements: ProgressEntry[];
-    photos: ProgressEntry[];
-  };
-  recent: ProgressEntry[];
-}
-
-export interface Activity {
-  id: string;
-  type: 'workout' | 'nutrition' | 'progress';
-  date: string;
-  description: string;
-  data: any;
-}
-
-export interface ActivityData {
-  clientId: string;
-  activities: Activity[];
-  total: number;
-  summary: {
-    workouts: number;
-    nutritionLogs: number;
-    progressEntries: number;
-  };
-}
 
 export class ProgressService {
   /**

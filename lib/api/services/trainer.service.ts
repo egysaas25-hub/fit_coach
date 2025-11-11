@@ -3,32 +3,13 @@ import { apiClient } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { ApiResponse } from '@/types/shared/response';
 import { Client } from '@/types/domain/client.model';
+import { TrainerStats, TrainerDashboardData } from '@/types/lib/api/services/trainer.types';
 
 /**
  * Trainer Service
  * Rule 5: Service calls apiClient
  * Rule 6: Uses endpoints
  */
-
-export interface TrainerStats {
-  totalClients: number;
-  activeSessions: number;
-  clientProgress: number;
-  revenue: number;
-}
-
-export interface TrainerDashboardData {
-  stats: TrainerStats;
-  recentClients: Client[];
-  recentActivity: Array<{
-    id: string;
-    clientId: string;
-    clientName: string;
-    action: string;
-    timestamp: string;
-    type: string;
-  }>;
-}
 
 export class TrainerService {
   /**

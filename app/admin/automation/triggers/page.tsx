@@ -1,9 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import DataTable from "@/components/workspace/data-table"
-import { Plus, Play, Edit2, Trash2 } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Plus, Play, Edit, Trash2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table"
 
 interface Trigger {
   id: string
@@ -73,142 +79,134 @@ export default function TriggersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold font-poppins text-foreground mb-2">Triggers & Events</h1>
-        <p className="text-muted-foreground">Define conditions and actions for automation</p>
-      </div>
-
-      {/* Triggers Table */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold font-poppins text-foreground">Active Triggers</h2>
-          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
-            <Plus size={16} />
+    <div className="flex min-h-screen bg-background">
+      <main className="flex-1 p-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-balance mb-2">Triggers & Events</h1>
+            <p className="text-muted-foreground">Define conditions and actions for automation</p>
+          </div>
+          <Button onClick={() => setShowModal(true)}>
+            <Plus className="mr-2 h-4 w-4" />
             Create Trigger
-          </button>
+          </Button>
         </div>
 
-        <DataTable<Trigger>
-          columns={[
-            {
-              key: "name",
-              label: "Trigger Name",
-              sortable: true,
-            },
-            {
-              key: "eventType",
-              label: "Event Type",
-              sortable: true,
-            },
-            {
-              key: "condition",
-              label: "Condition",
-            },
-            {
-              key: "linkedAction",
-              label: "Linked Action",
-            },
-            {
-              key: "status",
-              label: "Status",
-              render: (status) => (
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    status === "Active" ? "bg-primary/20 text-primary" : "bg-muted/50 text-muted-foreground"
-                  }`}
+        {/* Triggers Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Active Triggers</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Trigger Name</TableHead>
+                  <TableHead>Event Type</TableHead>
+                  <TableHead>Condition</TableHead>
+                  <TableHead>Linked Action</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {triggers.map((trigger) => (
+                  <TableRow key={trigger.id}>
+                    <TableCell>{trigger.name}</TableCell>
+                    <TableCell>{trigger.eventType}</TableCell>
+                    <TableCell>{trigger.condition}</TableCell>
+                    <TableCell>{trigger.linkedAction}</TableCell>
+                    <TableCell>
+                      <Badge variant={trigger.status === "Active" ? "default" : "secondary"}>
+                        {trigger.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon" title="Test">
+                          <Play className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Edit">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Delete">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Create Trigger Dialog */}
+        <Dialog open={showModal} onOpenChange={setShowModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Create Trigger</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className="block text-sm font-medium mb-2">Trigger Name</Label>
+                <Input
+                  type="text"
+                  value={newTrigger.name}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, name: e.target.value })}
+                  placeholder="e.g., Inactivity Alert"
+                />
+              </div>
+
+              <div>
+                <Label className="block text-sm font-medium mb-2">Event Type</Label>
+                <Select
+                  value={newTrigger.eventType}
+                  onValueChange={(value) => setNewTrigger({ ...newTrigger, eventType: value })}
                 >
-                  {status}
-                </span>
-              ),
-            },
-            {
-              key: "id",
-              label: "Actions",
-              render: (id) => (
-                <div className="flex gap-2">
-                  <button className="p-1 hover:bg-border rounded transition-colors" title="Test">
-                    <Play size={16} className="text-primary" />
-                  </button>
-                  <button className="p-1 hover:bg-border rounded transition-colors" title="Edit">
-                    <Edit2 size={16} className="text-muted-foreground hover:text-foreground" />
-                  </button>
-                  <button className="p-1 hover:bg-border rounded transition-colors" title="Delete">
-                    <Trash2 size={16} className="text-destructive" />
-                  </button>
-                </div>
-              ),
-            },
-          ]}
-          data={triggers}
-        />
-      </div>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Client Inactivity">Client Inactivity</SelectItem>
+                    <SelectItem value="Subscription Renewal">Subscription Renewal</SelectItem>
+                    <SelectItem value="Performance Anomaly">Performance Anomaly</SelectItem>
+                    <SelectItem value="Payment Error">Payment Error</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-      {/* Create Trigger Dialog */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create Trigger</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Trigger Name</label>
-            <input
-              type="text"
-              value={newTrigger.name}
-              onChange={(e) => setNewTrigger({ ...newTrigger, name: e.target.value })}
-              placeholder="e.g., Inactivity Alert"
-              className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-            />
-          </div>
+              <div>
+                <Label className="block text-sm font-medium mb-2">Condition</Label>
+                <Input
+                  type="text"
+                  value={newTrigger.condition}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, condition: e.target.value })}
+                  placeholder="e.g., No login for 7 days"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Event Type</label>
-            <select
-              value={newTrigger.eventType}
-              onChange={(e) => setNewTrigger({ ...newTrigger, eventType: e.target.value })}
-              className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary"
-            >
-              <option>Client Inactivity</option>
-              <option>Subscription Renewal</option>
-              <option>Performance Anomaly</option>
-              <option>Payment Error</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Condition</label>
-            <input
-              type="text"
-              value={newTrigger.condition}
-              onChange={(e) => setNewTrigger({ ...newTrigger, condition: e.target.value })}
-              placeholder="e.g., No login for 7 days"
-              className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Linked Action</label>
-            <input
-              type="text"
-              value={newTrigger.linkedAction}
-              onChange={(e) => setNewTrigger({ ...newTrigger, linkedAction: e.target.value })}
-              placeholder="e.g., Send WhatsApp reminder"
-              className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-            />
-          </div>
-          </div>
-          <DialogFooter className="flex gap-3">
-            <button onClick={() => setShowModal(false)} className="btn-secondary">
-              Cancel
-            </button>
-            <button onClick={handleCreateTrigger} className="btn-primary">
-              Create Trigger
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <div>
+                <Label className="block text-sm font-medium mb-2">Linked Action</Label>
+                <Input
+                  type="text"
+                  value={newTrigger.linkedAction}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, linkedAction: e.target.value })}
+                  placeholder="e.g., Send WhatsApp reminder"
+                />
+              </div>
+            </div>
+            <DialogFooter className="flex gap-3">
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateTrigger}>
+                Create Trigger
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </main>
     </div>
   )
 }

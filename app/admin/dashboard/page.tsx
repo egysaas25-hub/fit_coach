@@ -104,7 +104,7 @@ const QuickActions: React.FC = () => {
       <h2 className="text-lg font-semibold mb-2">Quick Actions</h2>
       <p className="text-sm text-muted-foreground mb-4">Common tasks and shortcuts</p>
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        <button className="px-4 py Се3 border border-border rounded-lg hover:bg-accent text-left flex items-center gap-3">
+        <button className="px-4 py-3 border border-border rounded-lg hover:bg-accent text-left flex items-center gap-3">
           <UserPlus className="w-4 h-4" />
           <span className="text-sm font-medium">Add Client</span>
         </button>

@@ -56,7 +56,7 @@ export default function BillingPage() {
 
       {/* Plan Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 bg-[#1a1d1b] border border-[#2a2d2b] rounded-lg p-6">
+        <div className="md:col-span-2 bg-card border border-border rounded-lg p-6">
           <div className="flex items-start justify-between mb-6">
             <div>
               <h3 className="text-lg font-poppins font-bold text-foreground mb-2">Current Plan</h3>
@@ -96,7 +96,7 @@ export default function BillingPage() {
             >
               Upgrade
             </button>
-            <button className="flex-1 bg-[#2a2d2b] text-foreground px-4 py-2 rounded-lg font-semibold hover:bg-[#3a3d3b] transition-colors">
+            <button className="flex-1 bg-muted text-foreground px-4 py-2 rounded-lg font-semibold hover:bg-accent transition-colors">
               Downgrade
             </button>
           </div>

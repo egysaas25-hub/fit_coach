@@ -10,7 +10,7 @@ interface ExerciseCardProps {
 
 export function ExerciseCard({ name, category, difficulty, equipment, muscleGroup }: ExerciseCardProps) {
   const difficultyColors = {
-    Beginner: "text-[#21ee43] bg-[#21ee43]/20",
+    Beginner: "text-primary bg-primary/20",
     Intermediate: "text-yellow-500 bg-yellow-500/20",
     Advanced: "text-red-500 bg-red-500/20",
   }
@@ -20,7 +20,7 @@ export function ExerciseCard({ name, category, difficulty, equipment, muscleGrou
       <div className="flex items-start gap-4">
         {/* Icon */}
         <div className="w-12 h-12 rounded-lg bg-[#21ee43]/20 flex items-center justify-center flex-shrink-0">
-          <svg className="w-6 h-6 text-[#21ee43]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

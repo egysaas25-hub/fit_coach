@@ -20,8 +20,15 @@ export default function ClientReportsPage() {
   const filteredReports = reports.filter(r => !selectedClientId || r.title.toLowerCase().includes(selectedClientId.toLowerCase()));
 
   return (
-    <div className="p-6 space-y-6">
-      <Card>
+    <div className="min-h-screen bg-background">
+      <main className="flex-1 p-6 lg:p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Client Reports</h1>
+          <p className="text-muted-foreground">Generate and export client performance reports</p>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
         <CardHeader>
           <CardTitle>Client Reports</CardTitle>
         </CardHeader>
@@ -74,6 +81,8 @@ export default function ClientReportsPage() {
           </div>
         </CardContent>
       </Card>
+        </div>
+      </main>
     </div>
   );
 }

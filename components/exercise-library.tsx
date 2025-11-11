@@ -239,7 +239,7 @@ export default function ExerciseLibrary() {
                     {Math.max(...exercises.map(e => e.usageCount))}
                   </p>
                 </div>
-                <TrendingUp className="w-8 h-8 text-[#00C26A]" />
+                <TrendingUp className="w-8 h-8 text-primary" />
               </div>
             </CardContent>
           </Card>
