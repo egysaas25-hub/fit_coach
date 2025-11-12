@@ -19,6 +19,7 @@ export const apiClient = axios.create({
 
 // Request interceptor: Inject auth token
 apiClient.interceptors.request.use(config => {
+  console.log('API Client: Sending request', config);
   const { token, tenantId } = useAuthStore.getState();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -31,8 +32,12 @@ apiClient.interceptors.request.use(config => {
 
 // Response interceptor: Handle errors globally
 apiClient.interceptors.response.use(
-  response => response,
+  response => {
+    console.log('API Client: Received response', response);
+    return response;
+  },
   error => {
+    console.error('API Client: Request error', error);
     if (error.response?.status === 401) {
       // Clear auth on 401 Unauthorized
       useAuthStore.getState().clearAuth();

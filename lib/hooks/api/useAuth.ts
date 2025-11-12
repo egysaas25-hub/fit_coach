@@ -41,12 +41,25 @@ export const useRegister = () => {
   const { setToken } = useAuthStore();
   
   return useMutation({
-    mutationFn: (data: RegisterDto) => authService.register(data),
+    mutationFn: async (data: RegisterDto) => {
+      try {
+        console.log('Attempting to register with data:', data);
+        const result = await authService.register(data);
+        console.log('Registration successful:', result);
+        return result;
+      } catch (error) {
+        console.error('Registration service error:', error);
+        throw error;
+      }
+    },
     onSuccess: ({ user, token }) => {
       setUser(user);
       setToken(token);
       queryClient.setQueryData(['user'], user);
     },
+    onError: (error) => {
+      console.error('Registration hook error:', error);
+    }
   });
 };
 

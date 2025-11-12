@@ -30,13 +30,25 @@ export class AuthService {
    * Rule 3: Uses mapper
    */
   async register(data: RegisterDto): Promise<{ user: User; token: string }> {
-    const response = await apiClient.post<ApiResponse<AuthResponseDto>>(
-      endpoints.auth.register,
-      data
-    );
-    const { token, user: userDto } = response.data.data;
-    const user = authMapper.toModel(userDto);
-    return { user, token };
+    console.log('AuthService: Attempting to register with data:', data);
+    try {
+      const response = await apiClient.post<ApiResponse<AuthResponseDto>>(
+        endpoints.auth.register,
+        data
+      );
+      console.log('AuthService: Registration API response:', response);
+      const { token, user: userDto } = response.data.data;
+      const user = authMapper.toModel(userDto);
+      console.log('AuthService: Registration successful, returning user and token');
+      return { user, token };
+    } catch (error: any) {
+      console.error('AuthService: Registration API error:', error);
+      // If it's a validation error, rethrow it with more details
+      if (error.error?.details) {
+        throw new Error(JSON.stringify(error.error.details));
+      }
+      throw error;
+    }
   }
 
   /**

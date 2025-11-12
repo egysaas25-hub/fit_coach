@@ -1,7 +1,7 @@
 // In a real application, you would use a library like 'jsonwebtoken' or 'jose'.
 // For this mock backend, we'll use simple base64 encoding to simulate tokens.
 
-import { isBlacklisted } from '@/app/api/auth/logout/route';
+import { isBlacklisted } from '@/lib/auth/token-blacklist';
 import { TokenPayload } from '@/types/lib/auth/types';
 
 // Mock secret key

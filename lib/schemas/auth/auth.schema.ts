@@ -13,9 +13,18 @@ export const registerSchema = z.object({
   confirmPassword: z.string().min(1, 'Confirm password is required'),
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
   phone: phoneValidation.optional(),
+  role: z.enum(['admin', 'trainer', 'client']).optional(), // Add role to schema
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Passwords must match',
   path: ['confirmPassword'],
+});
+
+export const apiRegisterSchema = z.object({
+  email: emailValidation,
+  password: passwordStrength,
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  phone: phoneValidation.optional(),
+  role: z.enum(['admin', 'trainer', 'client']).optional(),
 });
 
 export const forgotPasswordSchema = z.object({

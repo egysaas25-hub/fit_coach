@@ -3,13 +3,10 @@ import { requireAuth } from '@/lib/middleware/auth.middleware';
 import { success } from '@/lib/utils/response';
 import { ensureDbInitialized } from '@/lib/db/init';
 import { database } from '@/lib/mock-db/database';
+import { addToBlacklist } from '@/lib/auth/token-blacklist';
 
 // In-memory blacklist for logged out tokens (in production, use Redis)
 const tokenBlacklist = new Set<string>();
-
-export function addToBlacklist(token: string) {
-  tokenBlacklist.add(token);
-}
 
 export function isBlacklisted(token: string): boolean {
   return tokenBlacklist.has(token);

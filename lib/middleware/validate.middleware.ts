@@ -16,10 +16,27 @@ export function withValidation<T>(
 ): RequestHandler {
   return async (req: NextRequest, ...args: any[]) => {
     try {
+      console.log('Validation middleware: Parsing request body');
       const body = await req.json();
+      console.log('Validation middleware: Request body:', body);
       const validatedBody = schema.parse(body);
+      console.log('Validation middleware: Validated body:', validatedBody);
       return handler(req, validatedBody, ...args);
     } catch (error: any) {
+      console.error('Validation middleware: Validation error:', error);
+      // Log specific validation issues
+      if (error.errors) {
+        console.error('Validation middleware: Detailed validation errors:', error.errors);
+        error.errors.forEach((err: any, index: number) => {
+          console.error(`Validation middleware: Error ${index + 1}:`, {
+            path: err.path,
+            message: err.message,
+            code: err.code,
+            expected: err.expected,
+            received: err.received
+          });
+        });
+      }
       if (error.errors) {
         return validationError(error.errors);
       }
