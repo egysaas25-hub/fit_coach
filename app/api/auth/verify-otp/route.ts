@@ -4,18 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { generateToken } from '@/lib/auth/jwt';
 import { withLogging, logAuthAttempt } from '@/lib/middleware/logging.middleware';
 import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
-
-// Use same store as request-otp (module-level for simplicity)
-const otpStore = new Map<string, { hash: string; expiresAt: number; attempts: number; lockedUntil?: number }>();
-
-function hashOtp(code: string): string {
-  let hash = 0;
-  for (let i = 0; i < code.length; i++) {
-    hash = (hash << 5) - hash + code.charCodeAt(i);
-    hash |= 0;
-  }
-  return String(hash);
-}
+import { otpStore, hashOtp } from '@/lib/auth/otp';
 
 export const POST = withRateLimit(withLogging(async (req: NextRequest) => {
   try {
@@ -65,15 +54,14 @@ export const POST = withRateLimit(withLogging(async (req: NextRequest) => {
     let userName;
     
     if (name && workspaceName) {
-      // Registration flow
+      // REGISTRATION - create new user
       if (role === 'admin' || role === 'team_member') {
-        // Create team member
         user = await prisma.team_members.create({
           data: {
-            tenant_id: BigInt(1), // Default tenant
+            tenant_id: BigInt(1),
             full_name: name,
-            email: email || `${phone.replace(/\D/g, '')}@example.com`,
-            role: 'admin', // Default to admin for team members
+            email: email || `${phone.replace(/\D/g, '')}@temp.example.com`,
+            role: 'admin',
             wa_user_id: fullPhone,
           },
         });
@@ -81,7 +69,7 @@ export const POST = withRateLimit(withLogging(async (req: NextRequest) => {
         userEmail = user.email;
         userName = user.full_name;
       } else {
-        // Create customer
+        // Create customer...
         user = await prisma.customers.create({
           data: {
             tenant_id: BigInt(1), // Default tenant
@@ -97,22 +85,18 @@ export const POST = withRateLimit(withLogging(async (req: NextRequest) => {
         userName = `${user.first_name} ${user.last_name}`;
       }
     } else {
-      // Login flow - find existing user
-      const customer = await prisma.customers.findUnique({
+      // LOGIN - find existing user by phone
+      const customer = await prisma.customers.findFirst({
         where: {
-          uq_customer_phone: {
-            tenant_id: BigInt(1),
-            phone_e164: fullPhone,
-          },
+          tenant_id: BigInt(1),
+          phone_e164: fullPhone,
         },
       });
 
-      const teamMember = await prisma.team_members.findUnique({
+      const teamMember = await prisma.team_members.findFirst({
         where: {
-          uq_team_email: {
-            tenant_id: BigInt(1),
-            email: `${phone.replace(/\D/g, '')}@example.com`,
-          },
+          tenant_id: BigInt(1),
+          wa_user_id: fullPhone, // Use wa_user_id, not fake email
         },
       });
 
@@ -144,7 +128,23 @@ export const POST = withRateLimit(withLogging(async (req: NextRequest) => {
     };
 
     logAuthAttempt(req, phone, true);
-    return success({ token, user: userDto });
+    
+    // Set HttpOnly cookies for better security
+    const response = NextResponse.json(
+      { success: true, data: { token, user: userDto } },
+      { status: 200 }
+    );
+    
+    // Set HttpOnly cookies
+    response.cookies.set('access_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 60 * 60, // 1 hour
+      path: '/'
+    });
+    
+    return response;
   } catch (err) {
     console.error('verify-otp failed', err);
     try {

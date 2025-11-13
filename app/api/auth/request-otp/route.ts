@@ -3,23 +3,7 @@ import { success, error } from '@/lib/utils/response';
 import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
 import { withLogging, logAuthAttempt } from '@/lib/middleware/logging.middleware';
 import { prisma } from '@/lib/prisma';
-
-// In-memory store for OTPs (in production, this should be stored in Redis or similar)
-const otpStore = new Map<string, { hash: string; expiresAt: number; attempts: number; lockedUntil?: number }>();
-
-function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function hashOtp(code: string): string {
-  // Simple hash for mock (do NOT use in production)
-  let hash = 0;
-  for (let i = 0; i < code.length; i++) {
-    hash = (hash << 5) - hash + code.charCodeAt(i);
-    hash |= 0;
-  }
-  return String(hash);
-}
+import { otpStore, generateOtp, hashOtp } from '@/lib/auth/otp';
 
 async function handler(req: NextRequest) {
   try {

@@ -88,7 +88,7 @@ export const useVerifyOtp = () => {
   const { setUser } = useUserStore();
   const { setToken } = useAuthStore();
   return useMutation({
-    mutationFn: (data: { phone: string; countryCode: string; code: string; role?: string }) => authService.verifyOtp(data),
+    mutationFn: (data: { phone: string; countryCode: string; code: string; role?: string; name?: string; email?: string; workspaceName?: string }) => authService.verifyOtp(data),
     onSuccess: ({ user, token }) => {
       setUser(user);
       setToken(token);
@@ -97,7 +97,6 @@ export const useVerifyOtp = () => {
   });
 };
 
-// New hook for registration with OTP
 export const useRegisterWithOtp = () => {
   const queryClient = useQueryClient();
   const { setUser } = useUserStore();
@@ -112,33 +111,17 @@ export const useRegisterWithOtp = () => {
       email?: string;
       workspaceName: string;
     }) => {
-      // For registration with OTP, we need to call a different endpoint
-      // This would typically be a custom endpoint that handles both OTP verification and registration
-      // For now, we'll simulate this by first verifying OTP and then registering
-      try {
-        // First verify the OTP
-        const otpResult = await authService.verifyOtp({
-          phone: data.phone,
-          countryCode: data.countryCode,
-          code: data.code
-        });
-        
-        // Then register the user with the additional data
-        // Note: In a real implementation, this would be handled by a single backend endpoint
-        const registerData: RegisterDto = {
-          email: data.email || '',
-          password: 'temp-password', // This would be handled by the backend
-          confirmPassword: 'temp-password',
-          name: data.name,
-          phone: `${data.countryCode}${data.phone}`,
-        };
-        
-        const registerResult = await authService.register(registerData);
-        return registerResult;
-      } catch (error) {
-        console.error('Registration with OTP error:', error);
-        throw error;
-      }
+      // Just call verifyOtp with all registration data
+      // The backend already handles registration
+      return await authService.verifyOtp({
+        phone: data.phone,
+        countryCode: data.countryCode,
+        code: data.code,
+        name: data.name,
+        email: data.email,
+        workspaceName: data.workspaceName,
+        role: 'admin' // or whatever role for new workspace owner
+      });
     },
     onSuccess: ({ user, token }) => {
       setUser(user);

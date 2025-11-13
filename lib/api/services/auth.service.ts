@@ -96,7 +96,7 @@ export class AuthService {
     return response.data.data;
   }
 
-  async verifyOtp(data: { phone: string; countryCode: string; code: string; role?: string }): Promise<{ user: User; token: string }> {
+  async verifyOtp(data: { phone: string; countryCode: string; code: string; role?: string; name?: string; email?: string; workspaceName?: string }): Promise<{ user: User; token: string }> {
     const response = await apiClient.post<ApiResponse<{ token: string; user: any }>>(
       endpoints.auth.verifyOtp,
       data
