@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { success, error } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
-import { database } from '@/lib/mock-db/database';
+import { prisma } from '@/lib/prisma';
 import { generateToken } from '@/lib/auth/jwt';
 import { withLogging, logAuthAttempt } from '@/lib/middleware/logging.middleware';
 import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
@@ -19,10 +18,9 @@ function hashOtp(code: string): string {
 }
 
 export const POST = withRateLimit(withLogging(async (req: NextRequest) => {
-  ensureDbInitialized();
   try {
     const body = await req.json();
-    const { phone, countryCode, code, role = 'client' } = body || {};
+    const { phone, countryCode, code, role = 'client', name, email, workspaceName } = body || {};
     if (!phone || !countryCode || !code) {
       logAuthAttempt(req, phone || 'unknown', false, 'missing fields');
       return error('phone, countryCode and code are required', 400);
@@ -33,17 +31,14 @@ export const POST = withRateLimit(withLogging(async (req: NextRequest) => {
     const now = Date.now();
     if (!entry) {
       logAuthAttempt(req, phone, false, 'no otp');
-      database.create('authAttempts', { phone, countryCode, success: false, reason: 'no otp' });
       return error('No OTP requested for this number', 400);
     }
     if (entry.lockedUntil && entry.lockedUntil > now) {
       logAuthAttempt(req, phone, false, 'locked');
-      database.create('authAttempts', { phone, countryCode, success: false, reason: 'locked' });
       return error('Too many attempts. Try again later.', 429);
     }
     if (entry.expiresAt < now) {
       logAuthAttempt(req, phone, false, 'expired');
-      database.create('authAttempts', { phone, countryCode, success: false, reason: 'expired' });
       return error('OTP expired', 400);
     }
 
@@ -57,43 +52,104 @@ export const POST = withRateLimit(withLogging(async (req: NextRequest) => {
       }
       otpStore.set(key, entry);
       logAuthAttempt(req, phone, false, 'invalid code');
-      database.create('authAttempts', { phone, countryCode, success: false, reason: 'invalid code' });
       return error('Invalid OTP code', 401);
     }
 
     // OTP valid: create or fetch user
-    const email = `${phone.replace(/\D/g, '')}@example.com`;
-    const name = `User ${phone}`;
-    let user = database.query<any>('users', (u) => u.email === email)[0];
-    if (!user) {
-      user = database.create<any>('users', {
-        email,
-        name,
-        role,
-        passwordHash: '',
+    const fullPhone = `${countryCode}${phone}`;
+    
+    // Check if this is a registration request (has name/workspaceName)
+    let user;
+    let userType;
+    let userEmail;
+    let userName;
+    
+    if (name && workspaceName) {
+      // Registration flow
+      if (role === 'admin' || role === 'team_member') {
+        // Create team member
+        user = await prisma.team_members.create({
+          data: {
+            tenant_id: BigInt(1), // Default tenant
+            full_name: name,
+            email: email || `${phone.replace(/\D/g, '')}@example.com`,
+            role: 'admin', // Default to admin for team members
+            wa_user_id: fullPhone,
+          },
+        });
+        userType = 'team_member';
+        userEmail = user.email;
+        userName = user.full_name;
+      } else {
+        // Create customer
+        user = await prisma.customers.create({
+          data: {
+            tenant_id: BigInt(1), // Default tenant
+            phone_e164: fullPhone,
+            first_name: name.split(' ')[0],
+            last_name: name.split(' ').slice(1).join(' ') || 'User',
+            source: 'sales',
+            status: 'lead',
+          },
+        });
+        userType = 'customer';
+        userEmail = null;
+        userName = `${user.first_name} ${user.last_name}`;
+      }
+    } else {
+      // Login flow - find existing user
+      const customer = await prisma.customers.findUnique({
+        where: {
+          uq_customer_phone: {
+            tenant_id: BigInt(1),
+            phone_e164: fullPhone,
+          },
+        },
       });
+
+      const teamMember = await prisma.team_members.findUnique({
+        where: {
+          uq_team_email: {
+            tenant_id: BigInt(1),
+            email: `${phone.replace(/\D/g, '')}@example.com`,
+          },
+        },
+      });
+
+      if (customer) {
+        user = customer;
+        userType = 'customer';
+        userEmail = null;
+        userName = `${customer.first_name} ${customer.last_name}`;
+      } else if (teamMember) {
+        user = teamMember;
+        userType = 'team_member';
+        userEmail = teamMember.email;
+        userName = teamMember.full_name;
+      } else {
+        logAuthAttempt(req, phone, false, 'user not found');
+        return error('User not found', 404);
+      }
     }
 
-    const token = await generateToken(user.id, role);
+    const token = await generateToken(String(user.id), role);
 
     // Map to expected DTO format
     const userDto = {
-      id: user.id,
-      tenant_id: 'tenant-1',
-      type: role,
-      email: user.email,
-      name: user.name,
+      id: String(user.id),
+      tenant_id: String(user.tenant_id),
+      type: userType,
+      email: userEmail,
+      name: userName,
     };
 
-    logAuthAttempt(req, email, true);
-    database.create('authAttempts', { phone, countryCode, success: true });
+    logAuthAttempt(req, phone, true);
     return success({ token, user: userDto });
   } catch (err) {
     console.error('verify-otp failed', err);
     try {
       const body = await req.json().catch(() => ({} as any));
       logAuthAttempt(req, body?.phone || 'unknown', false, 'verify-otp failure');
-      database.create('authAttempts', { phone: (body?.phone || 'unknown'), countryCode: (body?.countryCode || 'unknown'), success: false, reason: 'verify-otp failure' });
     } catch {}
     return error('Failed to verify OTP', 500);
   }
