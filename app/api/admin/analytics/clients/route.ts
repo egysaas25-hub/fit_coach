@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { database } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/admin/analytics/clients
  * Get client analytics (Admin only)
  */
 export async function GET(req: NextRequest) {
-  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
 
@@ -17,26 +15,42 @@ export async function GET(req: NextRequest) {
   if (roleCheck) return roleCheck;
 
   try {
-    const clients = database.getAll('clients');
-    const workoutLogs = database.getAll('workoutLogs');
-    const nutritionLogs = database.getAll('nutritionLogs');
-    const progressEntries = database.getAll('progressEntries');
+    // Hardcoded tenant_id for now
+    const tenantId = BigInt(1);
+
+    const clients = await prisma.customers.findMany({
+      where: {
+        tenant_id: tenantId
+      }
+    });
+
+    const workoutLogs = await prisma.progress_tracking.findMany({
+      where: {
+        tenant_id: tenantId
+      }
+    });
+
+    const nutritionLogs = await prisma.progress_tracking.findMany({
+      where: {
+        tenant_id: tenantId
+      }
+    });
 
     // Client activity analysis
-    const clientActivity = clients.map((client: any) => {
-      const clientWorkouts = workoutLogs.filter((w: any) => w.clientId === client.id);
-      const clientNutrition = nutritionLogs.filter((n: any) => n.clientId === client.id);
-      const clientProgress = progressEntries.filter((p: any) => p.clientId === client.id);
+    const clientActivity = clients.map(client => {
+      const clientWorkouts = workoutLogs.filter(w => w.customer_id === client.id);
+      const clientNutrition = nutritionLogs.filter(n => n.customer_id === client.id);
+      const clientProgress = workoutLogs.filter(p => p.customer_id === client.id);
 
       return {
-        clientId: client.id,
-        name: client.name,
+        clientId: client.id.toString(),
+        name: `${client.first_name || ''} ${client.last_name || ''}`.trim(),
         workoutsLogged: clientWorkouts.length,
         nutritionLogged: clientNutrition.length,
         progressEntries: clientProgress.length,
         lastActivity:
           clientWorkouts.length > 0
-            ? (clientWorkouts[clientWorkouts.length - 1] as any).createdAt
+            ? clientWorkouts[clientWorkouts.length - 1].recorded_at
             : null,
       };
     });

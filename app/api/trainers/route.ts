@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { database } from '@/lib/mock-db/database';
-import { Trainer, RoleType } from '@/types/lib/mock-db/types';
 import { success, error } from '@/lib/utils/response';
 import { hashPassword } from '@/lib/auth/password';
-import { ensureDbInitialized } from '@/lib/db/init';
 import { withLogging } from '@/lib/middleware/logging.middleware';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/trainers
  * Get all trainers (Admin/Trainer access)
  */
 const getHandler = async (req: NextRequest) => {
-  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
 
@@ -25,20 +22,47 @@ const getHandler = async (req: NextRequest) => {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
 
-    let trainers = database.getAll<Trainer>('trainers');
+    // Hardcoded tenant_id for now
+    const tenantId = BigInt(1);
+
+    // Get team members with role 'coach' (which represents trainers)
+    let query: any = {
+      where: {
+        tenant_id: tenantId,
+        role: 'coach'
+      }
+    };
 
     // Search
     if (search) {
-      trainers = database.search('trainers', search, ['name', 'email']);
+      query.where.full_name = { contains: search, mode: 'insensitive' };
     }
 
-    // Paginate
-    const result = database.paginate(trainers, page, limit);
+    const teamMembers = await prisma.team_members.findMany(query);
 
-    // Remove sensitive data
-    const sanitized = result.data.map(({ passwordHash, ...t }) => t);
+    // Paginate manually
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedTeamMembers = teamMembers.slice(startIndex, endIndex);
 
-    return success({ data: sanitized, pagination: result.pagination });
+    const pagination = {
+      page,
+      limit,
+      total: teamMembers.length,
+      pages: Math.ceil(teamMembers.length / limit)
+    };
+
+    // Format response
+    const formattedTeamMembers = paginatedTeamMembers.map(member => ({
+      id: member.id.toString(),
+      name: member.full_name,
+      email: member.email,
+      role: 'trainer', // Map 'coach' role to 'trainer' for frontend
+      createdAt: member.created_at,
+      updatedAt: member.created_at // Team members don't have updated_at in schema
+    }));
+
+    return success({ data: formattedTeamMembers, pagination: pagination });
   } catch (err) {
     console.error('Failed to fetch trainers:', err);
     return error('Failed to fetch trainers', 500);
@@ -52,7 +76,6 @@ export const GET = withLogging(getHandler);
  * Create a new trainer (Admin only)
  */
 const postHandler = async (req: NextRequest) => {
-  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
 
@@ -67,21 +90,42 @@ const postHandler = async (req: NextRequest) => {
       return error('Name and email are required', 400);
     }
 
-    // Check if trainer exists
-    const existing = database.query('trainers', (t: any) => t.email === email)[0];
+    // Hardcoded tenant_id for now
+    const tenantId = BigInt(1);
+
+    // Check if team member exists
+    const existing = await prisma.team_members.findUnique({
+      where: {
+        uq_team_email: {
+          tenant_id: tenantId,
+          email: email
+        }
+      }
+    });
+
     if (existing) {
       return error('Trainer with this email already exists', 409);
     }
 
-    // Create trainer
-    const newTrainer = database.create<Trainer>('trainers', {
-      name,
-      email,
-      role: RoleType.Trainer,
-      passwordHash: hashPassword(password),
+    // Create team member with role 'coach'
+    const newTeamMember = await prisma.team_members.create({
+      data: {
+        tenant_id: tenantId,
+        full_name: name,
+        email: email,
+        role: 'coach'
+      }
     });
 
-    const { passwordHash, ...trainerResponse } = newTrainer;
+    const trainerResponse = {
+      id: newTeamMember.id.toString(),
+      name: newTeamMember.full_name,
+      email: newTeamMember.email,
+      role: 'trainer', // Map 'coach' role to 'trainer' for frontend
+      createdAt: newTeamMember.created_at,
+      updatedAt: newTeamMember.created_at
+    };
+
     return success(trainerResponse, 201);
   } catch (err) {
     console.error('Failed to create trainer:', err);

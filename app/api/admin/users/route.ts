@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { database, User } from '@/lib/mock-db/database';
 import { success, error } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
 import { hashPassword } from '@/lib/auth/password';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/admin/users
  * Get all users (Admin only)
  */
 export async function GET(req: NextRequest) {
-  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
 
@@ -24,28 +22,96 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-    let users = database.getAll<User>('users');
+    // Hardcoded tenant_id for now
+    const tenantId = BigInt(1);
 
-    // Filter by role
-    if (role) {
-      users = users.filter((u) => u.role === role);
+    // Get clients and team members based on role filter
+    let clients: any[] = [];
+    let teamMembers: any[] = [];
+
+    if (!role || role === 'client') {
+      // Get clients
+      let clientQuery: any = {
+        where: {
+          tenant_id: tenantId
+        }
+      };
+
+      if (search) {
+        clientQuery.where.OR = [
+          { first_name: { contains: search, mode: 'insensitive' } },
+          { last_name: { contains: search, mode: 'insensitive' } },
+          { phone_e164: { contains: search, mode: 'insensitive' } }
+        ];
+      }
+
+      clients = await prisma.customers.findMany(clientQuery);
     }
 
-    // Search
-    if (search) {
-      users = database.search('users', search, ['name', 'email']);
+    if (!role || role !== 'client') {
+      // Get team members
+      let teamQuery: any = {
+        where: {
+          tenant_id: tenantId
+        }
+      };
+
+      if (role) {
+        // Map role to database role
+        const dbRole = role === 'trainer' ? 'coach' : role;
+        teamQuery.where.role = dbRole;
+      }
+
+      if (search) {
+        teamQuery.where.full_name = { contains: search, mode: 'insensitive' };
+      }
+
+      teamMembers = await prisma.team_members.findMany(teamQuery);
     }
+
+    // Combine and format users
+    let users: any[] = [];
+
+    // Format clients
+    const formattedClients = clients.map(client => ({
+      id: client.id.toString(),
+      name: `${client.first_name || ''} ${client.last_name || ''}`.trim(),
+      email: '', // Clients don't have email
+      phone: client.phone_e164,
+      role: 'client',
+      createdAt: client.created_at,
+      updatedAt: client.updated_at
+    }));
+
+    // Format team members
+    const formattedTeamMembers = teamMembers.map(member => ({
+      id: member.id.toString(),
+      name: member.full_name,
+      email: member.email,
+      phone: '', // Team members don't have phone in this schema
+      role: member.role === 'coach' ? 'trainer' : member.role,
+      createdAt: member.created_at,
+      updatedAt: member.created_at // Team members don't have updated_at in schema
+    }));
+
+    users = [...formattedClients, ...formattedTeamMembers];
 
     // Sort by creation date (newest first)
-    users = database.sort(users, 'createdAt', 'desc');
+    users.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     // Paginate
-    const result = database.paginate(users, page, limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedUsers = users.slice(startIndex, endIndex);
 
-    // Remove sensitive data
-    const sanitized = result.data.map(({ passwordHash, ...u }) => u);
+    const pagination = {
+      page,
+      limit,
+      total: users.length,
+      pages: Math.ceil(users.length / limit)
+    };
 
-    return success({ data: sanitized, pagination: result.pagination });
+    return success({ data: paginatedUsers, pagination });
   } catch (err) {
     console.error('Failed to fetch users:', err);
     return error('Failed to fetch users', 500);
@@ -57,7 +123,6 @@ export async function GET(req: NextRequest) {
  * Create a new user (Admin only)
  */
 export async function POST(req: NextRequest) {
-  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
 
@@ -66,30 +131,106 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, email, role, password = 'password123' } = body;
+    const { name, email, role, password = 'password123', phone } = body;
 
-    if (!name || !email || !role) {
-      return error('Name, email, and role are required', 400);
+    if (!name || !role) {
+      return error('Name and role are required', 400);
     }
 
-    // Check if user exists
-    const existing = database.query('users', (u: any) => u.email === email)[0];
-    if (existing) {
-      return error('User with this email already exists', 409);
+    // Hardcoded tenant_id for now
+    const tenantId = BigInt(1);
+
+    if (role === 'client') {
+      // Check if client exists
+      if (!phone) {
+        return error('Phone number is required for clients', 400);
+      }
+
+      const existingClient = await prisma.customers.findUnique({
+        where: {
+          uq_customer_phone: {
+            tenant_id: tenantId,
+            phone_e164: phone
+          }
+        }
+      });
+
+      if (existingClient) {
+        return error('Client with this phone number already exists', 409);
+      }
+
+      // Create client
+      const [firstName, ...lastNameParts] = name.split(' ');
+      const lastName = lastNameParts.join(' ') || '';
+
+      const newUser = await prisma.customers.create({
+        data: {
+          tenant_id: tenantId,
+          phone_e164: phone,
+          first_name: firstName,
+          last_name: lastName,
+          source: 'sales', // Use 'sales' as a valid source enum value
+          status: 'lead'
+        }
+      });
+
+      return success({
+        id: newUser.id.toString(),
+        name: `${newUser.first_name || ''} ${newUser.last_name || ''}`.trim(),
+        email: '',
+        phone: newUser.phone_e164,
+        role: 'client',
+        createdAt: newUser.created_at,
+        updatedAt: newUser.updated_at
+      }, 201);
+    } else {
+      // Check if team member exists
+      if (!email) {
+        return error('Email is required for team members', 400);
+      }
+
+      const existingTeamMember = await prisma.team_members.findUnique({
+        where: {
+          uq_team_email: {
+            tenant_id: tenantId,
+            email: email
+          }
+        }
+      });
+
+      if (existingTeamMember) {
+        return error('Team member with this email already exists', 409);
+      }
+
+      // Map role to database role
+      const dbRole = role === 'trainer' ? 'coach' : role;
+
+      // Create team member
+      const newUser = await prisma.team_members.create({
+        data: {
+          tenant_id: tenantId,
+          full_name: name,
+          email: email,
+          role: dbRole
+        }
+      });
+
+      return success({
+        id: newUser.id.toString(),
+        name: newUser.full_name,
+        email: newUser.email,
+        phone: '',
+        role: newUser.role === 'coach' ? 'trainer' : newUser.role,
+        createdAt: newUser.created_at,
+        updatedAt: newUser.created_at
+      }, 201);
     }
-
-    // Create user
-    const newUser = database.create<User>('users', {
-      name,
-      email,
-      role,
-      passwordHash: hashPassword(password),
-    });
-
-    const { passwordHash, ...userResponse } = newUser;
-    return success(userResponse, 201);
-  } catch (err) {
+  } catch (err: any) {
     console.error('Failed to create user:', err);
+    // Check if it's a Prisma error about the source enum
+    if (err.code === 'P2009') {
+      return error('Invalid source value. Please use one of: landing, social, sales, referral, campaign, post_payment', 400);
+    }
     return error('Failed to create user', 500);
   }
 }
@@ -99,7 +240,6 @@ export async function POST(req: NextRequest) {
  * Bulk update users (Admin only)
  */
 export async function PATCH(req: NextRequest) {
-  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
 
@@ -118,16 +258,75 @@ export async function PATCH(req: NextRequest) {
       return error('updates object is required', 400);
     }
 
-    // Don't allow password changes via bulk update
-    delete updates.passwordHash;
-    delete updates.password;
+    // Hardcoded tenant_id for now
+    const tenantId = BigInt(1);
 
     const updated = [];
     for (const id of userIds) {
-      const result = database.update('users', id, updates);
-      if (result) {
-        const { passwordHash, ...userResponse } = result as any;
-        updated.push(userResponse);
+      try {
+        const userId = BigInt(id);
+
+        // Try to find as client first
+        let clientResult = await prisma.customers.findUnique({
+          where: { id: userId }
+        });
+
+        if (clientResult) {
+          // Update client
+          const updateData: any = {};
+          if (updates.name) {
+            const [firstName, ...lastNameParts] = updates.name.split(' ');
+            updateData.first_name = firstName;
+            updateData.last_name = lastNameParts.join(' ') || '';
+          }
+          if (updates.phone) updateData.phone_e164 = updates.phone;
+          if (updates.status) updateData.status = updates.status;
+
+          const updatedClient = await prisma.customers.update({
+            where: { id: userId },
+            data: updateData
+          });
+
+          updated.push({
+            id: updatedClient.id.toString(),
+            name: `${updatedClient.first_name || ''} ${updatedClient.last_name || ''}`.trim(),
+            email: '',
+            phone: updatedClient.phone_e164,
+            role: 'client',
+            createdAt: updatedClient.created_at,
+            updatedAt: updatedClient.updated_at
+          });
+        } else {
+          // Try to find as team member
+          let teamMemberResult = await prisma.team_members.findUnique({
+            where: { id: userId }
+          });
+
+          if (teamMemberResult) {
+            // Update team member
+            const updateData: any = {};
+            if (updates.name) updateData.full_name = updates.name;
+            if (updates.email) updateData.email = updates.email;
+
+            const updatedTeamMember = await prisma.team_members.update({
+              where: { id: userId },
+              data: updateData
+            });
+
+            updated.push({
+              id: updatedTeamMember.id.toString(),
+              name: updatedTeamMember.full_name,
+              email: updatedTeamMember.email,
+              phone: '',
+              role: updatedTeamMember.role === 'coach' ? 'trainer' : updatedTeamMember.role,
+              createdAt: updatedTeamMember.created_at,
+              updatedAt: updatedTeamMember.created_at
+            });
+          }
+        }
+      } catch (err) {
+        console.error(`Failed to update user ${id}:`, err);
+        // Continue with other updates
       }
     }
 

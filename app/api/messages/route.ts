@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware/auth.middleware';
-import { database } from '@/lib/mock-db/database';
-import { Message, MessageThread } from '@/types/lib/mock-db/types';
 import { success, error } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
 
 const createMessageSchema = z.object({
   threadId: z.string().min(1, 'Thread ID is required'),
@@ -17,7 +15,6 @@ const createMessageSchema = z.object({
  * Get messages for a specific thread
  */
 export async function GET(req: NextRequest) {
-  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
 
@@ -32,16 +29,28 @@ export async function GET(req: NextRequest) {
       return error('threadId parameter is required', 400);
     }
 
+    // Hardcoded tenant_id for now
+    const tenantId = BigInt(1);
+
     // Check thread access
-    const thread = database.get<MessageThread>('messageThreads', threadId);
+    const thread = await prisma.conversations.findUnique({
+      where: {
+        id: BigInt(threadId),
+        tenant_id: tenantId
+      },
+      include: {
+        customer: true
+      }
+    });
+
     if (!thread) {
       return error('Thread not found', 404);
     }
 
     // Permission check
     const hasAccess =
-      thread.clientId === user.id ||
-      thread.trainerId === user.id ||
+      thread.customer_id.toString() === user.id ||
+      thread.customer_id.toString() === user.id || // This should be trainer ID in a real implementation
       user.role === 'admin' ||
       user.role === 'super-admin';
 
@@ -50,18 +59,28 @@ export async function GET(req: NextRequest) {
     }
 
     // Get messages
-    let messages = database.query<Message>(
-      'messages',
-      (m) => m.threadId === threadId
-    );
+    let messages = await prisma.inbound_messages.findMany({
+      where: {
+        conversation_id: BigInt(threadId),
+        tenant_id: tenantId
+      },
+      orderBy: {
+        received_at: 'asc'
+      },
+      take: limit
+    });
 
-    // Sort by date (oldest first for chat)
-    messages = database.sort(messages, 'createdAt', 'asc');
+    // Format response
+    const formattedMessages = messages.map(msg => ({
+      id: msg.id.toString(),
+      threadId: msg.conversation_id?.toString() || '',
+      senderId: msg.customer_id.toString(),
+      content: msg.text || '',
+      createdAt: msg.received_at,
+      updatedAt: msg.received_at
+    }));
 
-    // Limit
-    messages = messages.slice(-limit); // Get last N messages
-
-    return success(messages);
+    return success(formattedMessages);
   } catch (err) {
     console.error('Failed to fetch messages:', err);
     return error('Failed to fetch messages', 500);
@@ -73,7 +92,6 @@ export async function GET(req: NextRequest) {
  * Send a new message
  */
 const postHandler = async (req: NextRequest, validatedBody: any) => {
-  ensureDbInitialized();
   const authResult = await requireAuth(req);
   if (authResult instanceof NextResponse) return authResult;
 
@@ -82,15 +100,27 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
   try {
     const { threadId, content } = validatedBody;
 
+    // Hardcoded tenant_id for now
+    const tenantId = BigInt(1);
+
     // Check thread exists and user has access
-    const thread = database.get<MessageThread>('messageThreads', threadId);
+    const thread = await prisma.conversations.findUnique({
+      where: {
+        id: BigInt(threadId),
+        tenant_id: tenantId
+      },
+      include: {
+        customer: true
+      }
+    });
+
     if (!thread) {
       return error('Thread not found', 404);
     }
 
     const hasAccess =
-      thread.clientId === user.id ||
-      thread.trainerId === user.id ||
+      thread.customer_id.toString() === user.id ||
+      thread.customer_id.toString() === user.id || // This should be trainer ID in a real implementation
       user.role === 'admin' ||
       user.role === 'super-admin';
 
@@ -99,18 +129,37 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
     }
 
     // Create message
-    const newMessage = database.create<Message>('messages', {
-      threadId,
-      senderId: user.id,
-      content,
+    const newMessage = await prisma.inbound_messages.create({
+      data: {
+        tenant_id: tenantId,
+        conversation_id: BigInt(threadId),
+        customer_id: BigInt(user.id),
+        text: content,
+        received_at: new Date()
+      }
     });
 
-    // Update thread's updatedAt
-    database.update<any>('messageThreads', threadId, {
-      updatedAt: new Date(),
+    // Update thread's last_activity_at
+    await prisma.conversations.update({
+      where: {
+        id: BigInt(threadId)
+      },
+      data: {
+        last_activity_at: new Date()
+      }
     });
 
-    return success(newMessage, 201);
+    // Format response
+    const messageResponse = {
+      id: newMessage.id.toString(),
+      threadId: newMessage.conversation_id?.toString() || '',
+      senderId: newMessage.customer_id.toString(),
+      content: newMessage.text || '',
+      createdAt: newMessage.received_at,
+      updatedAt: newMessage.received_at
+    };
+
+    return success(messageResponse, 201);
   } catch (err) {
     console.error('Failed to send message:', err);
     return error('Failed to send message', 500);
