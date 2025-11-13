@@ -4,7 +4,8 @@ module.exports = {
   roots: ['<rootDir>'],
   testMatch: [
     '**/__tests__/**/*.+(ts|tsx|js)',
-    '**/?(*.)+(spec|test).+(ts|tsx|js)'
+    '**/?(*.)+(spec|test).+(ts|tsx|js)',
+    '**/tests/unit/**/*.+(ts|tsx|js)'
   ],
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
@@ -25,6 +26,8 @@ module.exports = {
   ],
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',
-    '<rootDir>/.next/'
+    '<rootDir>/.next/',
+    '<rootDir>/cypress/',
+    '<rootDir>/tests/e2e/'
   ]
 };

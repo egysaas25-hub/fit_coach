@@ -1,5 +1,5 @@
 {
-  "name": "my-v0-project",
+  "name": "fitcoach-pro",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,15 +14,12 @@
     "test:unit:watch": "jest --watch",
     "test:unit:coverage": "jest --coverage",
     "test:admin": "node tests/admin/run-admin-tests.js",
-    "test:admin:unit": "jest __tests__/admin/",
-    "test:admin:dashboard": "jest __tests__/admin/dashboard/",
-    "test:admin:clients": "jest __tests__/admin/clients/",
-    "test:admin:teams": "jest __tests__/admin/teams/",
-    "test:admin:workouts": "jest __tests__/admin/workouts/",
-    "test:admin:nutrition": "jest __tests__/admin/nutrition/",
-    "test:admin:exercises": "jest __tests__/admin/exercises/",
-    "test:admin:subscriptions": "jest __tests__/admin/subscriptions/",
-    "test:admin:communication": "jest __tests__/admin/communication/",
+    "tools:db:create-admin": "node tools/database/create-test-admin.js",
+    "tools:db:test-connection": "node tools/database/test-db-connection.js",
+    "tools:db:init": "node tools/database/init-db-simple.js",
+    "tools:db:check-tenants": "node tools/database/check-tenants.js",
+    "tools:api:test-login": "node tools/api/test-login.js",
+    "tools:api:verify-login": "node tools/api/verify-login.js",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
     "e2e": "start-server-and-test dev http://localhost:3000 cypress:run"
