@@ -34,6 +34,7 @@ export interface Payment {
   amount: number;
   status: PaymentStatus;
   processedAt: string;
+  method: string;
 }
 
 export enum BillingCycle {
