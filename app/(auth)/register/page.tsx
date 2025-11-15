@@ -87,6 +87,16 @@ export default function UnifiedRegister() {
     setError('');
     try {
       const res = await requestOtp.mutateAsync({ phone: phoneNumber, countryCode });
+      
+      // 🔥 DEV MODE: Show OTP in toast
+      if (res?.devMode?.otp) {
+        toast({
+          title: '🔓 Development Mode',
+          description: `Your OTP is: ${res.devMode.otp}`,
+          duration: 30000, // Show for 30 seconds
+        });
+      }
+      
       setIsLoading(false);
       setOtpSent(true);
       setStep('otp');

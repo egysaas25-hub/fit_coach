@@ -56,30 +56,80 @@ export const POST = withRateLimit(withLogging(async (req: NextRequest) => {
     if (name && workspaceName) {
       // REGISTRATION - create new user
       if (role === 'admin' || role === 'team_member') {
-        user = await prisma.team_members.create({
-          data: {
-            tenant_id: BigInt(1),
-            full_name: name,
-            email: email || `${phone.replace(/\D/g, '')}@temp.example.com`,
-            role: 'admin',
-            wa_user_id: fullPhone,
-          },
-        });
+        try {
+          user = await prisma.team_members.create({
+            data: {
+              tenant_id: BigInt(1),
+              full_name: name,
+              email: email || `${phone.replace(/\D/g, '')}@temp.example.com`,
+              role: 'admin',
+              wa_user_id: fullPhone,
+            },
+          });
+        } catch (createError: any) {
+          // If user already exists, find the existing user
+          if (createError.code === 'P2002') { // Unique constraint violation
+            user = await prisma.team_members.findFirst({
+              where: {
+                tenant_id: BigInt(1),
+                wa_user_id: fullPhone,
+              },
+            });
+            
+            // If still not found, try by email
+            if (!user && email) {
+              user = await prisma.team_members.findFirst({
+                where: {
+                  tenant_id: BigInt(1),
+                  email: email,
+                },
+              });
+            }
+            
+            // If still not found, this is an unexpected error
+            if (!user) {
+              throw createError;
+            }
+          } else {
+            throw createError;
+          }
+        }
+        
         userType = 'team_member';
         userEmail = user.email;
         userName = user.full_name;
       } else {
         // Create customer...
-        user = await prisma.customers.create({
-          data: {
-            tenant_id: BigInt(1), // Default tenant
-            phone_e164: fullPhone,
-            first_name: name.split(' ')[0],
-            last_name: name.split(' ').slice(1).join(' ') || 'User',
-            source: 'sales',
-            status: 'lead',
-          },
-        });
+        try {
+          user = await prisma.customers.create({
+            data: {
+              tenant_id: BigInt(1), // Default tenant
+              phone_e164: fullPhone,
+              first_name: name.split(' ')[0],
+              last_name: name.split(' ').slice(1).join(' ') || 'User',
+              source: 'sales',
+              status: 'lead',
+            },
+          });
+        } catch (createError: any) {
+          // If customer already exists, find the existing customer
+          if (createError.code === 'P2002') { // Unique constraint violation
+            user = await prisma.customers.findFirst({
+              where: {
+                tenant_id: BigInt(1),
+                phone_e164: fullPhone,
+              },
+            });
+            
+            // If still not found, this is an unexpected error
+            if (!user) {
+              throw createError;
+            }
+          } else {
+            throw createError;
+          }
+        }
+        
         userType = 'customer';
         userEmail = null;
         userName = `${user.first_name} ${user.last_name}`;

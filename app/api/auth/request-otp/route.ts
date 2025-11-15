@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { success, error } from '@/lib/utils/response';
 import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
 import { withLogging, logAuthAttempt } from '@/lib/middleware/logging.middleware';
-import { prisma } from '@/lib/prisma';
 import { otpStore, generateOtp, hashOtp } from '@/lib/auth/otp';
+import { sendOTP } from '@/lib/services/whatsapp.service';
 
 async function handler(req: NextRequest) {
   try {
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error('Failed to parse JSON body:', parseError);
+      return error('Invalid JSON in request body', 400);
+    }
     const { phone, countryCode } = body || {};
     if (!phone || !countryCode) {
       return error('phone and countryCode are required', 400);
@@ -21,40 +27,35 @@ async function handler(req: NextRequest) {
       return error('Too many attempts. Try again later.', 429);
     }
 
-    // Check if user exists in database
-    const fullPhone = `${countryCode}${phone}`;
-    const customer = await prisma.customers.findUnique({
-      where: {
-        uq_customer_phone: {
-          tenant_id: BigInt(1), // Default tenant
-          phone_e164: fullPhone,
-        },
-      },
-    });
-
-    const teamMember = await prisma.team_members.findUnique({
-      where: {
-        uq_team_email: {
-          tenant_id: BigInt(1), // Default tenant
-          email: `${phone.replace(/\D/g, '')}@example.com`,
-        },
-      },
-    });
-
-    // For registration, we don't need to check if user exists
-    // For login, we should verify the user exists
-    // But for simplicity in this implementation, we'll allow both
-
     const code = generateOtp();
     const ttlSeconds = 120;
-    otpStore.set(key, { hash: hashOtp(code), expiresAt: now + ttlSeconds * 1000, attempts: 0 });
+    otpStore.set(key, { 
+      hash: hashOtp(code), 
+      expiresAt: now + ttlSeconds * 1000, 
+      attempts: 0 
+    });
 
-    // In a real implementation, you would send the OTP via WhatsApp here
-    // For now, we'll just log it
-    console.log(`OTP for ${fullPhone}: ${code}`);
+    // Send OTP via WhatsApp (or log in development)
+    const fullPhone = `${countryCode}${phone}`;
+    await sendOTP(fullPhone, code);
+
+    // 🔥 DEVELOPMENT MODE: Log OTP to console
+    if (process.env.NODE_ENV === 'development') {
+      console.log('\n==============================================');
+      console.log(`📱 OTP for ${countryCode}${phone}: ${code}`);
+      console.log(`⏱️  Expires in ${ttlSeconds} seconds`);
+      console.log('==============================================\n');
+    }
 
     logAuthAttempt(req, phone, true);
-    return success({ message: 'OTP sent via WhatsApp', ttlSeconds });
+    
+    // Return the OTP in response for development ONLY
+    return success({ 
+      message: 'OTP sent via WhatsApp', 
+      ttlSeconds,
+      // 🔥 REMOVE THIS IN PRODUCTION
+      devMode: process.env.NODE_ENV === 'development' ? { otp: code } : undefined
+    });
   } catch (err) {
     console.error('request-otp failed', err);
     try {

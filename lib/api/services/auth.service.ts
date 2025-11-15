@@ -88,8 +88,8 @@ export class AuthService {
    * Rule 5: Service calls apiClient
    * Rule 3: Uses mapper
    */
-  async requestOtp(data: { phone: string; countryCode: string }): Promise<{ message: string; ttlSeconds: number }> {
-    const response = await apiClient.post<ApiResponse<{ message: string; ttlSeconds: number }>>(
+  async requestOtp(data: { phone: string; countryCode: string }): Promise<{ message: string; ttlSeconds: number; devMode?: { otp: string } }> {
+    const response = await apiClient.post<ApiResponse<{ message: string; ttlSeconds: number; devMode?: { otp: string } }>>(
       endpoints.auth.requestOtp,
       data
     );
