@@ -1,76 +1,116 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth/jwt';
-import { database } from '@/lib/mock-db/database';
-import type { User } from '@/lib/mock-db/database';
 import { unauthorized, forbidden } from '@/lib/utils/response';
+import { prisma } from '@/lib/prisma';
 
-type Role = 'client' | 'trainer' | 'admin' | 'super-admin';
+interface User {
+  id: string;
+  tenant_id: string;
+  email: string;
+  name: string;
+  full_name: string;
+  role: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-/**
- * Checks for a valid JWT in the Authorization header and returns the user if successful.
- * If the token is missing, invalid, or the user doesn't exist, it returns an unauthorized response.
- *
- * @param req - The Next.js request object.
- * @returns An object containing the user or a NextResponse with an error.
- */
+export interface AuthenticatedRequest extends NextRequest {
+  user: User;
+}
+
 export async function requireAuth(
-  req: NextRequest
-): Promise<{ user: User } | NextResponse> {
-  const authHeader = req.headers.get('Authorization');
-  let token: string | null = null;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split(' ')[1];
-  }
-  // Fallback to HTTP-only cookie
-  if (!token) {
-    token = req.cookies.get('access_token')?.value || null;
-  }
-  if (!token) {
-    return unauthorized('Authorization header or session cookie is missing.');
-  }
+  request: NextRequest,
+  handler: (req: AuthenticatedRequest) => Promise<NextResponse>
+): Promise<NextResponse> {
+  try {
+    const token = request.cookies.get('auth-token')?.value;
+    
+    if (!token) {
+      return unauthorized('Authentication required');
+    }
 
-  const payload = await verifyToken(token);
-  if (!payload) {
-    return unauthorized('Invalid or expired token.');
-  }
+    const payload = verifyToken(token);
+    if (!payload) {
+      return unauthorized('Invalid or expired token');
+    }
 
-  const user = database.get<User>('users', payload.userId);
-  if (!user) {
-    return unauthorized('User not found.');
-  }
+    // Get user from real database
+    let user: User | null = null;
+    
+    try {
+      const dbUser = await prisma.$queryRaw`
+        SELECT 
+          member_id as id,
+          tenant_id,
+          email,
+          first_name || ' ' || last_name as name,
+          first_name || ' ' || last_name as full_name,
+          role,
+          created_at,
+          updated_at
+        FROM team_members
+        WHERE member_id = ${payload.userId}::uuid
+          AND is_active = true
+        LIMIT 1
+      `;
+      
+      if (dbUser && dbUser[0]) {
+        user = {
+          id: dbUser[0].id,
+          tenant_id: dbUser[0].tenant_id,
+          email: dbUser[0].email,
+          name: dbUser[0].name,
+          full_name: dbUser[0].full_name,
+          role: dbUser[0].role,
+          createdAt: dbUser[0].created_at,
+          updatedAt: dbUser[0].updated_at,
+        };
+      }
+    } catch (error) {
+      console.error('Database query failed:', error);
+      return unauthorized('Database error');
+    }
 
-  return { user };
+    if (!user) {
+      return unauthorized('User not found');
+    }
+
+    // Add user to request
+    const authenticatedRequest = request as AuthenticatedRequest;
+    authenticatedRequest.user = user;
+
+    return handler(authenticatedRequest);
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    return unauthorized('Authentication failed');
+  }
 }
 
-/**
- * Checks if the user has one of the required roles.
- * This function should be called after `requireAuth`.
- *
- * @param user - The user object, typically from `requireAuth`.
- * @param roles - An array of roles that are allowed.
- * @returns A forbidden response if the user's role is not allowed, otherwise null.
- */
-export function requireRole(user: User, roles: Role[]): NextResponse | null {
-  if (!roles.includes(user.role as Role)) {
-    return forbidden('You do not have permission to access this resource.');
-  }
-  return null;
+export async function requireRole(
+  roles: string[],
+  request: NextRequest,
+  handler: (req: AuthenticatedRequest) => Promise<NextResponse>
+): Promise<NextResponse> {
+  return requireAuth(request, async (req) => {
+    if (!roles.includes(req.user.role)) {
+      return forbidden('Insufficient permissions');
+    }
+    return handler(req);
+  });
 }
 
-export async function requireSession(req: NextRequest): Promise<{ user: User } | NextResponse> {
-  const access = req.cookies.get('access_token')?.value;
-  const refresh = req.cookies.get('refresh_token')?.value;
-  if (!access || !refresh) {
-    return unauthorized('Missing session cookies');
-  }
-  // Validate access token
-  const payload = await verifyToken(access);
-  if (!payload) {
-    return unauthorized('Invalid or expired session');
-  }
-  const user = database.get<User>('users', payload.userId);
-  if (!user) {
-    return unauthorized('User not found');
-  }
-  return { user };
+export async function requireTenantAccess(
+  request: NextRequest,
+  handler: (req: AuthenticatedRequest) => Promise<NextResponse>
+): Promise<NextResponse> {
+  return requireAuth(request, async (req) => {
+    const tenantId = request.nextUrl.searchParams.get('tenant_id') || 
+                    (await request.json().catch(() => ({})))?.tenant_id;
+    
+    if (tenantId && req.user.tenant_id !== tenantId) {
+      return forbidden('Access denied to this tenant');
+    }
+    
+    return handler(req);
+  });
 }
