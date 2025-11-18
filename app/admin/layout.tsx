@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { AdminSidebar } from "@/components/navigation/admin-sidebar"
+import { Sidebar } from "@/components/shared/navigation/Sidebar"
 import { useAuthStore } from "@/lib/store/auth.store"
 export default function AdminLayout({
   children,
@@ -15,7 +15,7 @@ export default function AdminLayout({
   const parts = relative.split("/").filter(Boolean)
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
-      <AdminSidebar />
+      <Sidebar role="admin" tenantId={tenantId || undefined} />
       <main className="flex-1 overflow-auto">
         <div className="sticky top-0 z-10 bg-card border-b border-border">
           <nav className="px-6 py-3 text-sm text-muted-foreground">

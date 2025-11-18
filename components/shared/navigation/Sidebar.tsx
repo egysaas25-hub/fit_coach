@@ -52,11 +52,12 @@ const adminNavItems: NavItem[] = [
     title: "Dashboard",
     href: "/admin/dashboard",
     icon: LayoutDashboard,
-  },
-  {
-    title: "Analytics",
-    href: "/admin/analytics/overview",
-    icon: BarChart3,
+    children: [
+      { title: "Business Analytics", href: "/admin/dashboard/analytics/business", icon: BarChart3 },
+      { title: "Client Analytics", href: "/admin/dashboard/analytics/clients", icon: Users },
+      { title: "Trainer Analytics", href: "/admin/dashboard/analytics/trainers", icon: Users2 },
+      { title: "System Health", href: "/admin/dashboard/analytics/system", icon: Activity },
+    ],
   },
   {
     title: "Reports",
@@ -68,7 +69,7 @@ const adminNavItems: NavItem[] = [
   {
     title: "Clients",
     href: "/admin/clients",
-    icon: ShoppingCart,
+    icon: Users,
   },
   {
     title: "Team",
@@ -76,7 +77,7 @@ const adminNavItems: NavItem[] = [
     icon: Users2,
     children: [
       { title: "Members", href: "/admin/teams/members", icon: Users },
-      { title: "Team Analytics", href: "/admin/teams/analytics", icon: BarChart3 },
+      { title: "Analytics", href: "/admin/teams/analytics", icon: BarChart3 },
       { title: "Roles & Permissions", href: "/admin/teams/roles", icon: Shield },
     ],
   },
@@ -95,21 +96,16 @@ const adminNavItems: NavItem[] = [
     ],
   },
 
-  // Plans Section
+  // Plans & Programs Section
   {
-    title: "Workouts",
-    href: "/admin/workouts",
-    icon: Dumbbell,
-  },
-  {
-    title: "Nutrition",
-    href: "/admin/nutrition",
-    icon: Apple,
+    title: "Programs",
+    href: "/admin/programs",
+    icon: Target,
     children: [
-      { title: "Templates", href: "/admin/nutrition/templates", icon: Table },
-      { title: "Ingredients", href: "/admin/nutrition/ingredients", icon: Table },
-      { title: "AI Builder", href: "/admin/nutrition/ai", icon: Sparkles },
-      { title: "Client Logs", href: "/admin/nutrition/logs", icon: ScrollText },
+      { title: "Training Plans", href: "/admin/programs/training/new", icon: Dumbbell },
+      { title: "Nutrition Plans", href: "/admin/programs/nutrition/new", icon: Apple },
+      { title: "Assignments", href: "/admin/programs/assignments", icon: Table },
+      { title: "Goal Templates", href: "/admin/programs/goals", icon: Target },
     ],
   },
   {
@@ -117,19 +113,26 @@ const adminNavItems: NavItem[] = [
     href: "/admin/exercises",
     icon: Dumbbell,
     children: [
-      { title: "Custom", href: "/admin/exercises/custom", icon: Table },
       { title: "Library", href: "/admin/exercises/library", icon: Table },
+      { title: "Custom", href: "/admin/exercises/custom", icon: Table },
       { title: "AI Generator", href: "/admin/exercises/ai", icon: Sparkles },
     ],
   },
   {
-    title: "Programs",
-    href: "/admin/programs",
-    icon: Target,
+    title: "Nutrition",
+    href: "/admin/nutrition",
+    icon: Apple,
     children: [
-      { title: "Goal Templates", href: "/admin/programs/goals", icon: Target },
-      { title: "Assignments", href: "/admin/programs/assignments", icon: Table },
+      { title: "Ingredients", href: "/admin/nutrition/ingredients", icon: Table },
+      { title: "Templates", href: "/admin/nutrition/templates", icon: Table },
+      { title: "AI Generator", href: "/admin/nutrition/ai", icon: Sparkles },
+      { title: "Client Logs", href: "/admin/nutrition/logs", icon: ScrollText },
     ],
+  },
+  {
+    title: "Workouts",
+    href: "/admin/workouts",
+    icon: Dumbbell,
   },
 
   // Business Section
@@ -188,6 +191,7 @@ const adminNavItems: NavItem[] = [
     icon: Settings,
     children: [
       { title: "Integrations", href: "/admin/settings/integrations", icon: Zap },
+      { title: "WhatsApp", href: "/admin/settings/whatsapp", icon: MessageSquare },
       { title: "Branding", href: "/admin/settings/branding", icon: Settings },
       { title: "Account", href: "/admin/settings/account", icon: User },
       { title: "Billing & Usage", href: "/admin/settings/billing", icon: CreditCard },
