@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
+import { requireRole } from '@/lib/middleware/auth.middleware';
 import { success, error } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
 
 // In-memory settings store (use database in production)
 let appSettings = {
@@ -34,19 +33,14 @@ let appSettings = {
  * Get application settings (Admin only)
  */
 export async function GET(req: NextRequest) {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const roleCheck = requireRole(authResult.user, ['admin', 'super-admin']);
-  if (roleCheck) return roleCheck;
-
-  try {
-    return success(appSettings);
-  } catch (err) {
-    console.error('Failed to fetch settings:', err);
-    return error('Failed to fetch settings', 500);
-  }
+  return requireRole(['admin', 'super-admin'], req, async (authReq) => {
+    try {
+      return success(appSettings);
+    } catch (err) {
+      console.error('Failed to fetch settings:', err);
+      return error('Failed to fetch settings', 500);
+    }
+  });
 }
 
 /**
@@ -54,27 +48,22 @@ export async function GET(req: NextRequest) {
  * Update application settings (Admin only)
  */
 export async function PATCH(req: NextRequest) {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
+  return requireRole(['super-admin'], req, async (authReq) => {
+    try {
+      const body = await req.json();
 
-  const roleCheck = requireRole(authResult.user, ['super-admin']); // Only super-admin
-  if (roleCheck) return roleCheck;
+      // Deep merge settings
+      appSettings = {
+        general: { ...appSettings.general, ...(body.general || {}) },
+        email: { ...appSettings.email, ...(body.email || {}) },
+        features: { ...appSettings.features, ...(body.features || {}) },
+        limits: { ...appSettings.limits, ...(body.limits || {}) },
+      };
 
-  try {
-    const body = await req.json();
-
-    // Deep merge settings
-    appSettings = {
-      general: { ...appSettings.general, ...(body.general || {}) },
-      email: { ...appSettings.email, ...(body.email || {}) },
-      features: { ...appSettings.features, ...(body.features || {}) },
-      limits: { ...appSettings.limits, ...(body.limits || {}) },
-    };
-
-    return success(appSettings);
-  } catch (err) {
-    console.error('Failed to update settings:', err);
-    return error('Failed to update settings', 500);
-  }
+      return success(appSettings);
+    } catch (err) {
+      console.error('Failed to update settings:', err);
+      return error('Failed to update settings', 500);
+    }
+  });
 }

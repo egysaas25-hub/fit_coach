@@ -1,296 +1,168 @@
-// app/admin/dashboard/page.tsx
-'use client';
+"use client"
 
-import { 
-  Users, TrendingUp, DollarSign, AlertCircle, UserPlus, 
-  FileText, Send, Calendar, ArrowUpRight, ArrowDownRight
-} from 'lucide-react';
-import { AdminHeader, Tabs, TabsList, TabsTrigger, TabsContent } from './AdminClientComponents';
-import { useDashboardStats, useActivityFeed, useAlerts, useAIInsights } from '@/lib/hooks/api/useDashboard';
-import { DashboardStats } from '@/types/domain/dashboard';
+import { StatCard } from "@/components/shared/data-display/StatCard"
+import { Users, DollarSign, TrendingUp, AlertCircle, Calendar, MessageSquare } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
-/**
- * Admin Dashboard Page
- * Follows Architecture Rules:
- * - Rule 1: Component calls hooks only
- * - Uses React Query for server data
- */
-
-// KPI Cards Component
-const KPICards: React.FC<{ stats: DashboardStats | undefined }> = ({ stats }) => {
-  if (!stats) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-card border border-border rounded-lg p-6 animate-pulse">
-            <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-            <div className="h-8 bg-muted rounded w-1/2" />
-          </div>
-        ))}
-      </div>
-    );
+export default function AdminDashboardPage() {
+  // Mock user data (will come from auth context)
+  const user = {
+    name: "Ahmed Reda",
+    email: "ahmed@trainersaas.com",
+    role: "admin",
   }
 
-  const kpis = [
-    {
-      title: "Total Users",
-      value: stats.totalUsers || 0,
-      change: stats.growthRate || 0,
-      icon: Users,
-      trend: (stats.growthRate || 0) >= 0 ? "up" : "down",
-      href: "/admin/clients",
-    },
-    {
-      title: "Active Sessions",
-      value: stats.activeSessions || 0,
-      change: 0,
-      icon: Calendar,
-      trend: "up",
-      href: "/admin/workouts",
-    },
-    {
-      title: "Revenue",
-      value: `$${(stats.revenue || 0).toLocaleString()}`,
-      change: 0,
-      icon: DollarSign,
-      trend: "up",
-      href: "/admin/billing",
-    },
-    {
-      title: "Open Tickets",
-      value: stats.openTickets || 0,
-      change: 0,
-      icon: AlertCircle,
-      trend: "down",
-      href: "/admin/support",
-    },
-  ];
+  // Mock data (will come from API)
+  const stats = {
+    activeClients: 128,
+    renewalsDue: 12,
+    mrr: "$45,280",
+    pendingTickets: 5,
+    newLeads: 23,
+    unreadMessages: 8,
+  }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {kpis.map((kpi) => {
-        const Icon = kpi.icon;
-        const isPositive = kpi.trend === "up";
-        const TrendIcon = isPositive ? ArrowUpRight : ArrowDownRight;
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back, {user.name}. Here's what's happening today.
+          </p>
+        </div>
 
-        return (
-          <div
-            key={kpi.title}
-            className="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-muted-foreground">{kpi.title}</p>
-              <Icon className="w-4 h-4 text-muted-foreground" />
+        {/* KPI Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <StatCard
+            title="Active Clients"
+            value={stats.activeClients}
+            description="from last month"
+            icon={Users}
+            trend={{ value: 12, isPositive: true }}
+            onClick={() => console.log("Navigate to clients")}
+          />
+          <StatCard
+            title="Renewals Due"
+            value={stats.renewalsDue}
+            description="next 14 days"
+            icon={Calendar}
+            trend={{ value: 3, isPositive: false }}
+            onClick={() => console.log("Navigate to renewals")}
+          />
+          <StatCard
+            title="Monthly Revenue"
+            value={stats.mrr}
+            description="MRR"
+            icon={DollarSign}
+            trend={{ value: 8, isPositive: true }}
+            onClick={() => console.log("Navigate to revenue")}
+          />
+          <StatCard
+            title="Pending Tickets"
+            value={stats.pendingTickets}
+            description="requires attention"
+            icon={AlertCircle}
+            onClick={() => console.log("Navigate to tickets")}
+          />
+          <StatCard
+            title="New Leads"
+            value={stats.newLeads}
+            description="this week"
+            icon={TrendingUp}
+            trend={{ value: 15, isPositive: true }}
+            onClick={() => console.log("Navigate to leads")}
+          />
+          <StatCard
+            title="Unread Messages"
+            value={stats.unreadMessages}
+            description="across all channels"
+            icon={MessageSquare}
+            onClick={() => console.log("Navigate to messages")}
+          />
+        </div>
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common tasks and shortcuts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+              <Button variant="outline" className="justify-start">
+                <Users className="mr-2 h-4 w-4" />
+                Add Client
+              </Button>
+              <Button variant="outline" className="justify-start">
+                <Calendar className="mr-2 h-4 w-4" />
+                Assign Plan
+              </Button>
+              <Button variant="outline" className="justify-start">
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Broadcast Message
+              </Button>
+              <Button variant="outline" className="justify-start">
+                <TrendingUp className="mr-2 h-4 w-4" />
+                View Reports
+              </Button>
             </div>
-            <div className="text-2xl font-bold text-foreground">{kpi.value}</div>
-            <div className="flex items-center gap-1 mt-1">
-              <TrendIcon className={`w-3 h-3 ${isPositive ? "text-primary" : "text-destructive"}`} />
-              <span className={`text-xs font-medium ${isPositive ? "text-primary" : "text-destructive"}`}>
-                {Math.abs(kpi.change)}%
-              </span>
-              <span className="text-xs text-muted-foreground">vs last 30 days</span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
+          </CardContent>
+        </Card>
 
-// Quick Actions Component
-const QuickActions: React.FC = () => {
-  return (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <h2 className="text-lg font-semibold mb-2">Quick Actions</h2>
-      <p className="text-sm text-muted-foreground mb-4">Common tasks and shortcuts</p>
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        <button className="px-4 py-3 border border-border rounded-lg hover:bg-accent text-left flex items-center gap-3">
-          <UserPlus className="w-4 h-4" />
-          <span className="text-sm font-medium">Add Client</span>
-        </button>
-        <button className="px-4 py-3 border border-border rounded-lg hover:bg-accent text-left flex items-center gap-3">
-          <FileText className="w-4 h-4" />
-          <span className="text-sm font-medium">Assign Plan</span>
-        </button>
-        <button className="px-4 py-3 border border-border rounded-lg hover:bg-accent text-left flex items-center gap-3">
-          <Send className="w-4 h-4" />
-          <span className="text-sm font-medium">Send Message</span>
-        </button>
-        <button className="px-4 py-3 border border-border rounded-lg hover:bg-accent text-left flex items-center gap-3">
-          <TrendingUp className="w-4 h-4" />
-          <span className="text-sm font-medium">View Reports</span>
-        </button>
-      </div>
-    </div>
-  );
-};
+        {/* Recent Activity */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Latest client interactions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[
+                  { client: "Sara Ahmed", action: "Completed check-in", time: "2 hours ago" },
+                  { client: "Omar Hassan", action: "Sent progress photo", time: "4 hours ago" },
+                  { client: "Mina Adel", action: "Renewed subscription", time: "5 hours ago" },
+                  { client: "John Doe", action: "Asked nutrition question", time: "6 hours ago" },
+                ].map((activity, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{activity.client}</p>
+                      <p className="text-xs text-muted-foreground">{activity.action}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{activity.time}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-// Activity Feed Component
-const ActivityFeed: React.FC<{ feed: any[] | undefined }> = ({ feed }) => {
-  if (!feed || feed.length === 0) {
-    return (
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-2">Recent Activity</h2>
-        <p className="text-sm text-muted-foreground mb-4">Latest client interactions and system events</p>
-        <div className="text-center py-8 text-muted-foreground">
-          No recent activity
+          <Card>
+            <CardHeader>
+              <CardTitle>Renewals Timeline</CardTitle>
+              <CardDescription>Upcoming subscription renewals</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[
+                  { client: "C102 – Sara Ahmed", plan: "3-Month Fat Loss", date: "Nov 20" },
+                  { client: "C097 – Omar Hassan", plan: "6-Month Hypertrophy", date: "Nov 22" },
+                  { client: "C056 – Mina Adel", plan: "3-Month Rehab", date: "Nov 25" },
+                  { client: "C045 – Lara Smith", plan: "12-Month Performance", date: "Nov 28" },
+                ].map((renewal, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{renewal.client}</p>
+                      <p className="text-xs text-muted-foreground">{renewal.plan}</p>
+                    </div>
+                    <span className="text-xs font-medium">{renewal.date}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <h2 className="text-lg font-semibold mb-2">Recent Activity</h2>
-      <p className="text-sm text-muted-foreground mb-4">Latest client interactions and system events</p>
-      <div className="space-y-4">
-        {feed.map((activity) => (
-          <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-border last:border-0">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Users className="w-4 h-4 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-foreground">{activity.message}</p>
-              <p className="text-xs text-muted-foreground mt-1">{activity.timestamp}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Alerts Component
-const AlertsList: React.FC<{ alerts: any[] | undefined }> = ({ alerts }) => {
-  if (!alerts || alerts.length === 0) {
-    return (
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-2">Alerts & Notifications</h2>
-        <p className="text-sm text-muted-foreground mb-4">Important updates requiring attention</p>
-        <div className="text-center py-8 text-muted-foreground">
-          No alerts at this time
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <h2 className="text-lg font-semibold mb-2">Alerts & Notifications</h2>
-      <p className="text-sm text-muted-foreground mb-4">Important updates requiring attention</p>
-      <div className="space-y-3">
-        {alerts.map((alert) => (
-          <div
-            key={alert.id}
-            className={`p-4 rounded-lg border ${
-              alert.severity === "critical"
-                ? "bg-destructive/10 border-destructive/20"
-                : alert.severity === "warning"
-                  ? "bg-yellow-500/10 border-yellow-500/20"
-                  : "bg-primary/10 border-primary/20"
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <AlertCircle
-                className={`w-5 h-5 flex-shrink-0 ${
-                  alert.severity === "critical"
-                    ? "text-destructive"
-                    : alert.severity === "warning"
-                      ? "text-yellow-500"
-                      : "text-primary"
-                }`}
-              />
-              <div className="flex-1">
-                <h4 className="font-semibold text-sm text-foreground">{alert.title}</h4>
-                <p className="text-sm text-muted-foreground mt-1">{alert.description}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// AI Insights Component
-const AIInsights: React.FC<{ insights: any[] | undefined }> = ({ insights }) => {
-  if (!insights || insights.length === 0) {
-    return (
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-2">AI-Powered Insights</h2>
-        <p className="text-sm text-muted-foreground mb-4">Recommendations and predictions</p>
-        <div className="text-center py-8 text-muted-foreground">
-          No insights available yet
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <h2 className="text-lg font-semibold mb-2">AI-Powered Insights</h2>
-      <p className="text-sm text-muted-foreground mb-4">Recommendations and predictions</p>
-      <div className="space-y-3">
-        {insights.map((insight) => (
-          <div key={insight.id} className="p-4 rounded-lg border border-border bg-card">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <h4 className="font-semibold text-sm text-foreground">{insight.title}</h4>
-                <p className="text-sm text-muted-foreground mt-1">{insight.description}</p>
-              </div>
-              <button className="px-3 py-1 text-sm border border-border rounded hover:bg-accent">
-                {insight.action}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Main Dashboard Component
-export default function EnhancedAdminDashboard() {
-  // Rule 1: Component calls hooks only
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: activityFeed } = useActivityFeed();
-  const { data: alerts } = useAlerts();
-  const { data: insights } = useAIInsights();
-
-  return (
-    <div className="min-h-screen bg-background">
-      <AdminHeader />
-      <main className="p-6 lg:p-8 space-y-8">
-        {statsLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-card border border-border rounded-lg p-6 animate-pulse">
-                <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                <div className="h-8 bg-muted rounded w-1/2" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <KPICards stats={stats} />
-        )}
-        <QuickActions />
-        <Tabs defaultValue="activity">
-          <TabsList>
-            <TabsTrigger value="activity">Recent Activity</TabsTrigger>
-            <TabsTrigger value="alerts">Alerts & Notifications</TabsTrigger>
-            <TabsTrigger value="insights">AI Insights</TabsTrigger>
-          </TabsList>
-          <TabsContent value="activity">
-            <ActivityFeed feed={activityFeed} />
-          </TabsContent>
-          <TabsContent value="alerts">
-            <AlertsList alerts={alerts} />
-          </TabsContent>
-          <TabsContent value="insights">
-            <AIInsights insights={insights} />
-          </TabsContent>
-        </Tabs>
-      </main>
-    </div>
-  );
+  )
 }

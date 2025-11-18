@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { AdminSidebar } from "@/components/navigation/admin-sidebar"
+
 import { useSubscriptions, useInvoices } from '@/lib/hooks/api/useBilling'
 import { Subscription, Invoice } from '@/types/domain/billing'
 
@@ -31,7 +31,6 @@ export default function BillingPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <AdminSidebar />
       <main className="flex-1">
         <div className="border-b border-border bg-card px-8 py-6">
           <h1 className="text-3xl font-bold text-foreground">Billing</h1>

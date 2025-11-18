@@ -3,14 +3,13 @@
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { AdminSidebar } from "@/components/navigation/admin-sidebar"
+
 
 export default function ProgramsPage() {
   const router = useRouter()
 
   return (
     <div className="flex min-h-screen">
-      <AdminSidebar />
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>

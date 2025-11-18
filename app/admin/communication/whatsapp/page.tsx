@@ -1,826 +1,263 @@
-
 "use client"
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Search,
-  Send,
-  Flag,
-  MessageSquare,
-  User,
-  AlertTriangle,
-  Info,
-  AlertCircle,
-  Phone,
-  Video,
-  MoreVertical,
-  ChevronRight,
-  ChevronLeft,
-  MessageCircle,
-  ThumbsUp,
-  Heart,
-  Lock,
-} from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
-// Types
-interface Thread {
-  id: number;
-  clientCode: string;
-  clientName: string;
-  phone?: string;
-  username?: string;
-  unreadCount: number;
-  status: 'active' | 'inactive';
-  goal: string;
-  currentRound: number;
-  totalRounds: number;
-  renewalCount: number;
-  lastMessage: string;
-  lastMessageTime: string;
-  assignedTrainer: string;
-  trainerTag: string;
-  hasFlag: boolean;
-  flagSeverity: 'critical' | 'warning' | 'coach' | 'info' | null;
-  online: boolean;
-}
+import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { MessageSquare, Send, Users, Clock, CheckCircle, AlertCircle } from "lucide-react"
 
-interface Message {
-  id: number;
-  sender: 'client' | 'trainer';
-  senderName: string;
-  trainerTag?: string;
-  content: string;
-  timestamp: string;
-  isRead: boolean;
-  isReply?: boolean;
-  comments?: Comment[];
-}
-
-interface Comment {
-  id: number;
-  senderName: string;
-  trainerTag: string;
-  content: string;
-  timestamp: string;
-}
-
-// Mock Data
-const mockThreads: Thread[] = [
+const whatsappThreads = [
   {
     id: 1,
-    clientCode: 'C001',
-    clientName: 'Anna Carter',
-    phone: '+20123456789',
-    username: '@anna_carter',
-    unreadCount: 3,
-    status: 'active',
-    goal: 'Fat Loss',
-    currentRound: 2,
-    totalRounds: 12,
-    renewalCount: 1,
-    lastMessage: 'Thanks for the meal plan update!',
-    lastMessageTime: '10:30 AM',
-    assignedTrainer: 'Mike Johnson',
-    trainerTag: 'JT',
-    hasFlag: false,
-    flagSeverity: null,
-    online: true,
+    clientCode: "C001",
+    clientName: "Sarah Johnson",
+    lastMessage: "Thanks for the workout plan! When should I start?",
+    timestamp: "2 min ago",
+    unreadCount: 2,
+    status: "active",
   },
   {
     id: 2,
-    clientCode: 'C002',
-    clientName: 'John Smith',
-    phone: '+20123456790',
-    username: '@john_smith',
-    unreadCount: 0,
-    status: 'active',
-    goal: 'Hypertrophy',
-    currentRound: 5,
-    totalRounds: 12,
-    renewalCount: 2,
-    lastMessage: 'Can we reschedule tomorrow?',
-    lastMessageTime: '9:45 AM',
-    assignedTrainer: 'Sarah Lee',
-    trainerTag: 'JT',
-    hasFlag: true,
-    flagSeverity: 'warning',
-    online: true,
-  },
-  {
-    id: 3,
-    clientCode: 'C003',
-    clientName: 'Emily Davis',
-    phone: '+20123456791',
-    username: '@emily_davis',
+    clientCode: "C002", 
+    clientName: "Mike Chen",
+    lastMessage: "Can we reschedule tomorrow's session?",
+    timestamp: "15 min ago",
     unreadCount: 1,
-    status: 'active',
-    goal: 'Rehab',
-    currentRound: 1,
-    totalRounds: 8,
-    renewalCount: 0,
-    lastMessage: 'How should I adjust for my knee pain?',
-    lastMessageTime: 'Yesterday',
-    assignedTrainer: 'Mike Johnson',
-    trainerTag: 'SA',
-    hasFlag: true,
-    flagSeverity: 'critical',
-    online: false,
-  },
-];
-
-const mockMessages: Message[] = [
-  {
-    id: 1,
-    sender: 'client',
-    senderName: 'Anna Carter',
-    content: 'Hi! I have a question about my meal plan for this week.',
-    timestamp: '10:20 AM',
-    isRead: true,
-    comments: [],
-  },
-  {
-    id: 2,
-    sender: 'trainer',
-    senderName: 'Mike Johnson',
-    trainerTag: 'JT',
-    content: 'Of course! What would you like to know?',
-    timestamp: '10:22 AM',
-    isRead: true,
-    isReply: true,
-    comments: [
-      {
-        id: 1,
-        senderName: 'Sarah Lee',
-        trainerTag: 'SA',
-        content: 'Client is doing well, staying consistent with check-ins',
-        timestamp: '10:23 AM',
-      },
-    ],
+    status: "active",
   },
   {
     id: 3,
-    sender: 'client',
-    senderName: 'Anna Carter',
-    content: 'Can I substitute chicken with fish in meal 3?',
-    timestamp: '10:25 AM',
-    isRead: true,
-    comments: [],
+    clientCode: "C003",
+    clientName: "Emily Davis",
+    lastMessage: "Completed today's workout! 💪",
+    timestamp: "1 hour ago",
+    unreadCount: 0,
+    status: "delivered",
   },
   {
     id: 4,
-    sender: 'trainer',
-    senderName: 'Mike Johnson',
-    trainerTag: 'JT',
-    content: 'Absolutely! Just make sure to use the same portion size. Fish is a great alternative.',
-    timestamp: '10:27 AM',
-    isRead: true,
-    isReply: true,
-    comments: [],
+    clientCode: "C004",
+    clientName: "Alex Rodriguez", 
+    lastMessage: "Having trouble with the meal plan...",
+    timestamp: "3 hours ago",
+    unreadCount: 3,
+    status: "active",
   },
-];
+]
 
-// Communication Page Component
-const CommunicationPage = ({ platform }: { platform: 'whatsapp' | 'messenger' | 'telegram' | 'instagram' | 'signal' }) => {
-  const [selectedThread, setSelectedThread] = useState<Thread>(mockThreads[0]);
-  const [viewMode, setViewMode] = useState<'active-read' | 'active-unread' | 'inactive'>('active-read');
-  const [groupBy, setGroupBy] = useState<'round' | 'goal' | 'renewal'>('round');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [messageInput, setMessageInput] = useState<string>('');
-  const [commentInput, setCommentInput] = useState<string>('');
-  const [activeCommentMessageId, setActiveCommentMessageId] = useState<number | null>(null);
-  const [isCommentPanelOpen, setIsCommentPanelOpen] = useState<boolean>(true);
+const messages = [
+  {
+    id: 1,
+    sender: "client",
+    message: "Hi! I just received my workout plan. It looks great!",
+    timestamp: "10:30 AM",
+    status: "delivered",
+  },
+  {
+    id: 2,
+    sender: "trainer",
+    message: "Great to hear! Remember to start with lighter weights and focus on form first.",
+    timestamp: "10:32 AM", 
+    status: "read",
+  },
+  {
+    id: 3,
+    sender: "client",
+    message: "Thanks for the workout plan! When should I start?",
+    timestamp: "10:45 AM",
+    status: "delivered",
+  },
+]
 
-  const platformConfig = {
-    whatsapp: {
-      title: 'WhatsApp Messages',
-      icon: MessageSquare,
-      color: 'text-green-500',
-      features: { phone: true, encryption: false },
-    },
-    messenger: {
-      title: 'Messenger',
-      icon: MessageCircle,
-      color: 'text-blue-500',
-      features: { phone: false, encryption: false },
-    },
-    telegram: {
-      title: 'Telegram Communication',
-      icon: Send,
-      color: 'text-blue-400',
-      features: { phone: true, encryption: false },
-    },
-    instagram: {
-      title: 'Instagram Direct Messages',
-      icon: MessageCircle,
-      color: 'text-pink-500',
-      features: { phone: false, encryption: false },
-    },
-    signal: {
-      title: 'Signal Communication',
-      icon: Lock,
-      color: 'text-blue-600',
-      features: { phone: true, encryption: true },
-    },
-  };
-
-  const config = platformConfig[platform];
-
-  const filteredThreads = mockThreads.filter((thread) => {
-    const matchesSearch =
-      thread.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      thread.clientCode.toLowerCase().includes(searchQuery.toLowerCase());
-
-    if (!matchesSearch) return false;
-
-    switch (viewMode) {
-      case 'active-read':
-        return thread.status === 'active' && thread.unreadCount === 0;
-      case 'active-unread':
-        return thread.status === 'active' && thread.unreadCount > 0;
-      case 'inactive':
-        return thread.status === 'inactive';
-      default:
-        return true;
-    }
-  });
-
-  const groupedThreads = () => {
-    const groups: { [key: string]: Thread[] } = {};
-
-    filteredThreads.forEach((thread) => {
-      let groupKey: string;
-      switch (groupBy) {
-        case 'round':
-          groupKey = `Round ${thread.currentRound}/${thread.totalRounds}`;
-          break;
-        case 'goal':
-          groupKey = thread.goal;
-          break;
-        case 'renewal':
-          groupKey = thread.renewalCount === 0 ? 'First-time' : thread.renewalCount === 1 ? 'Second' : 'Third+';
-          break;
-        default:
-          groupKey = 'All';
-      }
-
-      if (!groups[groupKey]) groups[groupKey] = [];
-      groups[groupKey].push(thread);
-    });
-
-    return groups;
-  };
-
-  const groups = groupedThreads();
-
-  const getCountByMode = (mode: 'active-read' | 'active-unread' | 'inactive') => {
-    return mockThreads.filter((t) => {
-      switch (mode) {
-        case 'active-read':
-          return t.status === 'active' && t.unreadCount === 0;
-        case 'active-unread':
-          return t.status === 'active' && t.unreadCount > 0;
-        case 'inactive':
-          return t.status === 'inactive';
-        default:
-          return false;
-      }
-    }).length;
-  };
-
-  const getFlagIcon = (severity: 'critical' | 'warning' | 'coach' | 'info' | null) => {
-    switch (severity) {
-      case 'critical':
-        return <AlertTriangle className="h-3 w-3 text-red-500" />;
-      case 'warning':
-        return <AlertCircle className="h-3 w-3 text-yellow-500" />;
-      case 'coach':
-        return <User className="h-3 w-3 text-blue-500" />;
-      case 'info':
-        return <Info className="h-3 w-3 text-gray-500" />;
-      default:
-        return null;
-    }
-  };
+export default function WhatsAppPage() {
+  const [selectedThread, setSelectedThread] = useState(whatsappThreads[0])
+  const [newMessage, setNewMessage] = useState("")
 
   const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      console.log('Sending message:', messageInput);
-      setMessageInput('');
+    if (newMessage.trim()) {
+      // Handle sending message
+      setNewMessage("")
     }
-  };
-
-  const handleAddComment = (messageId: number) => {
-    if (commentInput.trim()) {
-      console.log(`Adding comment to message ${messageId}:`, commentInput);
-      setCommentInput('');
-      setActiveCommentMessageId(null);
-    }
-  };
-
-  const handleFlag = (severity: 'critical' | 'warning' | 'coach' | 'info' | null) => {
-    console.log('Flagging thread with severity:', severity);
-  };
+  }
 
   return (
-    <div className="flex h-screen bg-background">
-      <div className="flex-1 grid grid-cols-[384px_1fr_320px] h-full">
-        {/* Thread List Column */}
-        <div className="border-r border-border bg-card flex flex-col">
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <config.icon className={`h-5 w-5 ${config.color}`} />
-                {config.title}
-              </h2>
-              <Badge variant="outline" className="gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                Connected
-              </Badge>
+    <div className="flex h-[calc(100vh-4rem)] bg-background">
+      {/* Threads List */}
+      <div className="w-80 border-r bg-card">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            WhatsApp Conversations
+          </h2>
+          <div className="flex gap-4 mt-2 text-sm">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-muted-foreground">Online</span>
             </div>
-
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or code..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              <span className="text-muted-foreground">{whatsappThreads.length} conversations</span>
             </div>
-
-            <div className="flex gap-2 mb-4">
-              <Button
-                variant={viewMode === 'active-read' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('active-read')}
-                className="flex-1 text-xs"
-              >
-                Read ({getCountByMode('active-read')})
-              </Button>
-              <Button
-                variant={viewMode === 'active-unread' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('active-unread')}
-                className="flex-1 text-xs"
-              >
-                Unread ({getCountByMode('active-unread')})
-              </Button>
-              <Button
-                variant={viewMode === 'inactive' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('inactive')}
-                className="flex-1 text-xs"
-              >
-                Inactive ({getCountByMode('inactive')})
-              </Button>
-            </div>
-
-            {viewMode !== 'inactive' && (
-              <Select value={groupBy} onValueChange={(val) => setGroupBy(val as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="round">Group by Check-in Round</SelectItem>
-                  <SelectItem value="goal">Group by Goal</SelectItem>
-                  <SelectItem value="renewal">Group by Renewal Count</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            {Object.entries(groups).map(([groupName, threads]) => (
-              <div key={groupName}>
-                <div className="px-4 py-2 bg-muted/50 text-sm font-medium sticky top-0 z-10">
-                  {groupName} ({threads.length})
-                </div>
-                {threads.map((thread) => (
-                  <button
-                    key={thread.id}
-                    onClick={() => setSelectedThread(thread)}
-                    className={`w-full p-4 border-b border-border hover:bg-accent/50 transition-colors text-left ${
-                      selectedThread?.id === thread.id ? 'bg-accent' : ''
-                    } ${thread.unreadCount > 0 ? 'bg-primary/5 font-semibold' : ''}`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="relative">
-                        <Avatar className="w-10 h-10">
-                          <AvatarFallback>
-                            {thread.clientName.split(' ').map((n) => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        {thread.online && (
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-card rounded-full" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-sm ${thread.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
-                            {thread.clientCode}—{thread.clientName}
-                            {thread.unreadCount > 0 && ` (${thread.unreadCount})`}
-                          </span>
-                          {thread.hasFlag && (
-                            <div className="flex items-center">{getFlagIcon(thread.flagSeverity)}</div>
-                          )}
-                        </div>
-                        {groupBy === 'round' && (
-                          <Badge variant="outline" className="text-xs mb-1">
-                            Round {thread.currentRound}/{thread.totalRounds}
-                          </Badge>
-                        )}
-                        <p className="text-xs text-muted-foreground truncate">{thread.lastMessage}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs text-muted-foreground">{thread.lastMessageTime}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            @{thread.assignedTrainer.split(' ')[0]} {thread.trainerTag}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ))}
           </div>
         </div>
 
-        {/* Chat Area Column */}
-        <div className="border-r border-border flex flex-col">
-          <div className="p-4 border-b border-border bg-card">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Avatar className="w-12 h-12">
-                    <AvatarFallback>
-                      {selectedThread.clientName.split(' ').map((n) => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  {selectedThread.online && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-card rounded-full" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold">
-                    {selectedThread.clientCode}—{selectedThread.clientName}
-                  </h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{selectedThread.goal}</span>
-                    <span>•</span>
-                    <span>Round {selectedThread.currentRound}/{selectedThread.totalRounds}</span>
-                    <span>•</span>
-                    <Badge variant="secondary" className="text-xs">
-                      @{selectedThread.assignedTrainer.split(' ')[0]} {selectedThread.trainerTag}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                {config.features.phone && (
-                  <>
-                    <Button variant="ghost" size="icon">
-                      <Phone className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Video className="h-4 w-4" />
-                    </Button>
-                  </>
+        <div className="overflow-y-auto">
+          {whatsappThreads.map((thread) => (
+            <div
+              key={thread.id}
+              className={`p-4 border-b cursor-pointer hover:bg-accent transition-colors ${
+                selectedThread.id === thread.id ? "bg-accent" : ""
+              }`}
+              onClick={() => setSelectedThread(thread)}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-medium text-foreground">
+                  {thread.clientCode}–{thread.clientName}
+                </h3>
+                {thread.unreadCount > 0 && (
+                  <Badge variant="default" className="text-xs">
+                    {thread.unreadCount}
+                  </Badge>
                 )}
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
               </div>
-            </div>
-          </div>
-
-          <div className="p-3 bg-muted/30 border-b border-border flex items-center gap-2">
-            <span className="text-sm text-muted-foreground mr-2">Actions:</span>
-            <Button size="sm" variant="default">
-              <Send className="h-3 w-3 mr-2" />
-              Reply
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <Flag className="h-3 w-3 mr-2" />
-                  Flag
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleFlag('info')}>
-                  <Info className="h-4 w-4 mr-2 text-gray-500" />
-                  Info
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleFlag('coach')}>
-                  <User className="h-4 w-4 mr-2 text-blue-500" />
-                  Coach Needed
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleFlag('warning')}>
-                  <AlertCircle className="h-4 w-4 mr-2 text-yellow-500" />
-                  Warning
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleFlag('critical')}>
-                  <AlertTriangle className="h-4 w-4 mr-2 text-red-500" />
-                  Critical
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <div className="ml-auto text-xs text-muted-foreground">
-              💡 Reply = Client sees | Comment = Staff only
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-0">
-            {mockMessages.map((message, index) => (
-              <div
-                key={message.id}
-                className="grid grid-cols-[1fr_auto] items-start gap-4 py-3 border-b border-border/50 last:border-b-0 hover:bg-accent/20"
-              >
-                <div className={`flex ${message.sender === 'client' ? 'justify-start' : 'justify-end'} items-start`}>
-                  <div className={`max-w-2xl ${message.sender === 'client' ? '' : 'text-right'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      {message.sender === 'trainer' && (
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs">
-                            @{message.senderName.split(' ')[0]} {message.trainerTag}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              setActiveCommentMessageId(
-                                activeCommentMessageId === message.id ? null : message.id
-                              )
-                            }
-                            className={`${activeCommentMessageId === message.id ? 'bg-yellow-50 border-yellow-200' : ''} transition-all duration-200`}
-                          >
-                            <MessageSquare className="h-4 w-4" />
-                            {message.comments && message.comments.length > 0 && (
-                              <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 text-xs">
-                                {message.comments.length}
-                              </Badge>
-                            )}
-                          </Button>
-                        </div>
-                      )}
-                      {message.sender === 'client' && (
-                        <span className="text-sm font-medium">{message.senderName}</span>
-                      )}
-                      {message.isReply && (
-                        <Badge variant="outline" className="text-xs">
-                          <Send className="h-2 w-2 mr-1" />
-                          Reply
-                        </Badge>
-                      )}
-                    </div>
-                    <div
-                      className={`inline-block rounded-lg px-4 py-2 max-w-full ${
-                        message.sender === 'client'
-                          ? 'bg-accent text-accent-foreground'
-                          : 'bg-primary text-primary-foreground'
-                      }`}
-                    >
-                      <p className="text-sm leading-relaxed">{message.content}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">{message.timestamp}</p>
-                  </div>
+              <p className="text-sm text-muted-foreground truncate mb-1">
+                {thread.lastMessage}
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{thread.timestamp}</span>
+                <div className="flex items-center gap-1">
+                  {thread.status === "delivered" && <CheckCircle className="h-3 w-3 text-green-500" />}
+                  {thread.status === "active" && <Clock className="h-3 w-3 text-yellow-500" />}
                 </div>
-                <div className="w-px bg-muted/30 self-stretch mx-2"></div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
-          <div className="p-4 border-t border-border bg-card">
-            <div className="flex gap-2 items-center">
-              {platform === 'messenger' && (
-                <Button variant="ghost" size="icon">
-                  <ThumbsUp className="h-4 w-4" />
-                </Button>
-              )}
-              {platform === 'instagram' && (
-                <Button variant="ghost" size="icon">
-                  <Heart className="h-4 w-4" />
-                </Button>
-              )}
-              <Input
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                placeholder="Type your message to client..."
-                className="flex-1"
-              />
-              <Button onClick={handleSendMessage}>
-                <Send className="h-4 w-4 mr-2" />
-                Send
+      {/* Chat Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Chat Header */}
+        <div className="p-4 border-b bg-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-foreground">
+                {selectedThread.clientCode}–{selectedThread.clientName}
+              </h3>
+              <p className="text-sm text-muted-foreground">Last seen 2 minutes ago</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                View Profile
+              </Button>
+              <Button variant="outline" size="sm">
+                Call
               </Button>
             </div>
-            {config.features.encryption && (
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                <Lock className="h-3 w-3" />
-                Messages are end-to-end encrypted
-              </p>
-            )}
           </div>
         </div>
 
-        {/* Comments Panel Column */}
-        <div
-          className={`bg-card border-l border-border flex flex-col transition-all duration-300 ease-in-out ${
-            isCommentPanelOpen ? 'w-80' : 'w-0 overflow-hidden'
-          }`}
-        >
-          <div className="p-4 border-b border-border flex items-center justify-between sticky top-0 bg-card z-10">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-yellow-600" />
-              <h3 className="text-sm font-semibold">Internal Comments</h3>
-              <Badge variant="secondary" className="text-xs">
-                {mockMessages.filter((m) => m.comments && m.comments.length > 0).length} messages
-              </Badge>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsCommentPanelOpen(!isCommentPanelOpen)}
-              className="h-8 w-8"
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${message.sender === "trainer" ? "justify-end" : "justify-start"}`}
             >
-              {isCommentPanelOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            </Button>
-          </div>
-
-          {isCommentPanelOpen && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-0">
-              {mockMessages.map((message, index) => (
-                <div
-                  key={message.id}
-                  className={`py-3 px-3 border-b border-border/50 last:border-b-0 ${
-                    activeCommentMessageId === message.id
-                      ? 'bg-yellow-50/80 dark:bg-yellow-900/20 border-yellow-200/50'
-                      : 'hover:bg-accent/20'
-                  } transition-all duration-200 ${message.sender !== 'trainer' ? 'opacity-30' : ''}`}
-                >
-                  {message.sender === 'trainer' ? (
-                    <>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-muted-foreground">Msg #{message.id}</span>
-                          {message.comments && message.comments.length > 0 && (
-                            <Badge variant="secondary" className="text-xs">
-                              {message.comments.length} comment{message.comments.length !== 1 ? 's' : ''}
-                            </Badge>
-                          )}
-                        </div>
-                        {activeCommentMessageId === message.id && (
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => handleAddComment(message.id)}
-                              className="h-6 px-3 text-xs"
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setActiveCommentMessageId(null)}
-                              className="h-6 px-3 text-xs"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      {activeCommentMessageId === message.id ? (
-                        <div className="space-y-2">
-                          <Textarea
-                            value={commentInput}
-                            onChange={(e) => setCommentInput(e.target.value)}
-                            placeholder="Add internal comment on this trainer message..."
-                            className="text-sm bg-background border-border/50"
-                            rows={3}
-                          />
-                        </div>
-                      ) : (
-                        <>
-                          {message.comments && message.comments.length > 0 ? (
-                            <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
-                              {message.comments.map((comment) => (
-                                <div
-                                  key={comment.id}
-                                  className="bg-yellow-50/60 dark:bg-yellow-900/20 border border-yellow-200/60 dark:border-yellow-800/60 rounded-md p-3"
-                                >
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <MessageSquare className="h-3 w-3 text-yellow-600 flex-shrink-0" />
-                                    <span className="text-xs font-medium text-yellow-900 dark:text-yellow-100 truncate">
-                                      {comment.senderName} (@{comment.trainerTag})
-                                    </span>
-                                  </div>
-                                  <p className="text-sm text-yellow-800 dark:text-yellow-200 leading-relaxed">
-                                    {comment.content}
-                                  </p>
-                                  <p className="text-xs text-yellow-600 mt-1">{comment.timestamp}</p>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-xs text-muted-foreground italic text-center py-4">
-                              No comments yet
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-xs text-muted-foreground italic text-center py-4">
-                      Comments only available for trainer messages
-                    </div>
+              <div
+                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  message.sender === "trainer"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-foreground"
+                }`}
+              >
+                <p className="text-sm">{message.message}</p>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs opacity-70">{message.timestamp}</span>
+                  {message.sender === "trainer" && (
+                    <CheckCircle className="h-3 w-3 opacity-70" />
                   )}
                 </div>
-              ))}
+              </div>
             </div>
-          )}
+          ))}
         </div>
-      </div>
-    </div>
-  );
-};
 
-// Main App Component with Platform Selector
-export default function CommunicationDemo() {
-  const [selectedPlatform, setSelectedPlatform] = useState<'whatsapp' | 'messenger' | 'telegram' | 'instagram' | 'signal'>('whatsapp');
-
-  return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Platform Selector */}
-      <div className="border-b bg-card p-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold">Communication Platforms</h1>
+        {/* Message Input */}
+        <div className="p-4 border-t bg-card">
           <div className="flex gap-2">
-            <Button
-              variant={selectedPlatform === 'whatsapp' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedPlatform('whatsapp')}
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              WhatsApp
-            </Button>
-            <Button
-              variant={selectedPlatform === 'messenger' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedPlatform('messenger')}
-            >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Messenger
-            </Button>
-            <Button
-              variant={selectedPlatform === 'telegram' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedPlatform('telegram')}
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Telegram
-            </Button>
-            <Button
-              variant={selectedPlatform === 'instagram' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedPlatform('instagram')}
-            >
-              <Heart className="h-4 w-4 mr-2" />
-              Instagram
-            </Button>
-            <Button
-              variant={selectedPlatform === 'signal' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedPlatform('signal')}
-            >
-              <Lock className="h-4 w-4 mr-2" />
-              Signal
+            <Textarea
+              placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              className="flex-1 min-h-[40px] max-h-32 resize-none"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSendMessage()
+                }
+              }}
+            />
+            <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+              <Send className="h-4 w-4" />
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Press Enter to send, Shift+Enter for new line
+          </p>
         </div>
       </div>
 
-      {/* Communication Page */}
-      <div className="flex-1 overflow-hidden">
-        <CommunicationPage platform={selectedPlatform} />
+      {/* Client Info Panel */}
+      <div className="w-80 border-l bg-card p-4">
+        <h3 className="font-semibold text-foreground mb-4">Client Information</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Client Code</p>
+            <p className="font-medium text-foreground">{selectedThread.clientCode}</p>
+          </div>
+          
+          <div>
+            <p className="text-sm text-muted-foreground">Full Name</p>
+            <p className="font-medium text-foreground">{selectedThread.clientName}</p>
+          </div>
+          
+          <div>
+            <p className="text-sm text-muted-foreground">Status</p>
+            <Badge variant="outline">Active Client</Badge>
+          </div>
+          
+          <div>
+            <p className="text-sm text-muted-foreground">Goal</p>
+            <p className="font-medium text-foreground">Weight Loss</p>
+          </div>
+          
+          <div>
+            <p className="text-sm text-muted-foreground">Trainer</p>
+            <p className="font-medium text-foreground">Sarah Johnson</p>
+          </div>
+          
+          <div>
+            <p className="text-sm text-muted-foreground">Last Check-in</p>
+            <p className="font-medium text-foreground">2 days ago</p>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-2">
+          <Button variant="outline" className="w-full">
+            View Full Profile
+          </Button>
+          <Button variant="outline" className="w-full">
+            Assign Plan
+          </Button>
+          <Button variant="outline" className="w-full">
+            Schedule Session
+          </Button>
+        </div>
       </div>
     </div>
-  );
+  )
 }

@@ -4,270 +4,287 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { AlertCircle, Plus, Play, Edit, Trash2, Bell } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table"
+import { Switch } from "@/components/ui/switch"
+import { Zap, Play, Pause, Plus, Settings, Clock, Users, MessageSquare } from "lucide-react"
 
-interface Workflow {
-  id: string
-  name: string
-  description: string
-  status: "Active" | "Inactive"
-  lastRun: string
-  triggers: number
-}
-
-const mockWorkflows: Workflow[] = [
+const automationWorkflows = [
   {
-    id: "1",
-    name: "Client Onboarding",
-    description: "Send welcome message and assign plan",
-    status: "Active",
+    id: 1,
+    name: "Welcome New Client",
+    description: "Automatically send welcome message and onboarding materials when a new client signs up",
+    trigger: "Client Registration",
+    actions: ["Send WhatsApp welcome", "Email onboarding guide", "Schedule first session"],
+    status: "active",
+    executions: 156,
+    successRate: 98,
     lastRun: "2 hours ago",
-    triggers: 3,
+    category: "Onboarding",
   },
   {
-    id: "2",
-    name: "Renewal Reminder",
-    description: "Automated renewal notifications",
-    status: "Active",
+    id: 2,
+    name: "Plan Delivery Notification",
+    description: "Notify client when their training and nutrition plans are ready for delivery",
+    trigger: "Plan Assignment",
+    actions: ["Generate PDF", "Send WhatsApp notification", "Create check-in schedule"],
+    status: "active",
+    executions: 89,
+    successRate: 95,
+    lastRun: "30 minutes ago",
+    category: "Plan Management",
+  },
+  {
+    id: 3,
+    name: "Missed Check-in Follow-up",
+    description: "Send reminder messages when clients miss their scheduled check-ins",
+    trigger: "Missed Check-in",
+    actions: ["Send reminder WhatsApp", "Notify trainer", "Reschedule check-in"],
+    status: "active",
+    executions: 234,
+    successRate: 87,
+    lastRun: "1 hour ago",
+    category: "Engagement",
+  },
+  {
+    id: 4,
+    name: "Progress Milestone Celebration",
+    description: "Automatically celebrate when clients reach their fitness milestones",
+    trigger: "Milestone Achieved",
+    actions: ["Send congratulations message", "Update progress badge", "Share achievement"],
+    status: "active",
+    executions: 67,
+    successRate: 100,
+    lastRun: "4 hours ago",
+    category: "Motivation",
+  },
+  {
+    id: 5,
+    name: "Subscription Renewal Reminder",
+    description: "Remind clients about upcoming subscription renewals and payment due dates",
+    trigger: "7 Days Before Expiry",
+    actions: ["Send renewal reminder", "Generate invoice", "Offer renewal discount"],
+    status: "paused",
+    executions: 45,
+    successRate: 92,
+    lastRun: "2 days ago",
+    category: "Billing",
+  },
+  {
+    id: 6,
+    name: "Trainer Workload Alert",
+    description: "Alert administrators when trainer workload exceeds capacity limits",
+    trigger: "Workload > 90%",
+    actions: ["Send admin alert", "Suggest client redistribution", "Block new assignments"],
+    status: "active",
+    executions: 12,
+    successRate: 100,
     lastRun: "1 day ago",
-    triggers: 2,
-  },
-  {
-    id: "3",
-    name: "Inactivity Alert",
-    description: "Alert inactive clients",
-    status: "Inactive",
-    lastRun: "5 days ago",
-    triggers: 1,
-  },
-  {
-    id: "4",
-    name: "Follow-up Sequence",
-    description: "Weekly follow-up messages",
-    status: "Active",
-    lastRun: "12 hours ago",
-    triggers: 4,
-  },
-  {
-    id: "5",
-    name: "Payment Failure Alert",
-    description: "Notify on payment failures",
-    status: "Active",
-    lastRun: "3 hours ago",
-    triggers: 2,
+    category: "Team Management",
   },
 ]
 
-export default function AutomationOverviewPage() {
-  const [workflows, setWorkflows] = useState<Workflow[]>(mockWorkflows)
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [newWorkflow, setNewWorkflow] = useState({ name: "", description: "" })
+const categories = ["All", "Onboarding", "Plan Management", "Engagement", "Motivation", "Billing", "Team Management"]
 
-  const activeWorkflows = workflows.filter((w) => w.status === "Active").length
-  const totalWorkflows = workflows.length
+export default function AutomationLibraryPage() {
+  const [selectedCategory, setSelectedCategory] = useState("All")
+  const [searchTerm, setSearchTerm] = useState("")
 
-  const handleCreateWorkflow = () => {
-    if (newWorkflow.name && newWorkflow.description) {
-      const workflow: Workflow = {
-        id: String(Date.now()),
-        ...newWorkflow,
-        status: "Active",
-        lastRun: "Just now",
-        triggers: 0,
-      }
-      setWorkflows([workflow, ...workflows])
-      setNewWorkflow({ name: "", description: "" })
-      setShowCreateModal(false)
-    }
-  }
+  const filteredWorkflows = automationWorkflows.filter((workflow) => {
+    const matchesCategory = selectedCategory === "All" || workflow.category === selectedCategory
+    const matchesSearch = workflow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         workflow.description.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesCategory && matchesSearch
+  })
 
-  const handleDeleteWorkflow = (id: string) => {
-    setWorkflows(workflows.filter((w) => w.id !== id))
+  const toggleWorkflow = (id: number) => {
+    // Handle workflow toggle
+    console.log(`Toggle workflow ${id}`)
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <main className="flex-1 p-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-balance mb-2">Automation Center</h1>
-            <p className="text-muted-foreground">Manage workflows, triggers, events, and AI alerts</p>
-          </div>
-          <Button onClick={() => setShowCreateModal(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Workflow
-          </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Automation Library</h1>
+          <p className="text-muted-foreground">Manage automated workflows and triggers</p>
         </div>
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Create Workflow
+        </Button>
+      </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Active Workflows</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeWorkflows}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Workflows</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalWorkflows}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Running Alerts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">42</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Failed Runs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">2</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Workflow List */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Workflows</CardTitle>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Workflows</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Run</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {workflows.map((workflow) => (
-                  <TableRow key={workflow.id}>
-                    <TableCell>{workflow.name}</TableCell>
-                    <TableCell>{workflow.description}</TableCell>
-                    <TableCell>
-                      <Badge variant={workflow.status === "Active" ? "default" : "secondary"}>
-                        {workflow.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{workflow.lastRun}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" title="Run">
-                          <Play className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title="Edit">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title="Delete" onClick={() => handleDeleteWorkflow(workflow.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="text-2xl font-bold">{automationWorkflows.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {automationWorkflows.filter(w => w.status === "active").length} active
+            </p>
           </CardContent>
         </Card>
 
-        {/* Notification Center */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
-                Recent Alerts
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { type: "success", msg: "Client Onboarding workflow completed for 3 clients" },
-                { type: "warning", msg: "Payment failure detected for user@example.com" },
-                { type: "info", msg: "Renewal reminder sent to 15 clients" },
-              ].map((alert, idx) => (
-                <div
-                  key={idx}
-                  className={`p-3 rounded-lg border flex items-start gap-3 ${
-                    alert.type === "success"
-                      ? "bg-primary/10 border-primary/30 text-primary"
-                      : alert.type === "warning"
-                        ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400"
-                        : "bg-blue-500/10 border-blue-500/30 text-blue-400"
-                  }`}
-                >
-                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm">{alert.msg}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="secondary" className="w-full justify-start text-sm">+ Test Alert</Button>
-              <Button variant="secondary" className="w-full justify-start text-sm">+ Import Workflow</Button>
-              <Button variant="secondary" className="w-full justify-start text-sm">Export Config</Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Create Workflow Dialog */}
-        <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create Workflow</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label className="block text-sm font-medium mb-2">Workflow Name</Label>
-                <Input
-                  type="text"
-                  value={newWorkflow.name}
-                  onChange={(e) => setNewWorkflow({ ...newWorkflow, name: e.target.value })}
-                  placeholder="e.g., Welcome Sequence"
-                />
-              </div>
-              <div>
-                <Label className="block text-sm font-medium mb-2">Description</Label>
-                <Textarea
-                  value={newWorkflow.description}
-                  onChange={(e) => setNewWorkflow({ ...newWorkflow, description: e.target.value })}
-                  placeholder="Describe what this workflow does..."
-                  rows={4}
-                />
-              </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Executions</CardTitle>
+            <Play className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {automationWorkflows.reduce((sum, w) => sum + w.executions, 0)}
             </div>
-            <DialogFooter className="flex gap-3">
-              <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateWorkflow}>
-                Create Workflow
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </main>
+            <p className="text-xs text-muted-foreground">This month</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {Math.round(automationWorkflows.reduce((sum, w) => sum + w.successRate, 0) / automationWorkflows.length)}%
+            </div>
+            <p className="text-xs text-muted-foreground">Average across all workflows</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Time Saved</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">47h</div>
+            <p className="text-xs text-muted-foreground">Estimated this month</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Search workflows..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {categories.map((category) => (
+                <Button
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(category)}
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Workflows List */}
+      <div className="space-y-4">
+        {filteredWorkflows.map((workflow) => (
+          <Card key={workflow.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-lg font-semibold text-foreground">{workflow.name}</h3>
+                    <Badge variant="outline">{workflow.category}</Badge>
+                    <Badge variant={workflow.status === "active" ? "default" : "secondary"}>
+                      {workflow.status}
+                    </Badge>
+                  </div>
+                  
+                  <p className="text-muted-foreground mb-4">{workflow.description}</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Trigger</p>
+                      <p className="font-medium text-foreground">{workflow.trigger}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Executions</p>
+                      <p className="font-medium text-foreground">{workflow.executions}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Success Rate</p>
+                      <p className="font-medium text-foreground">{workflow.successRate}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Last Run</p>
+                      <p className="font-medium text-foreground">{workflow.lastRun}</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Actions</p>
+                    <div className="flex flex-wrap gap-1">
+                      {workflow.actions.map((action, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {action}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-end gap-3 ml-6">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={workflow.status === "active"}
+                      onCheckedChange={() => toggleWorkflow(workflow.id)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {workflow.status === "active" ? "Active" : "Paused"}
+                    </span>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      <Settings className="h-4 w-4 mr-1" />
+                      Configure
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      View Logs
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {filteredWorkflows.length === 0 && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Zap className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No workflows found</h3>
+            <p className="text-muted-foreground mb-4">
+              Try adjusting your search or category filter
+            </p>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create New Workflow
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

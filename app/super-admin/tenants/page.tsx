@@ -1,4 +1,4 @@
-import { SuperAdminSidebar } from "@/components/super-admin-sidebar"
+import { SuperAdminSidebar } from "@/components/navigation/super-admin-sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

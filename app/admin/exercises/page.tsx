@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { AdminSidebar } from "@/components/navigation/admin-sidebar"
+
 import { ExerciseCard } from "@/components/features/exercise-card"
 import { useExercises } from '@/lib/hooks/api/useExercises'
 import { Exercise } from '@/types/domain/exercise'
@@ -56,7 +56,6 @@ export default function ExercisesPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <AdminSidebar />
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
