@@ -1,96 +1,141 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/middleware/auth.middleware';
-import { database } from '@/lib/mock-db/database';
-import { Notification } from '@/types/lib/mock-db/types';
-import { success, error } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
-import { withValidation } from '@/lib/middleware/validate.middleware';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 
-const createNotificationSchema = z.object({
-  userId: z.string().min(1, 'User ID is required'),
-  message: z.string().min(1, 'Message is required').max(500),
-  type: z.enum(['info', 'success', 'warning', 'error']).optional(),
-});
-
-/**
- * GET /api/notifications
- * Get notifications for current user
- */
-export async function GET(req: NextRequest) {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
+// GET /api/notifications - Get persistent notifications
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const unreadOnly = searchParams.get('unreadOnly') === 'true';
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const searchParams = request.nextUrl.searchParams
+    const tenantId = searchParams.get("tenant_id")
+    const recipientId = searchParams.get("recipient_id")
+    const isDismissed = searchParams.get("is_dismissed") || "false"
+    const notificationType = searchParams.get("type")
 
-    let notifications = database.query<Notification>(
-      'notifications',
-      (n) => n.userId === user.id
-    );
-
-    // Filter unread only
-    if (unreadOnly) {
-      notifications = notifications.filter((n) => !n.read);
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: "tenant_id is required" },
+        { status: 400 }
+      )
     }
 
-    // Sort by date (newest first)
-    notifications = database.sort(notifications, 'createdAt', 'desc');
+    let query = `
+      SELECT * FROM persistent_notifications
+      WHERE tenant_id = '${tenantId}'
+        AND is_dismissed = ${isDismissed === "true"}
+    `
 
-    // Limit
-    notifications = notifications.slice(0, limit);
+    if (recipientId) {
+      query += ` AND (recipient_id = '${recipientId}' OR recipient_id IS NULL)`
+    }
 
-    const unreadCount = database.query<Notification>(
-      'notifications',
-      (n) => n.userId === user.id && !n.read
-    ).length;
+    if (notificationType) {
+      query += ` AND notification_type = '${notificationType}'`
+    }
 
-    return success({
-      notifications,
-      unreadCount,
-      total: notifications.length,
-    });
-  } catch (err) {
-    console.error('Failed to fetch notifications:', err);
-    return error('Failed to fetch notifications', 500);
+    query += ` ORDER BY priority DESC, created_at DESC LIMIT 50`
+
+    const notifications = await prisma.$queryRawUnsafe(query)
+
+    return NextResponse.json({ notifications })
+  } catch (error) {
+    console.error("Error fetching notifications:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch notifications" },
+      { status: 500 }
+    )
   }
 }
 
-/**
- * POST /api/notifications
- * Create a new notification (admin/system only)
- */
-const postHandler = async (req: NextRequest, validatedBody: any) => {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
-  // Only admins can create notifications
-  if (user.role !== 'admin' && user.role !== 'super-admin') {
-    return error('Only admins can create notifications', 403);
-  }
-
+// POST /api/notifications - Create notification
+export async function POST(request: NextRequest) {
   try {
-    const { userId, message, type } = validatedBody;
-
-    const newNotification = database.create<Notification>('notifications', {
-      userId,
+    const body = await request.json()
+    const {
+      tenant_id,
+      recipient_id,
+      notification_type,
+      title,
       message,
-      read: false,
-    });
+      action_url,
+      action_label,
+      related_entity_type,
+      related_entity_id,
+      priority = "normal",
+    } = body
 
-    return success(newNotification, 201);
-  } catch (err) {
-    console.error('Failed to create notification:', err);
-    return error('Failed to create notification', 500);
+    if (!tenant_id || !notification_type || !title || !message) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      )
+    }
+
+    const notification = await prisma.$queryRaw`
+      INSERT INTO persistent_notifications (
+        tenant_id, recipient_id, notification_type, title, message,
+        action_url, action_label, related_entity_type, related_entity_id, priority
+      ) VALUES (
+        ${tenant_id}::uuid,
+        ${recipient_id ? `${recipient_id}::uuid` : null},
+        ${notification_type},
+        ${title},
+        ${message},
+        ${action_url || null},
+        ${action_label || null},
+        ${related_entity_type || null},
+        ${related_entity_id ? `${related_entity_id}::uuid` : null},
+        ${priority}
+      )
+      RETURNING *
+    `
+
+    return NextResponse.json({ notification: notification[0] }, { status: 201 })
+  } catch (error) {
+    console.error("Error creating notification:", error)
+    return NextResponse.json(
+      { error: "Failed to create notification" },
+      { status: 500 }
+    )
   }
-};
+}
 
-export const POST = withValidation(createNotificationSchema, postHandler);
+// PATCH /api/notifications/[id] - Mark as read or dismissed
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { notification_id, action } = body
+
+    if (!notification_id || !action) {
+      return NextResponse.json(
+        { error: "notification_id and action are required" },
+        { status: 400 }
+      )
+    }
+
+    let updateQuery = ""
+    if (action === "read") {
+      updateQuery = `is_read = true, read_at = NOW()`
+    } else if (action === "dismiss") {
+      updateQuery = `is_dismissed = true, dismissed_at = NOW()`
+    } else {
+      return NextResponse.json(
+        { error: "Invalid action. Use 'read' or 'dismiss'" },
+        { status: 400 }
+      )
+    }
+
+    const notification = await prisma.$queryRawUnsafe(`
+      UPDATE persistent_notifications
+      SET ${updateQuery}
+      WHERE notification_id = '${notification_id}'
+      RETURNING *
+    `)
+
+    return NextResponse.json({ notification: notification[0] })
+  } catch (error) {
+    console.error("Error updating notification:", error)
+    return NextResponse.json(
+      { error: "Failed to update notification" },
+      { status: 500 }
+    )
+  }
+}
