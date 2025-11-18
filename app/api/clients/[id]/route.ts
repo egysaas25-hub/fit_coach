@@ -1,130 +1,200 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { database } from '@/lib/mock-db/database';
-import { Client } from '@/types/lib/mock-db/types';
-import { success, error, notFound, forbidden } from '@/lib/utils/response';
-import { withValidation } from '@/lib/middleware/validate.middleware';
-import { updateClientSchema } from '@/lib/schemas/client/client.schema';
-import { ensureDbInitialized } from '@/lib/db/init';
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/auth/session'
+import { auditService } from '@/lib/services/audit'
+import { handleAPIError, AppError, ErrorResponses } from '@/lib/errors'
+import { z } from 'zod'
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
+// Validation schema for updating a client
+const updateClientSchema = z.object({
+  first_name: z.string().min(1).max(100).optional(),
+  last_name: z.string().min(1).max(100).optional(),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  age: z.number().int().min(1).max(120).optional(),
+  goal: z.string().max(255).optional(),
+  status: z.enum(['lead', 'active', 'paused', 'expired', 'churned', 'paid_pending_kyc', 'lead_incomplete']).optional(),
+})
 
 /**
  * GET /api/clients/[id]
- * Retrieves a single client by their ID.
- * - A client can view their own profile.
- * - A trainer can view their assigned clients.
- * - An admin can view any client.
+ * Fetch a single client by ID
  */
-export async function GET(req: NextRequest, { params }: RouteParams) {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) {
-    return authResult;
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getSession(request)
+    const clientId = BigInt(params.id)
+
+    const client = await prisma.customers.findFirst({
+      where: {
+        id: clientId,
+        tenant_id: BigInt(session.user.tenant_id),
+      },
+      include: {
+        subscriptions: {
+          orderBy: { created_at: 'desc' },
+          take: 5,
+        },
+        training_plans: {
+          where: { is_active: true },
+          orderBy: { created_at: 'desc' },
+          take: 1,
+        },
+        nutrition_plans: {
+          where: { is_active: true },
+          orderBy: { created_at: 'desc' },
+          take: 1,
+        },
+      },
+    })
+
+    if (!client) {
+      return ErrorResponses.notFound('Client')
+    }
+
+    // Serialize BigInt fields
+    const serialized = {
+      ...client,
+      id: client.id.toString(),
+      tenant_id: client.tenant_id.toString(),
+      subscriptions: client.subscriptions.map(sub => ({
+        ...sub,
+        id: sub.id.toString(),
+        tenant_id: sub.tenant_id.toString(),
+        customer_id: sub.customer_id.toString(),
+        currency_id: sub.currency_id.toString(),
+      })),
+      training_plans: client.training_plans.map(plan => ({
+        ...plan,
+        id: plan.id.toString(),
+        tenant_id: plan.tenant_id.toString(),
+        customer_id: plan.customer_id.toString(),
+        created_by: plan.created_by.toString(),
+      })),
+      nutrition_plans: client.nutrition_plans.map(plan => ({
+        ...plan,
+        id: plan.id.toString(),
+        tenant_id: plan.tenant_id.toString(),
+        customer_id: plan.customer_id.toString(),
+        created_by: plan.created_by.toString(),
+      })),
+    }
+
+    return NextResponse.json(serialized)
+  } catch (error) {
+    return handleAPIError(error)
   }
-  const { user } = authResult;
-  const { id } = params;
-
-  const client = database.get<Client>('clients', id);
-  if (!client) {
-    return notFound('Client');
-  }
-
-  // Permission check
-  const isOwner = user.role === 'client' && user.id === client.id;
-  const isAssignedTrainer = user.role === 'trainer' && client.trainerId === user.id;
-  const isAdmin = user.role === 'admin' || user.role === 'super-admin';
-
-  if (!isOwner && !isAssignedTrainer && !isAdmin) {
-    return forbidden("You don't have permission to view this client.");
-  }
-
-  const { passwordHash, ...clientResponse } = client;
-  return success(clientResponse);
 }
 
 /**
  * PATCH /api/clients/[id]
- * Updates a client's information.
- * - A client can update their own profile (limited fields).
- * - A trainer can update their assigned clients.
- * - An admin can update any client.
+ * Update a client
  */
-const patchHandler = async (req: NextRequest, validatedBody: any, { params }: RouteParams) => {
-    ensureDbInitialized();
-    const authResult = await requireAuth(req);
-    if (authResult instanceof NextResponse) {
-        return authResult;
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getSession(request)
+    const clientId = BigInt(params.id)
+    const body = await request.json()
+
+    // Validate input
+    const data = updateClientSchema.parse(body)
+
+    // Get existing client for audit log
+    const existingClient = await prisma.customers.findFirst({
+      where: {
+        id: clientId,
+        tenant_id: BigInt(session.user.tenant_id),
+      },
+    })
+
+    if (!existingClient) {
+      return ErrorResponses.notFound('Client')
     }
-    const { user } = authResult;
-    const { id } = params;
 
-    const client = database.get<Client>('clients', id);
-    if (!client) {
-        return notFound('Client');
+    // Update client
+    const updatedClient = await prisma.customers.update({
+      where: { id: clientId },
+      data: {
+        ...data,
+        updated_at: new Date(),
+      },
+    })
+
+    // Log to audit
+    await auditService.logUpdate(
+      session.user.tenant_id,
+      session.user.id,
+      'customer',
+      Number(clientId),
+      existingClient,
+      updatedClient
+    )
+
+    // Serialize BigInt
+    const serialized = {
+      ...updatedClient,
+      id: updatedClient.id.toString(),
+      tenant_id: updatedClient.tenant_id.toString(),
     }
 
-    // Permission check
-    const isOwner = user.role === 'client' && user.id === client.id;
-    const isAssignedTrainer = user.role === 'trainer' && client.trainerId === user.id;
-    const isAdmin = user.role === 'admin' || user.role === 'super-admin';
-
-    if (!isOwner && !isAssignedTrainer && !isAdmin) {
-        return forbidden("You don't have permission to update this client.");
-    }
-
-    try {
-        if (user.role === 'client' && 'trainerId' in validatedBody) {
-            return forbidden("Clients cannot change their assigned trainer.");
-        }
-
-        const updatedClient = database.update<Client>('clients', id, validatedBody);
-        if (updatedClient) {
-          const { passwordHash, ...clientResponse } = updatedClient;
-          return success(clientResponse);
-        } else {
-          return error('Failed to update client', 500);
-        }
-    } catch (err) {
-        console.error('Failed to update client:', err);
-        return error('An unexpected error occurred while updating the client.', 500);
-    }
-};
-export const PATCH = withValidation(updateClientSchema, patchHandler);
+    return NextResponse.json(serialized)
+  } catch (error) {
+    return handleAPIError(error)
+  }
+}
 
 /**
  * DELETE /api/clients/[id]
- * Deletes a client.
- * - Accessible only by Admins.
+ * Soft delete a client
  */
-export async function DELETE(req: NextRequest, { params }: RouteParams) {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) {
-    return authResult;
-  }
-  const { user } = authResult;
-  const { id } = params;
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getSession(request)
+    const clientId = BigInt(params.id)
 
-  const roleCheck = requireRole(user, ['admin', 'super-admin']);
-  if (roleCheck) {
-    return roleCheck;
-  }
+    // Get existing client for audit log
+    const existingClient = await prisma.customers.findFirst({
+      where: {
+        id: clientId,
+        tenant_id: BigInt(session.user.tenant_id),
+      },
+    })
 
-  const client = database.get<Client>('clients', id);
-  if (!client) {
-    return notFound('Client');
-  }
+    if (!existingClient) {
+      return ErrorResponses.notFound('Client')
+    }
 
-  const deleted = database.delete('clients', id);
-  if (deleted) {
-    // Return a 204 No Content response for successful deletion
-    return new NextResponse(null, { status: 204 });
-  } else {
-    return error('Failed to delete the client.', 500);
+    // Soft delete by updating status
+    const deletedClient = await prisma.customers.update({
+      where: { id: clientId },
+      data: {
+        status: 'churned',
+        updated_at: new Date(),
+      },
+    })
+
+    // Log to audit
+    await auditService.logDelete(
+      session.user.tenant_id,
+      session.user.id,
+      'customer',
+      Number(clientId),
+      existingClient
+    )
+
+    return NextResponse.json({
+      success: true,
+      message: 'Client deleted successfully',
+    })
+  } catch (error) {
+    return handleAPIError(error)
   }
 }

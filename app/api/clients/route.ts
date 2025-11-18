@@ -1,165 +1,164 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { success, paginatedSuccess, error, unauthorized, forbidden } from '@/lib/utils/response';
-import { withValidation } from '@/lib/middleware/validate.middleware';
-import { createClientSchema } from '@/lib/schemas/client/client.schema';
-import { hashPassword } from '@/lib/auth/password';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/auth/session'
+import { auditService } from '@/lib/services/audit'
+import { handleAPIError, AppError } from '@/lib/errors'
+import { z } from 'zod'
+import { Prisma } from '@prisma/client'
+
+// Validation schema for creating a client
+const createClientSchema = z.object({
+  phone_e164: z.string().regex(/^\+[0-9]{1,3}[0-9]{6,14}$/, 'Invalid phone number format (E.164 required)'),
+  first_name: z.string().min(1, 'First name is required').max(100),
+  last_name: z.string().min(1, 'Last name is required').max(100),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  age: z.number().int().min(1).max(120).optional(),
+  goal: z.string().max(255).optional(),
+  source: z.enum(['landing', 'social', 'sales', 'referral', 'campaign', 'post_payment']),
+})
 
 /**
  * GET /api/clients
- * Retrieves a list of clients.
- * - Trainers can see their assigned clients.
- * - Admins can see all clients.
+ * Fetch all clients for the current tenant with search, filters, sorting, and pagination
  */
-export async function GET(req: NextRequest) {
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) {
-    return authResult;
-  }
-  const { user } = authResult;
-
-  const roleCheck = requireRole(user, ['trainer', 'admin', 'super-admin']);
-  if (roleCheck) {
-    return roleCheck;
-  }
-
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
-    const search = searchParams.get('search') || '';
+    const session = await getSession(request)
+    const { searchParams } = new URL(request.url)
 
-    // Hardcoded tenant_id for now
-    const tenantId = BigInt(1);
+    // Parse query parameters
+    const page = parseInt(searchParams.get('page') || '1')
+    const pageSize = parseInt(searchParams.get('pageSize') || '50')
+    const search = searchParams.get('search') || ''
+    const status = searchParams.get('status') || ''
+    const goal = searchParams.get('goal') || ''
+    const sortBy = searchParams.get('sortBy') || 'created_at'
+    const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc'
 
-    let query: any = {
-      where: {
-        tenant_id: tenantId
-      },
-      include: {
-        subscriptions: true
-      }
-    };
-
-    // Filter based on role
-    if (user.role === 'trainer') {
-      // In the current schema, there's no direct trainer-client relationship
-      // For now, we'll just get all clients since we don't have trainer-client relationships set up
-      // In a real implementation, you would filter by the trainer's clients
+    // Build where clause
+    const where: Prisma.customersWhereInput = {
+      tenant_id: BigInt(session.user.tenant_id),
+      // Exclude soft-deleted clients
+      ...(status && { status: status as any }),
+      ...(goal && { goal: { contains: goal, mode: 'insensitive' } }),
+      ...(search && {
+        OR: [
+          { first_name: { contains: search, mode: 'insensitive' } },
+          { last_name: { contains: search, mode: 'insensitive' } },
+          { phone_e164: { contains: search } },
+        ],
+      }),
     }
 
-    // Search
-    if (search) {
-      query.where.OR = [
-        { first_name: { contains: search, mode: 'insensitive' } },
-        { last_name: { contains: search, mode: 'insensitive' } },
-        { phone_e164: { contains: search, mode: 'insensitive' } }
-      ];
-    }
+    // Fetch data with pagination
+    const [rows, total] = await Promise.all([
+      prisma.customers.findMany({
+        where,
+        orderBy: { [sortBy]: sortOrder },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          id: true,
+          phone_e164: true,
+          first_name: true,
+          last_name: true,
+          gender: true,
+          age: true,
+          status: true,
+          goal: true,
+          source: true,
+          created_at: true,
+          updated_at: true,
+        },
+      }),
+      prisma.customers.count({ where }),
+    ])
 
-    let clients = await prisma.customers.findMany(query);
+    // Convert BigInt to string for JSON serialization
+    const serializedRows = rows.map(row => ({
+      ...row,
+      id: row.id.toString(),
+    }))
 
-    const total = clients.length;
-    const paginatedClients = clients.slice((page - 1) * limit, page * limit);
-
-    // Format response
-    const formattedClients = paginatedClients.map((client: any) => ({
-      id: client.id.toString(),
-      name: `${client.first_name || ''} ${client.last_name || ''}`.trim(),
-      email: '', // Clients don't have email in the current schema
-      phone: client.phone_e164,
-      role: 'client',
-      status: client.status,
-      source: client.source,
-      subscriptions: client.subscriptions ? client.subscriptions.map((sub: any) => ({
-        id: sub.id.toString(),
-        planCode: sub.plan_code,
-        status: sub.status,
-        startAt: sub.start_at,
-        renewAt: sub.renew_at,
-        cancelAt: sub.cancel_at
-      })) : [],
-      createdAt: client.created_at,
-      updatedAt: client.updated_at
-    }));
-
-    return paginatedSuccess(formattedClients, { page, limit, total, pages: Math.ceil(total / limit) });
-  } catch (err) {
-    console.error('Failed to fetch clients:', err);
-    return error('An unexpected error occurred while fetching clients.', 500);
+    return NextResponse.json({
+      rows: serializedRows,
+      total,
+      page,
+      pageSize,
+    })
+  } catch (error) {
+    return handleAPIError(error)
   }
 }
 
 /**
  * POST /api/clients
- * Creates a new client.
- * - Accessible by Trainers and Admins.
+ * Create a new client
  */
-const postHandler = async (req: NextRequest, validatedBody: any) => {
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) {
-    return authResult;
-  }
-  const { user } = authResult;
-
-  const roleCheck = requireRole(user, ['trainer', 'admin', 'super-admin']);
-  if (roleCheck) {
-    return roleCheck;
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    // Hardcoded tenant_id for now
-    const tenantId = BigInt(1);
+    const session = await getSession(request)
+    const body = await request.json()
 
-    // Check if client exists
-    const existingClient = await prisma.customers.findUnique({
+    // Validate input
+    const data = createClientSchema.parse(body)
+
+    // Check for duplicate phone number within tenant
+    const existing = await prisma.customers.findFirst({
       where: {
-        uq_customer_phone: {
-          tenant_id: tenantId,
-          phone_e164: validatedBody.phone
-        }
-      }
-    });
+        tenant_id: BigInt(session.user.tenant_id),
+        phone_e164: data.phone_e164,
+      },
+    })
 
-    if (existingClient) {
-      return error('A client with this phone number already exists.', 409); // 409 Conflict
+    if (existing) {
+      throw new AppError(
+        'A client with this phone number already exists',
+        400,
+        'DUPLICATE_PHONE'
+      )
     }
 
-    // Create client
-    const [firstName, ...lastNameParts] = validatedBody.name.split(' ');
-    const lastName = lastNameParts.join(' ') || '';
-
-    const newClient = await prisma.customers.create({
+    // Create client (ClientCode will be auto-generated by database trigger)
+    const client = await prisma.customers.create({
       data: {
-        tenant_id: tenantId,
-        phone_e164: validatedBody.phone,
-        first_name: firstName,
-        last_name: lastName,
-        source: 'sales', // Use 'sales' as source for manually created clients
-        status: 'lead'
+        tenant_id: BigInt(session.user.tenant_id),
+        phone_e164: data.phone_e164,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        gender: data.gender,
+        age: data.age,
+        goal: data.goal,
+        source: data.source,
+        status: 'lead',
+        region: 'MENA',
+        language: 'en',
+      },
+    })
+
+    // Log to audit
+    await auditService.logCreate(
+      session.user.tenant_id,
+      session.user.id,
+      'customer',
+      Number(client.id),
+      {
+        phone_e164: data.phone_e164,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        status: 'lead',
       }
-    });
+    )
 
-    // Format response
-    const clientResponse = {
-      id: newClient.id.toString(),
-      name: `${newClient.first_name || ''} ${newClient.last_name || ''}`.trim(),
-      email: '', // Clients don't have email in the current schema
-      phone: newClient.phone_e164,
-      role: 'client',
-      status: newClient.status,
-      source: newClient.source,
-      subscriptions: [],
-      createdAt: newClient.created_at,
-      updatedAt: newClient.updated_at
-    };
+    // Convert BigInt to string
+    const serializedClient = {
+      ...client,
+      id: client.id.toString(),
+      tenant_id: client.tenant_id.toString(),
+    }
 
-    return success(clientResponse, 201);
-  } catch (err) {
-    console.error('Failed to create client:', err);
-    return error('An unexpected error occurred while creating the client.', 500);
+    return NextResponse.json(serializedClient, { status: 201 })
+  } catch (error) {
+    return handleAPIError(error)
   }
-};
-
-export const POST = withValidation(createClientSchema, postHandler);
+}
