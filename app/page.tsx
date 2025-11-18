@@ -52,7 +52,7 @@ export default function LandingPage() {
               <Link href="/client/register">Start Free Trial</Link>
             </Button>
             <Button size="lg" variant="outline" className="text-lg px-8 bg-transparent" asChild>
-              <Link href="/login">Sign In</Link>
+              <Link href="/login-whatsapp">Sign In</Link>
             </Button>
           </div>
         </div>

@@ -1,16 +1,6 @@
 // Simple local database for development
 // This replaces the complex PostgreSQL setup for quick testing
 
-interface User {
-  id: string;
-  tenant_id: string;
-  email: string;
-  phone: string;
-  name: string;
-  role: string;
-  is_active: boolean;
-}
-
 interface OTPCode {
   phone: string;
   code_hash: string;
@@ -34,7 +24,7 @@ const localDB = {
       tenant_id: '550e8400-e29b-41d4-a716-446655440000',
       name: 'Admin User',
       email: 'admin@demo.com',
-      phone: '+1234567890',
+      phone: '+201012345678',
       role: 'admin',
       is_active: true
     },
@@ -43,8 +33,17 @@ const localDB = {
       tenant_id: '550e8400-e29b-41d4-a716-446655440000',
       name: 'John Trainer',
       email: 'trainer@demo.com',
-      phone: '+1234567891',
+      phone: '+201087654321',
       role: 'senior',
+      is_active: true
+    },
+    {
+      id: '550e8400-e29b-41d4-a716-446655440003',
+      tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'Sarah Coach',
+      email: 'sarah@demo.com',
+      phone: '+966501234567',
+      role: 'junior',
       is_active: true
     }
   ],
@@ -77,20 +76,42 @@ export const localDatabase = {
   },
   
   // Verify OTP
-  verifyOTP: (phone: string, codeHash: string) => {
+  verifyOTP: async (phone: string, providedCode: string) => {
+    console.log(`🔍 Verifying OTP for ${phone} with code: ${providedCode}`);
+    console.log(`🔍 Current OTP records:`, localDB.otp_codes);
+    
     const now = Date.now();
     const otpRecord = localDB.otp_codes.find(otp => 
       otp.phone === phone && 
-      otp.code_hash === codeHash && 
       otp.expires_at > now
     );
     
-    if (otpRecord) {
+    if (!otpRecord) {
+      console.log(`❌ No valid OTP found for ${phone}. Current time: ${now}`);
+      console.log(`❌ Available OTPs:`, localDB.otp_codes.map(otp => ({
+        phone: otp.phone,
+        expires_at: otp.expires_at,
+        expired: otp.expires_at <= now
+      })));
+      return false;
+    }
+
+    console.log(`🔍 Found OTP record for ${phone}, comparing codes...`);
+    
+    // Compare the provided code with the stored hash
+    const bcrypt = require('bcryptjs');
+    const isValid = await bcrypt.compare(providedCode, otpRecord.code_hash);
+    
+    console.log(`🔍 Code comparison result: ${isValid}`);
+    
+    if (isValid) {
       // Remove used OTP
       localDB.otp_codes = localDB.otp_codes.filter(otp => otp.phone !== phone);
+      console.log(`✅ OTP verified for ${phone}`);
       return true;
     }
     
+    console.log(`❌ Invalid OTP for ${phone}`);
     return false;
   },
   
@@ -98,6 +119,12 @@ export const localDatabase = {
   cleanExpiredOTPs: () => {
     const now = Date.now();
     localDB.otp_codes = localDB.otp_codes.filter(otp => otp.expires_at > now);
+  },
+
+  // Add new user
+  addUser: (user: any) => {
+    localDB.team_members.push(user);
+    console.log(`✅ New user added: ${user.name} (${user.phone})`);
   }
 };
 
@@ -107,5 +134,6 @@ setInterval(() => {
 }, 60000);
 
 console.log('🗄️ Local database initialized with test users:');
-console.log('- Admin: +1234567890 (admin@demo.com)');
-console.log('- Trainer: +1234567891 (trainer@demo.com)');
+console.log('- Admin: +201012345678 (admin@demo.com)');
+console.log('- Senior Trainer: +201087654321 (trainer@demo.com)');
+console.log('- Junior Coach: +966501234567 (sarah@demo.com)');

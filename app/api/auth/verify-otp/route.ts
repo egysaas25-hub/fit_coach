@@ -1,206 +1,89 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { success, error } from '@/lib/utils/response';
-import { prisma } from '@/lib/prisma';
-import { generateToken } from '@/lib/auth/jwt';
-import { withLogging, logAuthAttempt } from '@/lib/middleware/logging.middleware';
-import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
-import { otpStore, hashOtp } from '@/lib/auth/otp';
+import { NextRequest, NextResponse } from 'next/server'
+import { authService } from '@/lib/services/auth'
+import { localDatabase } from '@/lib/db/local'
+import { z } from 'zod'
 
-export const POST = withRateLimit(withLogging(async (req: NextRequest) => {
+// Validation schema
+const verifyOTPSchema = z.object({
+  phone: z.string().regex(/^\+[0-9]{1,3}[0-9]{6,14}$/, 'Invalid phone number format'),
+  code: z.string().regex(/^\d{6}$/, 'Code must be 6 digits'),
+})
+
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
-    const { phone, countryCode, code, role = 'client', name, email, workspaceName } = body || {};
-    if (!phone || !countryCode || !code) {
-      logAuthAttempt(req, phone || 'unknown', false, 'missing fields');
-      return error('phone, countryCode and code are required', 400);
+    const body = await request.json()
+
+    // Validate input
+    const { phone, code } = verifyOTPSchema.parse(body)
+
+    // Verify OTP and get JWT token
+    const token = await authService.verifyOTP(phone, code)
+
+    // Decode token to get user info
+    const payload = await authService.verifyJWT(token)
+
+    // Get full user details from local database
+    const user = localDatabase.findUserByPhone(phone)
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
     }
 
-    const key = `${countryCode}:${phone}`;
-    const entry = otpStore.get(key);
-    const now = Date.now();
-    if (!entry) {
-      logAuthAttempt(req, phone, false, 'no otp');
-      return error('No OTP requested for this number', 400);
-    }
-    if (entry.lockedUntil && entry.lockedUntil > now) {
-      logAuthAttempt(req, phone, false, 'locked');
-      return error('Too many attempts. Try again later.', 429);
-    }
-    if (entry.expiresAt < now) {
-      logAuthAttempt(req, phone, false, 'expired');
-      return error('OTP expired', 400);
-    }
-
-    const valid = entry.hash === hashOtp(code);
-    entry.attempts += 1;
-
-    if (!valid) {
-      // Lockout after 3 failed attempts for 5 minutes
-      if (entry.attempts >= 3) {
-        entry.lockedUntil = now + 5 * 60 * 1000;
-      }
-      otpStore.set(key, entry);
-      logAuthAttempt(req, phone, false, 'invalid code');
-      return error('Invalid OTP code', 401);
-    }
-
-    // OTP valid: create or fetch user
-    const fullPhone = `${countryCode}${phone}`;
-    
-    // Check if this is a registration request (has name/workspaceName)
-    let user;
-    let userType;
-    let userEmail;
-    let userName;
-    
-    if (name && workspaceName) {
-      // REGISTRATION - create new user
-      if (role === 'admin' || role === 'team_member') {
-        try {
-          user = await prisma.team_members.create({
-            data: {
-              tenant_id: BigInt(1),
-              full_name: name,
-              email: email || `${phone.replace(/\D/g, '')}@temp.example.com`,
-              role: 'admin',
-              wa_user_id: fullPhone,
-            },
-          });
-        } catch (createError: any) {
-          // If user already exists, find the existing user
-          if (createError.code === 'P2002') { // Unique constraint violation
-            user = await prisma.team_members.findFirst({
-              where: {
-                tenant_id: BigInt(1),
-                wa_user_id: fullPhone,
-              },
-            });
-            
-            // If still not found, try by email
-            if (!user && email) {
-              user = await prisma.team_members.findFirst({
-                where: {
-                  tenant_id: BigInt(1),
-                  email: email,
-                },
-              });
-            }
-            
-            // If still not found, this is an unexpected error
-            if (!user) {
-              throw createError;
-            }
-          } else {
-            throw createError;
-          }
-        }
-        
-        userType = 'team_member';
-        userEmail = user.email;
-        userName = user.full_name;
-      } else {
-        // Create customer...
-        try {
-          user = await prisma.customers.create({
-            data: {
-              tenant_id: BigInt(1), // Default tenant
-              phone_e164: fullPhone,
-              first_name: name.split(' ')[0],
-              last_name: name.split(' ').slice(1).join(' ') || 'User',
-              source: 'sales',
-              status: 'lead',
-            },
-          });
-        } catch (createError: any) {
-          // If customer already exists, find the existing customer
-          if (createError.code === 'P2002') { // Unique constraint violation
-            user = await prisma.customers.findFirst({
-              where: {
-                tenant_id: BigInt(1),
-                phone_e164: fullPhone,
-              },
-            });
-            
-            // If still not found, this is an unexpected error
-            if (!user) {
-              throw createError;
-            }
-          } else {
-            throw createError;
-          }
-        }
-        
-        userType = 'customer';
-        userEmail = null;
-        userName = `${user.first_name} ${user.last_name}`;
-      }
-    } else {
-      // LOGIN - find existing user by phone
-      const customer = await prisma.customers.findFirst({
-        where: {
-          tenant_id: BigInt(1),
-          phone_e164: fullPhone,
+    // Create response
+    const response = NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        tenant: {
+          id: user.tenant_id,
+          name: 'Demo Tenant',
+          slug: 'demo-tenant',
         },
-      });
+      },
+      token,
+      tenant_id: user.tenant_id,
+    })
 
-      const teamMember = await prisma.team_members.findFirst({
-        where: {
-          tenant_id: BigInt(1),
-          wa_user_id: fullPhone, // Use wa_user_id, not fake email
-        },
-      });
-
-      if (customer) {
-        user = customer;
-        userType = 'customer';
-        userEmail = null;
-        userName = `${customer.first_name} ${customer.last_name}`;
-      } else if (teamMember) {
-        user = teamMember;
-        userType = 'team_member';
-        userEmail = teamMember.email;
-        userName = teamMember.full_name;
-      } else {
-        logAuthAttempt(req, phone, false, 'user not found');
-        return error('User not found', 404);
-      }
-    }
-
-    const token = await generateToken(String(user.id), role);
-
-    // Map to expected DTO format
-    const userDto = {
-      id: String(user.id),
-      tenant_id: String(user.tenant_id),
-      type: userType,
-      email: userEmail,
-      name: userName,
-    };
-
-    logAuthAttempt(req, phone, true);
-    
-    // Set HttpOnly cookies for better security
-    const response = NextResponse.json(
-      { success: true, data: { token, user: userDto } },
-      { status: 200 }
-    );
-    
-    // Set HttpOnly cookies
-    response.cookies.set('access_token', token, {
+    // Set HttpOnly cookie
+    response.cookies.set('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60, // 1 hour
-      path: '/'
-    });
-    
-    return response;
-  } catch (err) {
-    console.error('verify-otp failed', err);
-    try {
-      const body = await req.json().catch(() => ({} as any));
-      logAuthAttempt(req, body?.phone || 'unknown', false, 'verify-otp failure');
-    } catch {}
-    return error('Failed to verify OTP', 500);
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    })
+
+    return response
+  } catch (error) {
+    console.error('❌ Error verifying OTP:', error)
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    })
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      )
+    }
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 401 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to verify OTP' },
+      { status: 500 }
+    )
   }
-}), 5, 5 * 60 * 1000);
+}

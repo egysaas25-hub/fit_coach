@@ -1,69 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { success, error } from '@/lib/utils/response';
-import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
-import { withLogging, logAuthAttempt } from '@/lib/middleware/logging.middleware';
-import { otpStore, generateOtp, hashOtp } from '@/lib/auth/otp';
-import { sendOTP } from '@/lib/services/whatsapp.service';
+import { NextRequest, NextResponse } from 'next/server'
+import { authService } from '@/lib/services/auth'
+import { z } from 'zod'
 
-async function handler(req: NextRequest) {
+// Validation schema
+const requestOTPSchema = z.object({
+  phone: z.string().regex(/^\+[0-9]{1,3}[0-9]{6,14}$/, 'Invalid phone number format (E.164 required)'),
+})
+
+export async function POST(request: NextRequest) {
   try {
-    let body;
-    try {
-      body = await req.json();
-    } catch (parseError) {
-      console.error('Failed to parse JSON body:', parseError);
-      return error('Invalid JSON in request body', 400);
-    }
-    const { phone, countryCode } = body || {};
-    if (!phone || !countryCode) {
-      return error('phone and countryCode are required', 400);
-    }
+    const body = await request.json()
 
-    const key = `${countryCode}:${phone}`;
-    const existing = otpStore.get(key);
-    const now = Date.now();
-    if (existing?.lockedUntil && existing.lockedUntil > now) {
-      logAuthAttempt(req, phone, false, 'locked');
-      return error('Too many attempts. Try again later.', 429);
-    }
+    // Validate input
+    const { phone } = requestOTPSchema.parse(body)
 
-    const code = generateOtp();
-    const ttlSeconds = 120;
-    otpStore.set(key, { 
-      hash: hashOtp(code), 
-      expiresAt: now + ttlSeconds * 1000, 
-      attempts: 0 
-    });
+    // Get IP address for rate limiting
+    const ipAddress = request.headers.get('x-forwarded-for') || 
+                     request.headers.get('x-real-ip') || 
+                     'unknown'
 
-    // Send OTP via WhatsApp (or log in development)
-    const fullPhone = `${countryCode}${phone}`;
-    await sendOTP(fullPhone, code);
+    // Request OTP via AuthService
+    await authService.requestOTP(phone, ipAddress)
 
-    // 🔥 DEVELOPMENT MODE: Log OTP to console
-    if (process.env.NODE_ENV === 'development') {
-      console.log('\n==============================================');
-      console.log(`📱 OTP for ${countryCode}${phone}: ${code}`);
-      console.log(`⏱️  Expires in ${ttlSeconds} seconds`);
-      console.log('==============================================\n');
+    return NextResponse.json({
+      success: true,
+      message: 'OTP sent successfully via WhatsApp',
+      sent: true,
+      medium: 'whatsapp',
+    })
+  } catch (error) {
+    console.error('Error sending OTP:', error)
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      )
     }
 
-    logAuthAttempt(req, phone, true);
-    
-    // Return the OTP in response for development ONLY
-    return success({ 
-      message: 'OTP sent via WhatsApp', 
-      ttlSeconds,
-      // 🔥 REMOVE THIS IN PRODUCTION
-      devMode: process.env.NODE_ENV === 'development' ? { otp: code } : undefined
-    });
-  } catch (err) {
-    console.error('request-otp failed', err);
-    try {
-      const fallbackBody = await req.json().catch(() => ({} as any));
-      logAuthAttempt(req, fallbackBody?.phone || 'unknown', false, 'request-otp failure');
-    } catch {}
-    return error('Failed to request OTP', 500);
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to send OTP' },
+      { status: 500 }
+    )
   }
 }
-
-export const POST = withLogging(withRateLimit(handler, 3, 5 * 60 * 1000));

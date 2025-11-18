@@ -10,8 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Phone, MessageSquare, AlertCircle, Loader2, HelpCircle, User, Building } from 'lucide-react';
-import { useRequestOtp, useRegisterWithOtp } from "@/lib/hooks/api/useAuth";
-import { toast } from "@/lib/hooks/common/use-toast";
+import { toast } from "sonner";
 
 const COUNTRY_CODES = [
   { code: '+1', country: 'US/Canada', flag: '🇺🇸' },
@@ -42,8 +41,6 @@ export default function UnifiedRegister() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [language, setLanguage] = useState<'en' | 'ar'>('en');
   
-  const requestOtp = useRequestOtp();
-  const registerWithOtp = useRegisterWithOtp();
   const [statusMessage, setStatusMessage] = useState('');
   const router = useRouter();
 
@@ -85,26 +82,29 @@ export default function UnifiedRegister() {
     }
     setIsLoading(true);
     setError('');
+    
     try {
-      const res = await requestOtp.mutateAsync({ phone: phoneNumber, countryCode });
-      
-      // 🔥 DEV MODE: Show OTP in toast
-      if (res?.devMode?.otp) {
-        toast({
-          title: '🔓 Development Mode',
-          description: `Your OTP is: ${res.devMode.otp}`,
-          duration: 30000, // Show for 30 seconds
-        });
+      const response = await fetch("/api/auth/request-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: fullPhone }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Couldn't send code. Try again.");
       }
       
       setIsLoading(false);
       setOtpSent(true);
       setStep('otp');
       setIsOtpModalOpen(true);
-      (window as any).dataLayer = (window as any).dataLayer || [];
-      (window as any).dataLayer.push({ event: 'EVT-REG-START', phone: fullPhone });
-      const ttl = res?.ttlSeconds ?? 60;
-      setResendTimer(ttl);
+      
+      toast.success("Code sent via WhatsApp ✅");
+      
+      // Start resend timer
+      setResendTimer(60);
       const interval = setInterval(() => {
         setResendTimer((prev: number) => {
           if (prev <= 1) {
@@ -116,13 +116,9 @@ export default function UnifiedRegister() {
       }, 1000);
     } catch (e: any) {
       setIsLoading(false);
-      const msg = e?.response?.data?.error?.message || 'Failed to send OTP';
+      const msg = e.message || 'Failed to send OTP';
       setError(msg);
-      const status = e?.response?.status;
-      (window as any).dataLayer = (window as any).dataLayer || [];
-      if (status === 429) {
-        (window as any).dataLayer.push({ event: 'EVT-AUTH-LOCK', phone: fullPhone });
-      }
+      toast.error(msg);
     }
   };
 
@@ -171,27 +167,32 @@ export default function UnifiedRegister() {
   const handleVerifyOTP = async (otpCode: string) => {
     setIsLoading(true);
     setError('');
+    
     try {
-      // For registration, we'll use the registerWithOtp hook
-      const result = await registerWithOtp.mutateAsync({ 
-        phone: phoneNumber, 
-        countryCode, 
-        code: otpCode,
-        name,
-        email,
-        workspaceName
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          phone: fullPhone,
+          code: otpCode,
+          name,
+          email,
+          workspaceName
+        }),
       });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Registration failed");
+      }
+      
       setIsLoading(false);
       setStatusMessage('Registration successful');
       setIsOtpModalOpen(false);
-      (window as any).dataLayer = (window as any).dataLayer || [];
-      (window as any).dataLayer.push({ event: 'EVT-REG-SUCCESS', phone: fullPhone });
       
       // Show success message and redirect
-      toast({ 
-        title: 'Success', 
-        description: 'Registration successful! Redirecting to dashboard...' 
-      });
+      toast.success('Registration successful! Redirecting to dashboard...');
       
       // Redirect to dashboard
       setTimeout(() => {
@@ -199,7 +200,9 @@ export default function UnifiedRegister() {
       }, 2000);
     } catch (e: any) {
       setIsLoading(false);
-      setError(e?.response?.data?.error?.message || 'Invalid OTP code. Please try again.');
+      const errorMsg = e.message || 'Invalid OTP code. Please try again.';
+      setError(errorMsg);
+      toast.error(errorMsg);
       setOtp(['', '', '', '', '', '']);
       document.getElementById('otp-0')?.focus();
     }
@@ -414,11 +417,7 @@ export default function UnifiedRegister() {
                       <span className="text-muted-foreground">Resend code in {resendTimer}s</span>
                     ) : (
                       <button 
-                        onClick={() => { 
-                          (window as any).dataLayer = (window as any).dataLayer || []; 
-                          (window as any).dataLayer.push({ event: 'EVT-AUTH-RESEND', phone: fullPhone }); 
-                          handleSendOTP(); 
-                        }} 
+                        onClick={handleSendOTP} 
                         className="text-primary hover:underline font-medium"
                       >
                         Resend via WhatsApp

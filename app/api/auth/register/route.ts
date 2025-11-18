@@ -1,149 +1,125 @@
-import { NextRequest } from 'next/server';
-import { hashPassword } from '@/lib/auth/password';
-import { generateToken } from '@/lib/auth/jwt';
-import { success, error } from '@/lib/utils/response';
-import { withValidation } from '@/lib/middleware/validate.middleware';
-import { apiRegisterSchema as registerSchema } from '@/lib/schemas/auth/auth.schema';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { authService } from '@/lib/services/auth'
+import { localDatabase } from '@/lib/db/local'
+import { z } from 'zod'
 
-/**
- * Maps user role to user type
- * @param role - The role from the database
- * @returns The corresponding user type
- */
-function mapRoleToType(role: string): string {
-  switch (role) {
-    case 'admin':
-    case 'trainer':
-      return 'team_member';
-    case 'client':
-      return 'customer';
-    default:
-      return 'customer';
+// Validation schema
+const registerSchema = z.object({
+  phone: z.string().regex(/^\+[0-9]{1,3}[0-9]{6,14}$/, 'Invalid phone number format (E.164 required)'),
+  code: z.string().regex(/^\d{6}$/, 'Code must be 6 digits'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email format').optional(),
+  workspaceName: z.string().min(2, 'Workspace name must be at least 2 characters'),
+})
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+
+    // Validate input
+    const { phone, code, name, email, workspaceName } = registerSchema.parse(body)
+
+    // Verify OTP first - use development mode for testing
+    let isValidOTP = false
+    
+    if (process.env.NODE_ENV === 'development' && code === '123456') {
+      console.log(`🔓 Registration: accepting test code for ${phone}`)
+      isValidOTP = true
+    } else {
+      isValidOTP = await localDatabase.verifyOTP(phone, code)
+    }
+
+    if (!isValidOTP) {
+      return NextResponse.json(
+        { error: 'Invalid or expired OTP code. Please try again.' },
+        { status: 401 }
+      )
+    }
+
+    // Check if user already exists
+    const existingUser = localDatabase.findUserByPhone(phone)
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'User already exists with this phone number.' },
+        { status: 409 }
+      )
+    }
+
+    // Create new user in local database
+    const newUserId = `550e8400-e29b-41d4-a716-${Date.now()}`
+    const tenantId = '550e8400-e29b-41d4-a716-446655440000' // Demo tenant
+
+    const newUser = {
+      id: newUserId,
+      tenant_id: tenantId,
+      name: name,
+      email: email || `${phone}@temp.com`,
+      phone: phone,
+      role: 'admin', // New registrations get admin role
+      is_active: true
+    }
+
+    // Add to local database
+    localDatabase.addUser(newUser)
+
+    // Generate JWT token
+    const token = await authService.signJWT({
+      user_id: parseInt(newUserId.split('-').pop() || '0'),
+      tenant_id: parseInt(tenantId.split('-').pop() || '0'),
+      role: newUser.role,
+      email: newUser.email,
+    })
+
+    console.log(`✅ New user registered: ${name} (${phone})`)
+
+    // Create response
+    const response = NextResponse.json({
+      success: true,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        tenant: {
+          id: tenantId,
+          name: workspaceName,
+          slug: workspaceName.toLowerCase().replace(/\s+/g, '-'),
+        },
+      },
+      token,
+      tenant_id: tenantId,
+    })
+
+    // Set HttpOnly cookie
+    response.cookies.set('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    })
+
+    return response
+  } catch (error) {
+    console.error('Error registering user:', error)
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      )
+    }
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to register user' },
+      { status: 500 }
+    )
   }
 }
-
-/**
- * POST /api/auth/register
- * Register a new user
- */
-const registerHandler = async (req: NextRequest, validatedBody: any) => {
-  console.log('Register API: Received request with body:', validatedBody);
-  
-  try {
-    const { email, password, name, role = 'client', phone } = validatedBody;
-    
-    // Hardcoded tenant_id for now
-    const tenantId = BigInt(1);
-
-    // Check if user already exists based on role
-    if (role === 'client') {
-      // For clients, check by phone number
-      if (!phone) {
-        return error('Phone number is required for client registration', 400);
-      }
-      
-      const existingCustomer = await prisma.customers.findUnique({
-        where: {
-          uq_customer_phone: {
-            tenant_id: tenantId,
-            phone_e164: phone
-          }
-        }
-      });
-      
-      if (existingCustomer) {
-        console.log('Register API: Client already exists with phone:', phone);
-        return error('Client with this phone number already exists', 409);
-      }
-    } else {
-      // For team members (admin, trainer), check by email
-      const existingTeamMember = await prisma.team_members.findUnique({
-        where: {
-          uq_team_email: {
-            tenant_id: tenantId,
-            email: email
-          }
-        }
-      });
-      
-      if (existingTeamMember) {
-        console.log('Register API: Team member already exists with email:', email);
-        return error('Team member with this email already exists', 409);
-      }
-    }
-
-    let newUser: any;
-    let userRole: string;
-
-    // Create user based on role
-    if (role === 'client') {
-      // Create customer
-      newUser = await prisma.customers.create({
-        data: {
-          tenant_id: tenantId,
-          phone_e164: phone,
-          first_name: name.split(' ')[0],
-          last_name: name.split(' ').slice(1).join(' ') || '',
-          source: 'sales',
-          status: 'lead',
-        }
-      });
-      
-      userRole = 'client';
-      console.log('Register API: Created new customer:', newUser);
-    } else {
-      // Map 'trainer' role to 'coach' role in database
-      const dbRole = role === 'trainer' ? 'coach' : role;
-      
-      // Create team member
-      newUser = await prisma.team_members.create({
-        data: {
-          tenant_id: tenantId,
-          full_name: name,
-          email: email,
-          role: dbRole,
-        }
-      });
-      
-      userRole = role;
-      console.log('Register API: Created new team member:', newUser);
-    }
-
-    // Generate token
-    const token = await generateToken(newUser.id.toString(), userRole);
-    console.log('Register API: Generated token');
-
-    // Prepare response user object
-    let userResponse: any;
-    
-    if (role === 'client') {
-      userResponse = {
-        id: newUser.id.toString(),
-        firstName: newUser.first_name,
-        lastName: newUser.last_name,
-        phone: newUser.phone_e164,
-        role: userRole,
-        type: mapRoleToType(userRole)
-      };
-    } else {
-      userResponse = {
-        id: newUser.id.toString(),
-        fullName: newUser.full_name,
-        email: newUser.email,
-        role: userRole,
-        type: mapRoleToType(userRole)
-      };
-    }
-
-    console.log('Register API: Returning success response');
-    return success({ user: userResponse, token }, 201);
-  } catch (err) {
-    console.error('Registration error:', err);
-    return error('An unexpected error occurred during registration', 500);
-  }
-};
-
-export { registerHandler };
-
-export const POST = withValidation(registerSchema, registerHandler);

@@ -1,7 +1,4 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const poppins = Poppins({ subsets: ["latin"], weight: ["600","700"], variable: "--font-poppins" });
 import { Bell } from "lucide-react";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
@@ -22,7 +19,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark h-full">
       <body
-        className={`h-full bg-background text-foreground font-sans ${inter.variable} ${poppins.variable}`}
+        className="h-full bg-background text-foreground font-sans"
       >
         <Providers>
           <div className="fixed top-3 right-4 z-50 flex gap-2">
