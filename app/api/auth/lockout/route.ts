@@ -1,12 +1,11 @@
 import { NextRequest } from 'next/server';
 import { success, error } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
+
 
 // Share the same store for simplicity
 const otpStore = new Map<string, { hash: string; expiresAt: number; attempts: number; lockedUntil?: number }>();
 
 export async function PATCH(req: NextRequest) {
-  ensureDbInitialized();
   try {
     const body = await req.json();
     const { phone, countryCode, minutes = 15 } = body || {};
