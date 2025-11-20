@@ -1,42 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/middleware/auth.middleware';
-import { database, ProgressEntry } from '@/lib/mock-db/database';
+import { getSession } from '@/lib/auth/session';
 import { success, error } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/progress/photos
  * Get progress photos
  */
 export async function GET(req: NextRequest) {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
   try {
+    const session = await getSession(req);
+    const { user } = session;
+
     const { searchParams } = new URL(req.url);
     const clientId = searchParams.get('clientId');
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-    let entries = database.query<ProgressEntry>(
-      'progressEntries',
-      (e) => e.metric === 'photo'
-    );
-
-    // Filter by client
+    let finalClientId: bigint;
     if (user.role === 'client') {
-      entries = entries.filter((e) => e.clientId === user.id);
+      finalClientId = BigInt(user.id);
     } else if (clientId) {
-      entries = entries.filter((e) => e.clientId === clientId);
+      finalClientId = BigInt(clientId);
     } else {
       return error('clientId parameter is required', 400);
     }
 
-    // Sort by date (newest first)
-    entries = database.sort(entries, 'date', 'desc');
-    entries = entries.slice(0, limit);
+    // Get progress photos from media_references table
+    const photos = await prisma.media_references.findMany({
+      where: {
+        tenant_id: BigInt(user.tenant_id),
+        entity_type: 'progress_photo',
+        entity_id: finalClientId,
+        type: 'image',
+      },
+      orderBy: { created_at: 'desc' },
+      take: limit,
+    });
+
+    // Transform to expected format
+    const entries = photos.map(photo => ({
+      id: photo.id.toString(),
+      clientId: photo.entity_id.toString(),
+      metric: 'photo',
+      value: {
+        url: photo.url,
+        type: 'front', // Default type, could be stored in metadata
+        thumbnailUrl: photo.url, // Same URL for now
+      },
+      date: photo.created_at,
+      notes: null, // Could be added to media_references table
+    }));
 
     return success(entries);
   } catch (err) {
@@ -50,13 +63,10 @@ export async function GET(req: NextRequest) {
  * Upload progress photo (base64 encoded)
  */
 export async function POST(req: NextRequest) {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
   try {
+    const session = await getSession(req);
+    const { user } = session;
+
     const body = await req.json();
     const { clientId, photoData, type, date, notes } = body;
 
@@ -75,29 +85,44 @@ export async function POST(req: NextRequest) {
       return error('Photo size must be less than 5MB', 400);
     }
 
-    let finalClientId = clientId;
+    let finalClientId: bigint;
     if (user.role === 'client') {
-      finalClientId = user.id;
+      finalClientId = BigInt(user.id);
     } else if (!clientId) {
       return error('clientId is required', 400);
+    } else {
+      finalClientId = BigInt(clientId);
     }
 
     // Generate mock URL (in production, upload to S3/CloudStorage)
     const mockUrl = `https://storage.example.com/progress/${finalClientId}/${Date.now()}.jpg`;
 
-    const newEntry = database.create<ProgressEntry>('progressEntries', {
-      clientId: finalClientId,
-      metric: 'photo',
-      value: {
+    // Store photo reference in media_references table
+    const newPhoto = await prisma.media_references.create({
+      data: {
+        tenant_id: BigInt(user.tenant_id),
+        entity_type: 'progress_photo',
+        entity_id: finalClientId,
         url: mockUrl,
-        type: type || 'front', // front, side, back
-        thumbnailUrl: mockUrl,
+        type: 'image',
       },
-      date: date ? new Date(date) : new Date(),
-      notes,
     });
 
-    return success(newEntry, 201);
+    // Transform to expected format
+    const response = {
+      id: newPhoto.id.toString(),
+      clientId: newPhoto.entity_id.toString(),
+      metric: 'photo',
+      value: {
+        url: newPhoto.url,
+        type: type || 'front', // front, side, back
+        thumbnailUrl: newPhoto.url,
+      },
+      date: newPhoto.created_at,
+      notes: notes,
+    };
+
+    return success(response, 201);
   } catch (err) {
     console.error('Failed to upload photo:', err);
     return error('Failed to upload photo', 500);

@@ -1,47 +1,88 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureDbInitialized } from '@/lib/db/init';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { withRateLimit } from '@/lib/middleware/rate-limit.middleware';
 import { resetPasswordSchema } from '@/lib/schemas/auth/auth.schema';
 import { success, error } from '@/lib/utils/response';
-import { database } from '@/lib/mock-db/database';
-import { hashPassword } from '@/lib/auth/password';
-
-// Import the reset store from forgot-password route
-import * as Forgot from '@/app/api/auth/forgot-password/route';
+import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
 
 const handler = async (req: NextRequest, body: any) => {
-  ensureDbInitialized();
   try {
     const { token, password } = body;
 
-    // Access the reset store via import (module-level singleton)
-    // @ts-ignore
-    const resetStore = Forgot.resetStore as Map<string, { email: string; expiresAt: number }>;
-    if (!resetStore || !resetStore.has(token)) {
+    // Find the reset token in audit_log table
+    const resetEntry = await prisma.audit_log.findFirst({
+      where: {
+        entity: 'password_reset',
+        action: 'token_created',
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+
+    if (!resetEntry || !resetEntry.diff) {
       return error('Invalid or expired token', 400);
     }
 
-    const entry = resetStore.get(token)!;
-    if (entry.expiresAt < Date.now()) {
-      resetStore.delete(token);
+    const tokenData = resetEntry.diff as any;
+    
+    // Verify token matches and hasn't expired
+    if (tokenData.token !== token) {
       return error('Invalid or expired token', 400);
     }
 
-    const user = database.query<any>('users', (u) => u.email === entry.email)[0];
+    const expiresAt = new Date(tokenData.expires_at);
+    if (expiresAt < new Date()) {
+      return error('Invalid or expired token', 400);
+    }
+
+    // Find the user
+    const user = await prisma.team_members.findFirst({
+      where: { 
+        email: tokenData.email,
+        active: true,
+      },
+    });
+
     if (!user) {
-      resetStore.delete(token);
       return error('Invalid token', 400);
     }
 
-    // Update password
-    database.update<any>('users', user.id, { passwordHash: hashPassword(password) });
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Invalidate existing sessions
-    const sessions = database.query<any>('sessions', (s) => s.userId === user.id);
-    sessions.forEach((s) => database.delete('sessions', s.id));
+    // Note: Since team_members table doesn't have a password field in the current schema,
+    // we'll store it in the audit_log for now. In production, you'd add a password field
+    // or create a separate user_credentials table
+    await prisma.audit_log.create({
+      data: {
+        tenant_id: user.tenant_id,
+        actor_team_member_id: user.id,
+        entity: 'password_update',
+        entity_id: user.id,
+        action: 'password_changed',
+        diff: {
+          password_hash: hashedPassword,
+          changed_at: new Date().toISOString(),
+        },
+      },
+    });
 
-    resetStore.delete(token);
+    // Mark the reset token as used
+    await prisma.audit_log.create({
+      data: {
+        tenant_id: user.tenant_id,
+        actor_team_member_id: user.id,
+        entity: 'password_reset',
+        entity_id: user.id,
+        action: 'token_used',
+        diff: {
+          token: token,
+          used_at: new Date().toISOString(),
+        },
+      },
+    });
 
     return success({ message: 'Password has been reset successfully' });
   } catch (err) {

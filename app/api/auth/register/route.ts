@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authService } from '@/lib/services/auth'
-import { localDatabase } from '@/lib/db/local'
+import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 // Validation schema
@@ -19,14 +19,20 @@ export async function POST(request: NextRequest) {
     // Validate input
     const { phone, code, name, email, workspaceName } = registerSchema.parse(body)
 
-    // Verify OTP first - use development mode for testing
+    // Verify OTP using Prisma database
     let isValidOTP = false
     
     if (process.env.NODE_ENV === 'development' && code === '123456') {
       console.log(`🔓 Registration: accepting test code for ${phone}`)
       isValidOTP = true
     } else {
-      isValidOTP = await localDatabase.verifyOTP(phone, code)
+      // Use the auth service to verify OTP (it handles the database lookup)
+      try {
+        await authService.verifyOTP(phone, code)
+        isValidOTP = true
+      } catch (error) {
+        isValidOTP = false
+      }
     }
 
     if (!isValidOTP) {
@@ -37,35 +43,48 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = localDatabase.findUserByPhone(phone)
+    const existingUser = await prisma.team_members.findFirst({
+      where: { email: email || `${phone}@temp.com` },
+    })
+
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User already exists with this phone number.' },
+        { error: 'User already exists with this email.' },
         { status: 409 }
       )
     }
 
-    // Create new user in local database
-    const newUserId = `550e8400-e29b-41d4-a716-${Date.now()}`
-    const tenantId = '550e8400-e29b-41d4-a716-446655440000' // Demo tenant
+    // Create or get tenant
+    let tenant = await prisma.tenants.findFirst({
+      where: { slug: workspaceName.toLowerCase().replace(/\s+/g, '-') },
+    })
 
-    const newUser = {
-      id: newUserId,
-      tenant_id: tenantId,
-      name: name,
-      email: email || `${phone}@temp.com`,
-      phone: phone,
-      role: 'admin', // New registrations get admin role
-      is_active: true
+    if (!tenant) {
+      tenant = await prisma.tenants.create({
+        data: {
+          name: workspaceName,
+          slug: workspaceName.toLowerCase().replace(/\s+/g, '-'),
+          country: 'US', // Default country
+          timezone: 'America/New_York', // Default timezone
+        },
+      })
     }
 
-    // Add to local database
-    localDatabase.addUser(newUser)
+    // Create new team member
+    const newUser = await prisma.team_members.create({
+      data: {
+        tenant_id: tenant.id,
+        full_name: name,
+        email: email || `${phone}@temp.com`,
+        role: 'admin', // New registrations get admin role
+        active: true,
+      },
+    })
 
     // Generate JWT token
     const token = await authService.signJWT({
-      user_id: parseInt(newUserId.split('-').pop() || '0'),
-      tenant_id: parseInt(tenantId.split('-').pop() || '0'),
+      user_id: Number(newUser.id),
+      tenant_id: Number(tenant.id),
       role: newUser.role,
       email: newUser.email,
     })
@@ -76,18 +95,18 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       success: true,
       user: {
-        id: newUser.id,
-        name: newUser.name,
+        id: newUser.id.toString(),
+        name: newUser.full_name,
         email: newUser.email,
         role: newUser.role,
         tenant: {
-          id: tenantId,
-          name: workspaceName,
-          slug: workspaceName.toLowerCase().replace(/\s+/g, '-'),
+          id: tenant.id.toString(),
+          name: tenant.name,
+          slug: tenant.slug,
         },
       },
       token,
-      tenant_id: tenantId,
+      tenant_id: tenant.id.toString(),
     })
 
     // Set HttpOnly cookie

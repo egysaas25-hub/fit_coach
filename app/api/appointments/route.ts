@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import { database } from '@/lib/mock-db/database';
-import { Appointment } from '@/types/lib/mock-db/types';
+import { getSession } from '@/lib/auth/session';
 import { success, error } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
+import { prisma } from '@/lib/prisma';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { z } from 'zod';
 
@@ -21,13 +19,10 @@ const createAppointmentSchema = z.object({
  * Get appointments
  */
 export async function GET(req: NextRequest) {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
   try {
+    const session = await getSession(req);
+    const { user } = session;
+
     const { searchParams } = new URL(req.url);
     const clientId = searchParams.get('clientId');
     const trainerId = searchParams.get('trainerId');
@@ -37,41 +32,90 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-    let appointments = database.getAll<Appointment>('appointments');
+    // Build where clause for appointment-like interactions
+    const whereClause: any = {
+      tenant_id: BigInt(user.tenant_id),
+      // Filter for appointment-related interactions
+    };
 
     // Filter based on role
     if (user.role === 'client') {
-      appointments = appointments.filter((a) => a.clientId === user.id);
+      whereClause.customer_id = BigInt(user.id);
     } else if (user.role === 'trainer') {
-      appointments = appointments.filter((a) => a.trainerId === user.id);
+      whereClause.by_team_member_id = BigInt(user.id);
     }
 
-    // Apply filters
+    // Apply additional filters
     if (clientId) {
-      appointments = appointments.filter((a) => a.clientId === clientId);
+      whereClause.customer_id = BigInt(clientId);
     }
     if (trainerId) {
-      appointments = appointments.filter((a) => a.trainerId === trainerId);
-    }
-    if (status) {
-      appointments = appointments.filter((a) => a.status === status);
-    }
-    if (fromDate) {
-      const from = new Date(fromDate);
-      appointments = appointments.filter((a) => new Date(a.date) >= from);
-    }
-    if (toDate) {
-      const to = new Date(toDate);
-      appointments = appointments.filter((a) => new Date(a.date) <= to);
+      whereClause.by_team_member_id = BigInt(trainerId);
     }
 
-    // Sort by date (upcoming first)
-    appointments = database.sort(appointments, 'date', 'asc');
+    // Date range filter
+    if (fromDate || toDate) {
+      whereClause.sent_at = {};
+      if (fromDate) whereClause.sent_at.gte = new Date(fromDate);
+      if (toDate) whereClause.sent_at.lte = new Date(toDate);
+    }
 
-    // Paginate
-    const result = database.paginate(appointments, page, limit);
+    // Get appointments using interactions table
+    const appointments = await prisma.interactions.findMany({
+      where: whereClause,
+      include: {
+        customer: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+          },
+        },
+        by_team_member: {
+          select: {
+            id: true,
+            full_name: true,
+          },
+        },
+      },
+      orderBy: { sent_at: 'asc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
 
-    return success({ data: result.data, pagination: result.pagination });
+    // Get total count
+    const totalCount = await prisma.interactions.count({ where: whereClause });
+
+    // Transform to expected format
+    const transformedAppointments = appointments.map(interaction => {
+      const metadata = interaction.meta as any || {};
+      return {
+        id: interaction.id.toString(),
+        clientId: interaction.customer_id.toString(),
+        trainerId: interaction.by_team_member_id?.toString(),
+        date: metadata.scheduledAt || interaction.sent_at,
+        status: metadata.status || 'scheduled',
+        duration: metadata.duration || 60,
+        notes: interaction.message_text,
+        client: {
+          id: interaction.customer.id.toString(),
+          name: `${interaction.customer.first_name} ${interaction.customer.last_name}`,
+        },
+        trainer: interaction.by_team_member ? {
+          id: interaction.by_team_member.id.toString(),
+          name: interaction.by_team_member.full_name,
+        } : null,
+      };
+    });
+
+    const pagination = {
+      page,
+      limit,
+      total: totalCount,
+      pages: Math.ceil(totalCount / limit),
+    };
+
+    return success({ data: transformedAppointments, pagination });
   } catch (err) {
     console.error('Failed to fetch appointments:', err);
     return error('Failed to fetch appointments', 500);
@@ -83,13 +127,10 @@ export async function GET(req: NextRequest) {
  * Create new appointment
  */
 const postHandler = async (req: NextRequest, validatedBody: any) => {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
   try {
+    const session = await getSession(req);
+    const { user } = session;
+
     const { clientId, trainerId, date, duration, type, notes } = validatedBody;
 
     // Determine trainer ID
@@ -100,36 +141,81 @@ const postHandler = async (req: NextRequest, validatedBody: any) => {
       return error('Trainer ID is required', 400);
     }
 
-    // Check for conflicts (same trainer, overlapping time)
-    const appointmentDate = new Date(date);
-    const endTime = new Date(appointmentDate.getTime() + duration * 60000);
+    // Verify client and trainer exist
+    const [client, trainer] = await Promise.all([
+      prisma.customers.findUnique({
+        where: { id: BigInt(clientId) },
+        select: { id: true, first_name: true, last_name: true },
+      }),
+      prisma.team_members.findUnique({
+        where: { id: BigInt(finalTrainerId) },
+        select: { id: true, full_name: true },
+      }),
+    ]);
 
-    const conflicts = database.query<Appointment>('appointments', (a) => {
-      if (a.trainerId !== finalTrainerId) return false;
-      if (a.status === 'cancelled') return false;
-
-      const aStart = new Date(a.date);
-      const aEnd = new Date(aStart.getTime() + 60 * 60000); // Assume 1 hour default
-
-      return (
-        (appointmentDate >= aStart && appointmentDate < aEnd) ||
-        (endTime > aStart && endTime <= aEnd) ||
-        (appointmentDate <= aStart && endTime >= aEnd)
-      );
-    });
-
-    if (conflicts.length > 0) {
-      return error('Trainer has a conflicting appointment at this time', 409);
+    if (!client) {
+      return error('Client not found', 404);
+    }
+    if (!trainer) {
+      return error('Trainer not found', 404);
     }
 
-    const newAppointment = database.create<Appointment>('appointments', {
-      clientId,
-      trainerId: finalTrainerId,
-      date: appointmentDate,
-      status: 'scheduled' as any,
+    // Create appointment using interactions table
+    const newAppointment = await prisma.interactions.create({
+      data: {
+        tenant_id: BigInt(user.tenant_id),
+        customer_id: BigInt(clientId),
+        by_team_member_id: BigInt(finalTrainerId),
+        channel: 'web',
+        direction: 'out',
+        sent_at: new Date(date),
+        message_text: notes || '',
+        meta: {
+          scheduledAt: new Date(date),
+          duration: duration || 60,
+          status: 'scheduled',
+          type: type || 'training',
+        },
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+          },
+        },
+        by_team_member: {
+          select: {
+            id: true,
+            full_name: true,
+          },
+        },
+      },
     });
 
-    return success(newAppointment, 201);
+    // Transform to expected format
+    const metadata = newAppointment.meta as any || {};
+    const response = {
+      id: newAppointment.id.toString(),
+      clientId: newAppointment.customer_id.toString(),
+      trainerId: newAppointment.by_team_member_id?.toString(),
+      date: metadata.scheduledAt || newAppointment.sent_at,
+      status: metadata.status || 'scheduled',
+      duration: metadata.duration || 60,
+      type: metadata.type || 'training',
+      notes: newAppointment.message_text,
+      client: {
+        id: newAppointment.customer.id.toString(),
+        name: `${newAppointment.customer.first_name} ${newAppointment.customer.last_name}`,
+      },
+      trainer: newAppointment.by_team_member ? {
+        id: newAppointment.by_team_member.id.toString(),
+        name: newAppointment.by_team_member.full_name,
+      } : null,
+    };
+
+    return success(response, 201);
   } catch (err) {
     console.error('Failed to create appointment:', err);
     return error('Failed to create appointment', 500);

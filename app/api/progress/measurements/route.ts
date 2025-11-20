@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/middleware/auth.middleware';
-import { database, ProgressEntry } from '@/lib/mock-db/database';
+import { getSession } from '@/lib/auth/session';
 import { success, error } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
+import { prisma } from '@/lib/prisma';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { z } from 'zod';
 
@@ -25,34 +24,52 @@ const createMeasurementSchema = z.object({
  * Get body measurements
  */
 export async function GET(req: NextRequest) {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
   try {
+    const session = await getSession(req);
+    const { user } = session;
+
     const { searchParams } = new URL(req.url);
     const clientId = searchParams.get('clientId');
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-    let entries = database.query<ProgressEntry>(
-      'progressEntries',
-      (e) => e.metric === 'measurements'
-    );
-
-    // Filter by client
+    let finalClientId: bigint;
     if (user.role === 'client') {
-      entries = entries.filter((e) => e.clientId === user.id);
+      finalClientId = BigInt(user.id);
     } else if (clientId) {
-      entries = entries.filter((e) => e.clientId === clientId);
+      finalClientId = BigInt(clientId);
     } else {
       return error('clientId parameter is required', 400);
     }
 
-    // Sort by date (newest first)
-    entries = database.sort(entries, 'date', 'desc');
-    entries = entries.slice(0, limit);
+    // Get InBody metrics which contain body measurements
+    const measurements = await prisma.inbody_metrics.findMany({
+      where: {
+        customer_id: finalClientId,
+        tenant_id: BigInt(user.tenant_id),
+      },
+      orderBy: { recorded_at: 'desc' },
+      take: limit,
+    });
+
+    // Transform to expected format
+    const entries = measurements.map(measurement => ({
+      id: measurement.id.toString(),
+      clientId: measurement.customer_id.toString(),
+      metric: 'measurements',
+      value: {
+        height_cm: Number(measurement.height_cm),
+        weight_kg: Number(measurement.weight_kg),
+        bmi: Number(measurement.bmi),
+        body_fat_percent: Number(measurement.body_fat_percent),
+        muscle_mass_kg: Number(measurement.muscle_mass_kg),
+        water_percent: Number(measurement.water_percent),
+        visceral_fat_level: Number(measurement.visceral_fat_level),
+        bmr_kcal: measurement.bmr_kcal,
+        tdee_kcal: measurement.tdee_kcal,
+      },
+      date: measurement.recorded_at,
+      notes: measurement.notes,
+    }));
 
     return success(entries);
   } catch (err) {
@@ -66,30 +83,61 @@ export async function GET(req: NextRequest) {
  * Log body measurements
  */
 const postHandler = async (req: NextRequest, validatedBody: any) => {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
   try {
+    const session = await getSession(req);
+    const { user } = session;
+
     const { clientId, measurements, date, notes } = validatedBody;
 
-    let finalClientId = clientId;
+    let finalClientId: bigint;
     if (user.role === 'client') {
-      finalClientId = user.id;
+      finalClientId = BigInt(user.id);
     } else if (!clientId) {
       return error('clientId is required', 400);
+    } else {
+      finalClientId = BigInt(clientId);
     }
 
-    const newEntry = database.create<ProgressEntry>('progressEntries', {
-      clientId: finalClientId,
-      metric: 'measurements' as any,
-      value: measurements, // Store as object
-      date: date ? new Date(date) : new Date(),
+    // Create InBody metrics entry
+    const newEntry = await prisma.inbody_metrics.create({
+      data: {
+        tenant_id: BigInt(user.tenant_id),
+        customer_id: finalClientId,
+        recorded_at: date ? new Date(date) : new Date(),
+        height_cm: measurements.height_cm,
+        weight_kg: measurements.weight_kg,
+        bmi: measurements.bmi,
+        body_fat_percent: measurements.body_fat_percent,
+        muscle_mass_kg: measurements.muscle_mass_kg,
+        water_percent: measurements.water_percent,
+        visceral_fat_level: measurements.visceral_fat_level,
+        bmr_kcal: measurements.bmr_kcal,
+        tdee_kcal: measurements.tdee_kcal,
+        notes: notes,
+      },
     });
 
-    return success(newEntry, 201);
+    // Transform to expected format
+    const response = {
+      id: newEntry.id.toString(),
+      clientId: newEntry.customer_id.toString(),
+      metric: 'measurements',
+      value: {
+        height_cm: Number(newEntry.height_cm),
+        weight_kg: Number(newEntry.weight_kg),
+        bmi: Number(newEntry.bmi),
+        body_fat_percent: Number(newEntry.body_fat_percent),
+        muscle_mass_kg: Number(newEntry.muscle_mass_kg),
+        water_percent: Number(newEntry.water_percent),
+        visceral_fat_level: Number(newEntry.visceral_fat_level),
+        bmr_kcal: newEntry.bmr_kcal,
+        tdee_kcal: newEntry.tdee_kcal,
+      },
+      date: newEntry.recorded_at,
+      notes: newEntry.notes,
+    };
+
+    return success(response, 201);
   } catch (err) {
     console.error('Failed to log measurements:', err);
     return error('Failed to log measurements', 500);

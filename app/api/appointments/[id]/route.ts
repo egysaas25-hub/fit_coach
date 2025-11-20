@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/middleware/auth.middleware';
-import { database, Appointment } from '@/lib/mock-db/database';
+import { getSession } from '@/lib/auth/session';
 import { success, error, notFound, forbidden } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
-import { withValidation } from '@/lib/middleware/validate.middleware';
-import { withLogging } from '@/lib/middleware/logging.middleware';
-import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
   params: { id: string };
@@ -13,123 +9,206 @@ interface RouteParams {
 
 /**
  * GET /api/appointments/:id
+ * Get a specific appointment
  */
-const getHandler = async (req: NextRequest, { params }: RouteParams) => {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
+export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
-    const appointment = database.get<Appointment>('appointments', params.id);
-    if (!appointment) return notFound('Appointment');
+    const session = await getSession(req);
+    const { user } = session;
+    const appointmentId = BigInt(params.id);
+
+    // Get appointment from interactions table
+    const appointment = await prisma.interactions.findUnique({
+      where: { 
+        id: appointmentId,
+        tenant_id: BigInt(user.tenant_id),
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+          },
+        },
+        by_team_member: {
+          select: {
+            id: true,
+            full_name: true,
+          },
+        },
+      },
+    });
+
+    if (!appointment) {
+      return notFound('Appointment');
+    }
 
     // Permission check
-    const isClient = user.role === 'client' && appointment.clientId === user.id;
-    const isTrainer = user.role === 'trainer' && appointment.trainerId === user.id;
-const isAdmin = user.role === 'admin' || user.role === 'super-admin';
-
-    if (!isClient && !isTrainer && !isAdmin) {
+    if (user.role === 'client' && appointment.customer_id.toString() !== user.id.toString()) {
+      return forbidden("You don't have permission to view this appointment.");
+    }
+    if (user.role === 'trainer' && appointment.by_team_member_id?.toString() !== user.id.toString()) {
       return forbidden("You don't have permission to view this appointment.");
     }
 
-    return success(appointment);
+    // Transform to expected format
+    const metadata = appointment.meta as any || {};
+    const response = {
+      id: appointment.id.toString(),
+      clientId: appointment.customer_id.toString(),
+      trainerId: appointment.by_team_member_id?.toString(),
+      date: metadata.scheduledAt || appointment.sent_at,
+      status: metadata.status || 'scheduled',
+      duration: metadata.duration || 60,
+      notes: appointment.message_text,
+      client: {
+        id: appointment.customer.id.toString(),
+        name: `${appointment.customer.first_name} ${appointment.customer.last_name}`,
+      },
+      trainer: appointment.by_team_member ? {
+        id: appointment.by_team_member.id.toString(),
+        name: appointment.by_team_member.full_name,
+      } : null,
+    };
+
+    return success(response);
   } catch (err) {
     console.error('Failed to fetch appointment:', err);
     return error('Failed to fetch appointment', 500);
   }
-};
-
-export const GET = withLogging(getHandler);
+}
 
 /**
  * PATCH /api/appointments/:id
+ * Update an appointment
  */
-const updateAppointmentSchema = z.object({
-  status: z.enum(['scheduled', 'completed', 'cancelled']).optional(),
-  date: z.string().datetime().optional(),
-  notes: z.string().max(500).optional(),
-});
-
-const patchHandler = async (
-  req: NextRequest,
-  validatedBody: any,
-  { params }: RouteParams
-) => {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
+export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
-    const appointment = database.get<Appointment>('appointments', params.id);
-    if (!appointment) return notFound('Appointment');
+    const session = await getSession(req);
+    const { user } = session;
+    const appointmentId = BigInt(params.id);
+
+    // Get existing appointment
+    const existingAppointment = await prisma.interactions.findUnique({
+      where: { 
+        id: appointmentId,
+        tenant_id: BigInt(user.tenant_id),
+      },
+    });
+
+    if (!existingAppointment) {
+      return notFound('Appointment');
+    }
 
     // Permission check
-    const isClient = user.role === 'client' && appointment.clientId === user.id;
-    const isTrainer = user.role === 'trainer' && appointment.trainerId === user.id;
-    const isAdmin = user.role === 'admin' || user.role === 'super-admin';
-
-    if (!isClient && !isTrainer && !isAdmin) {
+    if (user.role === 'client' && existingAppointment.customer_id.toString() !== user.id.toString()) {
+      return forbidden("You don't have permission to update this appointment.");
+    }
+    if (user.role === 'trainer' && existingAppointment.by_team_member_id?.toString() !== user.id.toString()) {
       return forbidden("You don't have permission to update this appointment.");
     }
 
-    // Clients can only cancel, not change details
-    const keys = Object.keys(validatedBody || {});
-    if (user.role === 'client' && keys.length > 1) {
-      if (!validatedBody.status || validatedBody.status !== 'cancelled') {
-        return forbidden('Clients can only cancel appointments.');
-      }
-    }
+    const body = await req.json();
+    
+    // Update appointment metadata
+    const currentMetadata = existingAppointment.meta as any || {};
+    const updatedMetadata = {
+      ...currentMetadata,
+      scheduledAt: body.date ? new Date(body.date) : currentMetadata.scheduledAt,
+      status: body.status || currentMetadata.status,
+      duration: body.duration || currentMetadata.duration,
+    };
 
-    // Don't allow changing client or trainer
-    delete validatedBody.clientId;
-    delete validatedBody.trainerId;
+    const updatedAppointment = await prisma.interactions.update({
+      where: { id: appointmentId },
+      data: {
+        message_text: body.notes || existingAppointment.message_text,
+        meta: updatedMetadata,
+        sent_at: body.date ? new Date(body.date) : existingAppointment.sent_at,
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+          },
+        },
+        by_team_member: {
+          select: {
+            id: true,
+            full_name: true,
+          },
+        },
+      },
+    });
 
-    const updated = database.update('appointments', params.id, validatedBody);
-    if (!updated) return error('Failed to update appointment', 500);
+    // Transform to expected format
+    const metadata = updatedAppointment.meta as any || {};
+    const response = {
+      id: updatedAppointment.id.toString(),
+      clientId: updatedAppointment.customer_id.toString(),
+      trainerId: updatedAppointment.by_team_member_id?.toString(),
+      date: metadata.scheduledAt || updatedAppointment.sent_at,
+      status: metadata.status || 'scheduled',
+      duration: metadata.duration || 60,
+      notes: updatedAppointment.message_text,
+      client: {
+        id: updatedAppointment.customer.id.toString(),
+        name: `${updatedAppointment.customer.first_name} ${updatedAppointment.customer.last_name}`,
+      },
+      trainer: updatedAppointment.by_team_member ? {
+        id: updatedAppointment.by_team_member.id.toString(),
+        name: updatedAppointment.by_team_member.full_name,
+      } : null,
+    };
 
-    return success(updated);
+    return success(response);
   } catch (err) {
     console.error('Failed to update appointment:', err);
     return error('Failed to update appointment', 500);
   }
-};
-
-export const PATCH = withLogging(withValidation(updateAppointmentSchema, patchHandler));
+}
 
 /**
  * DELETE /api/appointments/:id
+ * Delete an appointment
  */
-const deleteHandler = async (req: NextRequest, { params }: RouteParams) => {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
-    const appointment = database.get<Appointment>('appointments', params.id);
-    if (!appointment) return notFound('Appointment');
+    const session = await getSession(req);
+    const { user } = session;
+    const appointmentId = BigInt(params.id);
 
-    // Only trainers and admins can delete
-    const isTrainer = user.role === 'trainer' && appointment.trainerId === user.id;
-    const isAdmin = user.role === 'admin' || user.role === 'super-admin';
+    // Get existing appointment
+    const existingAppointment = await prisma.interactions.findUnique({
+      where: { 
+        id: appointmentId,
+        tenant_id: BigInt(user.tenant_id),
+      },
+    });
 
-    if (!isTrainer && !isAdmin) {
-      return forbidden("You don't have permission to delete this appointment.");
+    if (!existingAppointment) {
+      return notFound('Appointment');
     }
 
-    const deleted = database.delete('appointments', params.id);
-    if (!deleted) return error('Failed to delete appointment', 500);
+    // Permission check - only trainers and admins can delete
+    if (user.role === 'client') {
+      return forbidden("Clients cannot delete appointments.");
+    }
+    if (user.role === 'trainer' && existingAppointment.by_team_member_id?.toString() !== user.id.toString()) {
+      return forbidden("You can only delete your own appointments.");
+    }
+
+    // Delete appointment
+    await prisma.interactions.delete({
+      where: { id: appointmentId },
+    });
 
     return new NextResponse(null, { status: 204 });
   } catch (err) {
     console.error('Failed to delete appointment:', err);
     return error('Failed to delete appointment', 500);
   }
-};
-
-export const DELETE = withLogging(deleteHandler);
+}

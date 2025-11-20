@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/middleware/auth.middleware';
-import { database, ProgressEntry } from '@/lib/mock-db/database';
+import { getSession } from '@/lib/auth/session';
 import { success, error, forbidden } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
+import { prisma } from '@/lib/prisma';
 import { withValidation } from '@/lib/middleware/validate.middleware';
 import { z } from 'zod';
 
@@ -18,48 +17,55 @@ const createWeightLogSchema = z.object({
  * Get weight progress entries
  */
 export async function GET(req: NextRequest) {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
   try {
+    const session = await getSession(req);
+    const { user } = session;
+
     const { searchParams } = new URL(req.url);
     const clientId = searchParams.get('clientId');
     const fromDate = searchParams.get('from');
     const toDate = searchParams.get('to');
     const limit = parseInt(searchParams.get('limit') || '50', 10);
 
-    let entries = database.query<ProgressEntry>(
-      'progressEntries',
-      (e) => e.metric === 'weight'
-    );
-
-    // Filter by client
+    let finalClientId: bigint;
     if (user.role === 'client') {
-      entries = entries.filter((e) => e.clientId === user.id);
+      finalClientId = BigInt(user.id);
     } else if (clientId) {
-      entries = entries.filter((e) => e.clientId === clientId);
+      finalClientId = BigInt(clientId);
     } else {
       return error('clientId parameter is required for trainers/admins', 400);
     }
 
-    // Filter by date range
+    // Build date filter
+    const dateFilter: any = {};
     if (fromDate) {
-      const from = new Date(fromDate);
-      entries = entries.filter((e) => new Date(e.date) >= from);
+      dateFilter.gte = new Date(fromDate);
     }
     if (toDate) {
-      const to = new Date(toDate);
-      entries = entries.filter((e) => new Date(e.date) <= to);
+      dateFilter.lte = new Date(toDate);
     }
 
-    // Sort by date (oldest first for progress charts)
-    entries = database.sort(entries, 'date', 'asc');
+    // Get weight entries from progress_tracking table
+    const weightEntries = await prisma.progress_tracking.findMany({
+      where: {
+        customer_id: finalClientId,
+        tenant_id: BigInt(user.tenant_id),
+        weight_kg: { not: null },
+        recorded_at: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
+      },
+      orderBy: { recorded_at: 'asc' },
+      take: limit,
+    });
 
-    // Limit results
-    entries = entries.slice(0, limit);
+    // Transform to expected format
+    const entries = weightEntries.map(entry => ({
+      id: entry.id.toString(),
+      clientId: entry.customer_id.toString(),
+      metric: 'weight',
+      value: Number(entry.weight_kg),
+      date: entry.recorded_at,
+      notes: entry.notes,
+    }));
 
     return success(entries);
   } catch (err) {
@@ -73,31 +79,44 @@ export async function GET(req: NextRequest) {
  * Log weight progress
  */
 const postHandler = async (req: NextRequest, validatedBody: any) => {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-
   try {
+    const session = await getSession(req);
+    const { user } = session;
+
     const { clientId, value, date, notes } = validatedBody;
 
     // Determine client ID
-    let finalClientId = clientId;
+    let finalClientId: bigint;
     if (user.role === 'client') {
-      finalClientId = user.id;
+      finalClientId = BigInt(user.id);
     } else if (!clientId) {
       return error('clientId is required for trainers/admins', 400);
+    } else {
+      finalClientId = BigInt(clientId);
     }
 
-    const newEntry = database.create<ProgressEntry>('progressEntries', {
-      clientId: finalClientId,
-      metric: 'weight' as any,
-      value,
-      date: date ? new Date(date) : new Date(),
+    // Create progress tracking entry
+    const newEntry = await prisma.progress_tracking.create({
+      data: {
+        tenant_id: BigInt(user.tenant_id),
+        customer_id: finalClientId,
+        recorded_at: date ? new Date(date) : new Date(),
+        weight_kg: value,
+        notes: notes,
+      },
     });
 
-    return success(newEntry, 201);
+    // Transform to expected format
+    const response = {
+      id: newEntry.id.toString(),
+      clientId: newEntry.customer_id.toString(),
+      metric: 'weight',
+      value: Number(newEntry.weight_kg),
+      date: newEntry.recorded_at,
+      notes: newEntry.notes,
+    };
+
+    return success(response, 201);
   } catch (err) {
     console.error('Failed to log weight:', err);
     return error('Failed to log weight', 500);

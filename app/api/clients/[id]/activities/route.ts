@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireRole } from '@/lib/middleware/auth.middleware';
-import {
-  database,
-  Client,
-  WorkoutLog,
-  NutritionLog,
-  ProgressEntry,
-} from '@/lib/mock-db/database';
+import { getSession } from '@/lib/auth/session';
 import { success, error, notFound, forbidden } from '@/lib/utils/response';
-import { ensureDbInitialized } from '@/lib/db/init';
+import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
   params: { id: string };
@@ -19,24 +12,26 @@ interface RouteParams {
  * Get recent activity feed for a client (workouts, nutrition, progress)
  */
 export async function GET(req: NextRequest, { params }: RouteParams) {
-  ensureDbInitialized();
-  const authResult = await requireAuth(req);
-  if (authResult instanceof NextResponse) return authResult;
-
-  const { user } = authResult;
-  const { id } = params;
-
   try {
+    const session = await getSession(req);
+    const { user } = session;
+    const clientId = BigInt(params.id);
+
     // Check if client exists
-    const client = database.get<Client>('clients', id);
+    const client = await prisma.customers.findUnique({
+      where: { id: clientId },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        tenant_id: true,
+      },
+    });
+
     if (!client) return notFound('Client');
 
-    // Permission check
-    const isOwner = user.role === 'client' && user.id === id;
-    const isAssignedTrainer = user.role === 'trainer' && client.trainerId === user.id;
-    const isAdmin = user.role === 'admin' || user.role === 'super-admin';
-
-    if (!isOwner && !isAssignedTrainer && !isAdmin) {
+    // Permission check - ensure user belongs to same tenant
+    if (user.tenant_id !== Number(client.tenant_id)) {
       return forbidden("You don't have permission to view this client's activities.");
     }
 
@@ -44,68 +39,104 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const limit = parseInt(searchParams.get('limit') || '20', 10);
     const fromDate = searchParams.get('from');
 
-    // Get all activities
-    const workoutLogs = database.query<WorkoutLog>(
-      'workoutLogs',
-      (w) => w.clientId === id
-    );
-    const nutritionLogs = database.query<NutritionLog>(
-      'nutritionLogs',
-      (n) => n.clientId === id
-    );
-    const progressEntries = database.query<ProgressEntry>(
-      'progressEntries',
-      (p) => p.clientId === id
-    );
+    // Build date filter
+    const dateFilter = fromDate ? { gte: new Date(fromDate) } : undefined;
+
+    // Get progress tracking activities
+    const progressEntries = await prisma.progress_tracking.findMany({
+      where: {
+        customer_id: clientId,
+        recorded_at: dateFilter,
+      },
+      orderBy: { recorded_at: 'desc' },
+      take: limit,
+    });
+
+    // Get checkin activities
+    const checkins = await prisma.checkins.findMany({
+      where: {
+        customer_id: clientId,
+        checkin_date: dateFilter ? { gte: new Date(fromDate!) } : undefined,
+      },
+      orderBy: { checkin_date: 'desc' },
+      take: limit,
+    });
+
+    // Get interactions (appointments, messages, etc.)
+    const interactions = await prisma.interactions.findMany({
+      where: {
+        customer_id: clientId,
+        sent_at: dateFilter,
+      },
+      include: {
+        by_team_member: {
+          select: {
+            full_name: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: { sent_at: 'desc' },
+      take: limit,
+    });
 
     // Convert to unified activity format
     const activities = [
-      ...workoutLogs.map((w) => ({
-        id: w.id,
-        type: 'workout',
-        date: w.dateCompleted,
-        description: `Completed workout`,
-        data: w,
-      })),
-      ...nutritionLogs.map((n) => ({
-        id: n.id,
-        type: 'nutrition',
-        date: n.dateLogged,
-        description: `Logged nutrition`,
-        data: n,
-      })),
       ...progressEntries.map((p) => ({
-        id: p.id,
+        id: p.id.toString(),
         type: 'progress',
-        date: p.date,
-        description: `Logged ${p.metric}: ${p.value}`,
-        data: p,
+        date: p.recorded_at,
+        description: `Progress update: ${p.weight_kg ? `Weight: ${p.weight_kg}kg` : ''} ${p.workout_done ? 'Workout completed' : ''}`.trim(),
+        data: {
+          weight_kg: p.weight_kg,
+          workout_done: p.workout_done,
+          sleep_hours: p.sleep_hours,
+          pain_score: p.pain_score,
+          notes: p.notes,
+        },
+      })),
+      ...checkins.map((c) => ({
+        id: c.id.toString(),
+        type: 'checkin',
+        date: c.checkin_date,
+        description: `${c.period} check-in`,
+        data: {
+          period: c.period,
+          action_taken: c.action_taken,
+          reviewed_at: c.reviewed_at,
+        },
+      })),
+      ...interactions.map((i) => ({
+        id: i.id.toString(),
+        type: 'interaction',
+        date: i.sent_at,
+        description: `${i.channel} ${i.direction}: ${i.message_text || i.intent_code || 'Activity'}`,
+        data: {
+          channel: i.channel,
+          direction: i.direction,
+          intent_code: i.intent_code,
+          message_text: i.message_text,
+          by_team_member: i.by_team_member,
+        },
       })),
     ];
 
-    // Filter by date
-    let filteredActivities = activities;
-    if (fromDate) {
-      const from = new Date(fromDate);
-      filteredActivities = activities.filter((a) => new Date(a.date) >= from);
-    }
-
     // Sort by date (newest first)
-    filteredActivities.sort(
+    activities.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
     // Limit results
-    const limitedActivities = filteredActivities.slice(0, limit);
+    const limitedActivities = activities.slice(0, limit);
 
     return success({
-      clientId: id,
+      clientId: params.id,
       activities: limitedActivities,
-      total: filteredActivities.length,
+      total: activities.length,
       summary: {
-        workouts: workoutLogs.length,
-        nutritionLogs: nutritionLogs.length,
         progressEntries: progressEntries.length,
+        checkins: checkins.length,
+        interactions: interactions.length,
       },
     });
   } catch (err) {

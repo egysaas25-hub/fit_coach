@@ -1,4 +1,11 @@
-import { ProgressEntry } from '@/lib/mock-db/database';
+// Progress entry interface for export functionality
+interface ProgressEntry {
+  id: string;
+  date: Date;
+  metric: string;
+  value: any;
+  notes?: string;
+}
 
 /**
  * Convert array of objects to CSV
