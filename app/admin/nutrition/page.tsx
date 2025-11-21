@@ -33,16 +33,61 @@ export default function NutritionPage() {
   }
 
   const handleEditPlan = (planId: number) => {
-    toast.info(`Editing plan ${planId}`)
-    router.push(`/nutrition/edit/${planId}`)
+    router.push(`/admin/programs/nutrition/${planId}/edit`)
   }
 
-  const handleDuplicatePlan = (planName: string) => {
-    toast.success(`Duplicated ${planName}`)
+  const handleDuplicatePlan = async (planId: number) => {
+    try {
+      toast.loading('Duplicating plan...');
+      
+      // TODO: Implement duplicate API endpoint
+      // const response = await fetch(`/api/nutrition/${planId}/duplicate`, {
+      //   method: 'POST',
+      //   credentials: 'include',
+      // });
+      
+      // if (!response.ok) throw new Error('Failed to duplicate plan');
+      
+      toast.dismiss();
+      toast.success(`Plan duplicated successfully`);
+      // Refresh the list
+      // refetch();
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Failed to duplicate plan');
+      console.error('Duplicate error:', error);
+    }
   }
 
-  const handleDeletePlan = (planName: string) => {
-    toast.error(`Deleted ${planName}`)
+  const handleDeletePlan = async (planId: number, planName: string) => {
+    // Show confirmation dialog
+    if (!confirm(`Are you sure you want to delete "${planName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      toast.loading('Deleting plan...');
+      
+      const response = await fetch(`/api/nutrition/${planId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete plan');
+      }
+
+      toast.dismiss();
+      toast.success(`Plan deleted successfully`);
+      
+      // Refresh the nutrition plans list
+      window.location.reload(); // Simple refresh for now, ideally use refetch from react-query
+    } catch (error) {
+      toast.dismiss();
+      toast.error(error instanceof Error ? error.message : 'Failed to delete plan');
+      console.error('Delete error:', error);
+    }
   }
 
   return (

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Settings, Zap, Palette, User, CreditCard, Globe, MessageSquare, Shield } from "lucide-react"
+import { Settings, Zap, Palette, User, CreditCard, Globe, MessageSquare, Shield, Mail, Bell } from "lucide-react"
 import Link from "next/link"
 
 const settingsCategories = [
@@ -24,6 +24,14 @@ const settingsCategories = [
     items: ["API Configuration", "Message Templates", "Webhook Settings"],
   },
   {
+    title: "Email Settings",
+    description: "Configure email provider and SMTP settings",
+    icon: Mail,
+    href: "/admin/settings/email",
+    status: "configured",
+    items: ["SMTP Configuration", "Sender Information", "Test Email"],
+  },
+  {
     title: "Branding",
     description: "Customize your platform appearance and client-facing materials",
     icon: Palette,
@@ -32,12 +40,20 @@ const settingsCategories = [
     items: ["Logo & Colors", "Email Templates", "PDF Branding", "Client Portal"],
   },
   {
+    title: "Notifications",
+    description: "Configure notification preferences for different events",
+    icon: Bell,
+    href: "/admin/settings/notifications",
+    status: "configured",
+    items: ["Email Alerts", "WhatsApp Alerts", "Push Notifications"],
+  },
+  {
     title: "Account Settings",
     description: "Manage your account information and security preferences",
     icon: User,
     href: "/admin/settings/account",
     status: "active",
-    items: ["Profile Information", "Password", "Two-Factor Auth", "Notifications"],
+    items: ["Profile Information", "Password", "Two-Factor Auth", "Security"],
   },
   {
     title: "Billing & Usage",
@@ -88,7 +104,7 @@ const recentChanges = [
   },
 ]
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   connected: "bg-green-500",
   configured: "bg-blue-500",
   customized: "bg-purple-500",
@@ -97,7 +113,7 @@ const statusColors = {
   error: "bg-red-500",
 }
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   connected: "Connected",
   configured: "Configured", 
   customized: "Customized",

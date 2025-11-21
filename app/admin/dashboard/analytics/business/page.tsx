@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { AdminLayout } from '@/components/layouts/AdminLayout'
+import AdminLayout from '@/components/layouts/AdminLayout'
 import { StatCard } from '@/components/shared/data-display/StatCard'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { DollarSign, TrendingUp, TrendingDown, Download, Calendar } from 'lucide-react'
+import { downloadCSV, formatCurrency as formatCurrencyCSV, formatPercentage as formatPercentageCSV } from '@/lib/utils/csv-generator'
 
 interface BusinessAnalytics {
   kpis: {
@@ -88,8 +89,71 @@ export default function BusinessAnalyticsPage() {
   }
 
   const handleExport = () => {
-    // TODO: Implement export functionality
-    console.log('Export analytics data')
+    if (!data) {
+      return
+    }
+
+    // Prepare comprehensive export data
+    const exportData = [
+      // KPIs Section
+      { section: 'KPIs', metric: 'Total Revenue', value: formatCurrencyCSV(data.kpis.total_revenue) },
+      { section: 'KPIs', metric: 'MRR', value: formatCurrencyCSV(data.kpis.mrr) },
+      { section: 'KPIs', metric: 'Expenses', value: formatCurrencyCSV(data.kpis.expenses) },
+      { section: 'KPIs', metric: 'Profit', value: formatCurrencyCSV(data.kpis.profit) },
+      { section: 'KPIs', metric: 'Profit Margin', value: formatPercentageCSV(data.kpis.profit_margin) },
+      { section: 'KPIs', metric: 'Avg Transaction Value', value: formatCurrencyCSV(data.kpis.avg_transaction_value) },
+      { section: 'KPIs', metric: 'Growth Rate', value: formatPercentageCSV(data.kpis.growth_rate) },
+      { section: 'KPIs', metric: 'Total Transactions', value: data.kpis.total_transactions },
+      { section: '', metric: '', value: '' }, // Empty row
+      
+      // Revenue Trend Section
+      { section: 'Revenue Trend', metric: 'Month', value: 'Revenue', extra1: 'Transactions' },
+      ...data.revenue_trend.map(item => ({
+        section: 'Revenue Trend',
+        metric: item.month,
+        value: formatCurrencyCSV(item.revenue),
+        extra1: item.transactions,
+      })),
+      { section: '', metric: '', value: '' }, // Empty row
+      
+      // Payment Gateway Distribution
+      { section: 'Payment Gateways', metric: 'Gateway', value: 'Amount', extra1: 'Transactions', extra2: 'Percentage' },
+      ...data.gateway_distribution.map(item => ({
+        section: 'Payment Gateways',
+        metric: item.gateway,
+        value: formatCurrencyCSV(item.amount),
+        extra1: item.transactions,
+        extra2: formatPercentageCSV(item.percentage),
+      })),
+      { section: '', metric: '', value: '' }, // Empty row
+      
+      // Customer Revenue
+      { section: 'Customer Revenue', metric: 'Type', value: 'Amount' },
+      { section: 'Customer Revenue', metric: 'New Customers', value: formatCurrencyCSV(data.customer_revenue.new_customers) },
+      { section: 'Customer Revenue', metric: 'Returning Customers', value: formatCurrencyCSV(data.customer_revenue.returning_customers) },
+      { section: '', metric: '', value: '' }, // Empty row
+      
+      // Top Revenue Sources
+      { section: 'Top Sources', metric: 'Source', value: 'Revenue', extra1: 'Customers', extra2: 'Avg per Customer' },
+      ...data.top_sources.map(item => ({
+        section: 'Top Sources',
+        metric: item.source,
+        value: formatCurrencyCSV(item.revenue),
+        extra1: item.customers,
+        extra2: formatCurrencyCSV(item.revenue / item.customers),
+      })),
+    ]
+
+    downloadCSV(exportData, {
+      filename: 'business-analytics',
+      columns: [
+        { key: 'section', header: 'Section' },
+        { key: 'metric', header: 'Metric' },
+        { key: 'value', header: 'Value' },
+        { key: 'extra1', header: 'Additional 1' },
+        { key: 'extra2', header: 'Additional 2' },
+      ],
+    })
   }
 
   return (
@@ -104,9 +168,9 @@ export default function BusinessAnalyticsPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleExport}>
+            <Button variant="outline" onClick={handleExport} disabled={!data}>
               <Download className="h-4 w-4 mr-2" />
-              Export
+              Export CSV
             </Button>
           </div>
         </div>
@@ -124,8 +188,11 @@ export default function BusinessAnalyticsPage() {
               title="Total Revenue"
               value={formatCurrency(data.kpis.total_revenue)}
               icon={DollarSign}
-              trend={data.kpis.growth_rate}
-              trendLabel="vs last month"
+              trend={{
+                value: data.kpis.growth_rate,
+                isPositive: data.kpis.growth_rate >= 0
+              }}
+              description="vs last month"
             />
             <StatCard
               title="MRR"
@@ -137,8 +204,11 @@ export default function BusinessAnalyticsPage() {
               title="Profit"
               value={formatCurrency(data.kpis.profit)}
               icon={data.kpis.profit >= 0 ? TrendingUp : TrendingDown}
-              trend={data.kpis.profit_margin}
-              trendLabel="margin"
+              trend={{
+                value: data.kpis.profit_margin,
+                isPositive: data.kpis.profit_margin >= 0
+              }}
+              description="margin"
             />
             <StatCard
               title="Avg Transaction"
@@ -209,7 +279,7 @@ export default function BusinessAnalyticsPage() {
                       cx="50%"
                       cy="50%"
                       outerRadius={80}
-                      label={(entry) => `${entry.gateway}: ${entry.percentage.toFixed(1)}%`}
+                      label={(entry: any) => `${entry.gateway}: ${entry.percentage.toFixed(1)}%`}
                     >
                       {data.gateway_distribution.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

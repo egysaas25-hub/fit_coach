@@ -1,104 +1,131 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { Zap, Play, Pause, Plus, Settings, Clock, Users, MessageSquare } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
+import { Zap, Play, Pause, Plus, Settings, Clock, Users, MessageSquare, Loader2 } from "lucide-react"
 
-const automationWorkflows = [
-  {
-    id: 1,
-    name: "Welcome New Client",
-    description: "Automatically send welcome message and onboarding materials when a new client signs up",
-    trigger: "Client Registration",
-    actions: ["Send WhatsApp welcome", "Email onboarding guide", "Schedule first session"],
-    status: "active",
-    executions: 156,
-    successRate: 98,
-    lastRun: "2 hours ago",
-    category: "Onboarding",
-  },
-  {
-    id: 2,
-    name: "Plan Delivery Notification",
-    description: "Notify client when their training and nutrition plans are ready for delivery",
-    trigger: "Plan Assignment",
-    actions: ["Generate PDF", "Send WhatsApp notification", "Create check-in schedule"],
-    status: "active",
-    executions: 89,
-    successRate: 95,
-    lastRun: "30 minutes ago",
-    category: "Plan Management",
-  },
-  {
-    id: 3,
-    name: "Missed Check-in Follow-up",
-    description: "Send reminder messages when clients miss their scheduled check-ins",
-    trigger: "Missed Check-in",
-    actions: ["Send reminder WhatsApp", "Notify trainer", "Reschedule check-in"],
-    status: "active",
-    executions: 234,
-    successRate: 87,
-    lastRun: "1 hour ago",
-    category: "Engagement",
-  },
-  {
-    id: 4,
-    name: "Progress Milestone Celebration",
-    description: "Automatically celebrate when clients reach their fitness milestones",
-    trigger: "Milestone Achieved",
-    actions: ["Send congratulations message", "Update progress badge", "Share achievement"],
-    status: "active",
-    executions: 67,
-    successRate: 100,
-    lastRun: "4 hours ago",
-    category: "Motivation",
-  },
-  {
-    id: 5,
-    name: "Subscription Renewal Reminder",
-    description: "Remind clients about upcoming subscription renewals and payment due dates",
-    trigger: "7 Days Before Expiry",
-    actions: ["Send renewal reminder", "Generate invoice", "Offer renewal discount"],
-    status: "paused",
-    executions: 45,
-    successRate: 92,
-    lastRun: "2 days ago",
-    category: "Billing",
-  },
-  {
-    id: 6,
-    name: "Trainer Workload Alert",
-    description: "Alert administrators when trainer workload exceeds capacity limits",
-    trigger: "Workload > 90%",
-    actions: ["Send admin alert", "Suggest client redistribution", "Block new assignments"],
-    status: "active",
-    executions: 12,
-    successRate: 100,
-    lastRun: "1 day ago",
-    category: "Team Management",
-  },
-]
+interface AutomationWorkflow {
+  id: string
+  name: string
+  description: string | null
+  trigger: string
+  actions: string[]
+  category: string | null
+  is_active: boolean
+  executions: number
+  success_rate: number
+  last_run_at: string | null
+  created_at: string
+  updated_at: string
+}
 
 const categories = ["All", "Onboarding", "Plan Management", "Engagement", "Motivation", "Billing", "Team Management"]
 
 export default function AutomationLibraryPage() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [searchTerm, setSearchTerm] = useState("")
+  const [workflows, setWorkflows] = useState<AutomationWorkflow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+  const { toast } = useToast()
 
-  const filteredWorkflows = automationWorkflows.filter((workflow) => {
+  // Fetch workflows on mount
+  useEffect(() => {
+    fetchWorkflows()
+  }, [])
+
+  const fetchWorkflows = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/automation/workflows')
+      if (!response.ok) {
+        throw new Error('Failed to fetch workflows')
+      }
+      const data = await response.json()
+      setWorkflows(data)
+    } catch (error) {
+      console.error('Error fetching workflows:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load automation workflows",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredWorkflows = workflows.filter((workflow) => {
     const matchesCategory = selectedCategory === "All" || workflow.category === selectedCategory
     const matchesSearch = workflow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         workflow.description.toLowerCase().includes(searchTerm.toLowerCase())
+                         (workflow.description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     return matchesCategory && matchesSearch
   })
 
-  const toggleWorkflow = (id: number) => {
-    // Handle workflow toggle
-    console.log(`Toggle workflow ${id}`)
+  const toggleWorkflow = async (id: string, currentStatus: boolean) => {
+    setTogglingId(id)
+    try {
+      const response = await fetch(`/api/automation/workflows/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_active: !currentStatus }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update workflow')
+      }
+
+      const updatedWorkflow = await response.json()
+
+      // Update local state
+      setWorkflows(prev =>
+        prev.map(w => w.id === id ? { ...w, is_active: updatedWorkflow.is_active } : w)
+      )
+
+      toast({
+        title: "Success",
+        description: `Workflow ${updatedWorkflow.is_active ? 'enabled' : 'disabled'} successfully`,
+      })
+    } catch (error) {
+      console.error('Error toggling workflow:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update workflow status",
+        variant: "destructive",
+      })
+    } finally {
+      setTogglingId(null)
+    }
+  }
+
+  const formatLastRun = (lastRunAt: string | null) => {
+    if (!lastRunAt) return 'Never'
+    
+    const date = new Date(lastRunAt)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 60) return `${diffMins} minutes ago`
+    if (diffHours < 24) return `${diffHours} hours ago`
+    return `${diffDays} days ago`
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   return (
@@ -123,9 +150,9 @@ export default function AutomationLibraryPage() {
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{automationWorkflows.length}</div>
+            <div className="text-2xl font-bold">{workflows.length}</div>
             <p className="text-xs text-muted-foreground">
-              {automationWorkflows.filter(w => w.status === "active").length} active
+              {workflows.filter(w => w.is_active).length} active
             </p>
           </CardContent>
         </Card>
@@ -137,7 +164,7 @@ export default function AutomationLibraryPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {automationWorkflows.reduce((sum, w) => sum + w.executions, 0)}
+              {workflows.reduce((sum, w) => sum + w.executions, 0)}
             </div>
             <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
@@ -150,7 +177,9 @@ export default function AutomationLibraryPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Math.round(automationWorkflows.reduce((sum, w) => sum + w.successRate, 0) / automationWorkflows.length)}%
+              {workflows.length > 0 
+                ? Math.round(workflows.reduce((sum, w) => sum + w.success_rate, 0) / workflows.length)
+                : 0}%
             </div>
             <p className="text-xs text-muted-foreground">Average across all workflows</p>
           </CardContent>
@@ -204,9 +233,9 @@ export default function AutomationLibraryPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-lg font-semibold text-foreground">{workflow.name}</h3>
-                    <Badge variant="outline">{workflow.category}</Badge>
-                    <Badge variant={workflow.status === "active" ? "default" : "secondary"}>
-                      {workflow.status}
+                    {workflow.category && <Badge variant="outline">{workflow.category}</Badge>}
+                    <Badge variant={workflow.is_active ? "default" : "secondary"}>
+                      {workflow.is_active ? "Active" : "Paused"}
                     </Badge>
                   </div>
                   
@@ -223,18 +252,18 @@ export default function AutomationLibraryPage() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Success Rate</p>
-                      <p className="font-medium text-foreground">{workflow.successRate}%</p>
+                      <p className="font-medium text-foreground">{workflow.success_rate}%</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Last Run</p>
-                      <p className="font-medium text-foreground">{workflow.lastRun}</p>
+                      <p className="font-medium text-foreground">{formatLastRun(workflow.last_run_at)}</p>
                     </div>
                   </div>
                   
                   <div>
                     <p className="text-xs text-muted-foreground mb-2">Actions</p>
                     <div className="flex flex-wrap gap-1">
-                      {workflow.actions.map((action, index) => (
+                      {Array.isArray(workflow.actions) && workflow.actions.map((action, index) => (
                         <Badge key={index} variant="secondary" className="text-xs">
                           {action}
                         </Badge>
@@ -246,12 +275,17 @@ export default function AutomationLibraryPage() {
                 <div className="flex flex-col items-end gap-3 ml-6">
                   <div className="flex items-center gap-2">
                     <Switch
-                      checked={workflow.status === "active"}
-                      onCheckedChange={() => toggleWorkflow(workflow.id)}
+                      checked={workflow.is_active}
+                      onCheckedChange={() => toggleWorkflow(workflow.id, workflow.is_active)}
+                      disabled={togglingId === workflow.id}
                     />
-                    <span className="text-sm text-muted-foreground">
-                      {workflow.status === "active" ? "Active" : "Paused"}
-                    </span>
+                    {togglingId === workflow.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        {workflow.is_active ? "Active" : "Paused"}
+                      </span>
+                    )}
                   </div>
                   
                   <div className="flex gap-2">

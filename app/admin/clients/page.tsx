@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { useQuery } from "@tanstack/react-query"
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -25,9 +26,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Search, Filter, Download, FileSpreadsheet } from "lucide-react"
+import { Plus, Search, Filter, FileSpreadsheet } from "lucide-react"
 import { toast } from "sonner"
 import { AddClientModal } from "@/components/features/clients/AddClientModal"
+import { ClientBulkActions } from "@/components/features/clients/ClientBulkActions"
+import { useBulkSelection } from "@/lib/hooks/useBulkSelection"
 
 // Client type from API
 interface Client {
@@ -105,6 +108,17 @@ export default function ClientsPage() {
       return response.json()
     },
   })
+
+  // Bulk selection
+  const {
+    isAllSelected,
+    isIndeterminate,
+    toggleAll,
+    toggleItem,
+    isSelected,
+    selectedItems,
+    deselectAll,
+  } = useBulkSelection(data?.rows || [])
 
   // Handle row click
   const handleRowClick = (client: Client) => {
@@ -286,6 +300,14 @@ export default function ClientsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Select all"
+                      className={isIndeterminate ? "data-[state=checked]:bg-primary/50" : ""}
+                    />
+                  </TableHead>
                   <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Status</TableHead>
@@ -302,6 +324,13 @@ export default function ClientsPage() {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleRowClick(client)}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={isSelected(client.id)}
+                        onCheckedChange={() => toggleItem(client.id)}
+                        aria-label={`Select ${client.full_name}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-mono font-semibold">
                       {client.client_code}
                     </TableCell>
@@ -365,6 +394,17 @@ export default function ClientsPage() {
         open={isAddModalOpen}
         onOpenChange={setIsAddModalOpen}
         onSuccess={() => refetch()}
+      />
+
+      {/* Bulk Actions */}
+      <ClientBulkActions
+        selectedIds={selectedItems.map(item => item.id)}
+        selectedCount={selectedItems.length}
+        onClearSelection={deselectAll}
+        onDeleteSuccess={() => {
+          refetch()
+          deselectAll()
+        }}
       />
     </div>
   )

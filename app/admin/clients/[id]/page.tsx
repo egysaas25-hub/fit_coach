@@ -21,11 +21,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ArrowLeft, Edit, Trash2, Save, X } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2, Save, X, Download } from 'lucide-react'
 import { ClientIdentityTab } from '@/components/features/clients/ClientIdentityTab'
 import { ClientSubscriptionsTab } from '@/components/features/clients/ClientSubscriptionsTab'
 import { ClientProgressTab } from '@/components/features/clients/ClientProgressTab'
 import { ClientNotesTab } from '@/components/features/clients/ClientNotesTab'
+import { ClientFilesTab } from '@/components/features/clients/ClientFilesTab'
+import { PDFExportButton } from '@/components/shared/actions/PDFExportButton'
 
 interface Client {
   id: string
@@ -226,6 +228,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           <TabsTrigger value="identity">Identity</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
           <TabsTrigger value="progress">Progress</TabsTrigger>
+          <TabsTrigger value="files">Files</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
         </TabsList>
 
@@ -241,7 +244,28 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         </TabsContent>
 
         <TabsContent value="progress" className="mt-6">
-          <ClientProgressTab clientId={client.id} />
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <PDFExportButton
+                endpoint="/api/export/progress-report"
+                payload={{
+                  clientId: client.id,
+                  dateRange: {
+                    startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+                    endDate: new Date().toISOString(),
+                  },
+                }}
+                filename={`progress-report-${client.client_code}-${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                label="Export Progress Report"
+                variant="outline"
+              />
+            </div>
+            <ClientProgressTab clientId={client.id} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="files" className="mt-6">
+          <ClientFilesTab clientId={client.id} />
         </TabsContent>
 
         <TabsContent value="notes" className="mt-6">

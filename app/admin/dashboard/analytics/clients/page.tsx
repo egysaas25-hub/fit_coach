@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { AdminLayout } from '@/components/layouts/AdminLayout'
+import AdminLayout from '@/components/layouts/AdminLayout'
 import { StatCard } from '@/components/shared/data-display/StatCard'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,7 @@ import {
 } from 'recharts'
 import { Users, TrendingUp, TrendingDown, AlertTriangle, Download } from 'lucide-react'
 import { format } from 'date-fns'
+import { downloadCSV, formatPercentage as formatPercentageCSV, formatDate } from '@/lib/utils/csv-generator'
 
 interface ClientAnalytics {
   kpis: {
@@ -104,6 +105,86 @@ export default function ClientAnalyticsPage() {
     return <Badge className="bg-green-500">Low</Badge>
   }
 
+  const handleExportCSV = () => {
+    if (!data) {
+      return
+    }
+
+    // Prepare comprehensive export data
+    const exportData = [
+      // KPIs Section
+      { section: 'KPIs', metric: 'Total Clients', value: data.kpis.total_clients },
+      { section: 'KPIs', metric: 'Active Clients', value: data.kpis.active_clients },
+      { section: 'KPIs', metric: 'Active Percentage', value: formatPercentageCSV(data.kpis.active_percentage) },
+      { section: 'KPIs', metric: 'Churn Rate', value: formatPercentageCSV(data.kpis.churn_rate) },
+      { section: 'KPIs', metric: 'Retention Rate', value: formatPercentageCSV(data.kpis.retention_rate) },
+      { section: 'KPIs', metric: 'Avg Engagement Score', value: data.kpis.avg_engagement_score },
+      { section: 'KPIs', metric: 'Expired Clients', value: data.kpis.expired_clients },
+      { section: '', metric: '', value: '' }, // Empty row
+      
+      // Growth Trend Section
+      { section: 'Growth Trend', metric: 'Month', value: 'New Clients', extra1: 'Churned Clients', extra2: 'Net Growth' },
+      ...data.growth_trend.map(item => ({
+        section: 'Growth Trend',
+        metric: item.month,
+        value: item.new_clients,
+        extra1: item.churned_clients,
+        extra2: item.net_growth,
+      })),
+      { section: '', metric: '', value: '' }, // Empty row
+      
+      // Engagement Distribution
+      { section: 'Engagement', metric: 'Level', value: 'Count', extra1: 'Percentage' },
+      ...data.engagement_distribution.map(item => ({
+        section: 'Engagement',
+        metric: item.level,
+        value: item.count,
+        extra1: formatPercentageCSV(item.percentage),
+      })),
+      { section: '', metric: '', value: '' }, // Empty row
+      
+      // Clients by Status
+      { section: 'Status Distribution', metric: 'Status', value: 'Count', extra1: 'Percentage' },
+      ...data.clients_by_status.map(item => ({
+        section: 'Status Distribution',
+        metric: item.status,
+        value: item.count,
+        extra1: formatPercentageCSV(item.percentage),
+      })),
+      { section: '', metric: '', value: '' }, // Empty row
+      
+      // Top Goals
+      { section: 'Top Goals', metric: 'Goal', value: 'Count' },
+      ...data.clients_by_goal.map(item => ({
+        section: 'Top Goals',
+        metric: item.goal,
+        value: item.count,
+      })),
+      { section: '', metric: '', value: '' }, // Empty row
+      
+      // Predicted Churn
+      { section: 'Churn Risk', metric: 'Client', value: 'Code', extra1: 'Risk Score', extra2: 'Last Interaction' },
+      ...data.predicted_churn.map(item => ({
+        section: 'Churn Risk',
+        metric: item.name,
+        value: item.client_code,
+        extra1: item.risk_score,
+        extra2: item.last_interaction ? formatDate(item.last_interaction) : 'Never',
+      })),
+    ]
+
+    downloadCSV(exportData, {
+      filename: 'client-analytics',
+      columns: [
+        { key: 'section', header: 'Section' },
+        { key: 'metric', header: 'Metric' },
+        { key: 'value', header: 'Value' },
+        { key: 'extra1', header: 'Additional 1' },
+        { key: 'extra2', header: 'Additional 2' },
+      ],
+    })
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -115,9 +196,9 @@ export default function ClientAnalyticsPage() {
               Track client growth, retention, and engagement
             </p>
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportCSV} disabled={!data}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            Export CSV
           </Button>
         </div>
 
@@ -140,8 +221,7 @@ export default function ClientAnalyticsPage() {
               title="Active Clients"
               value={data.kpis.active_clients.toString()}
               icon={TrendingUp}
-              trend={data.kpis.active_percentage}
-              trendLabel="of total"
+              description={`${formatPercentage(data.kpis.active_percentage)} of total`}
             />
             <StatCard
               title="Churn Rate"
@@ -242,7 +322,7 @@ export default function ClientAnalyticsPage() {
                       cx="50%"
                       cy="50%"
                       outerRadius={80}
-                      label={(entry) => `${entry.status}: ${entry.percentage.toFixed(1)}%`}
+                      label={(entry: any) => `${entry.status}: ${entry.percentage.toFixed(1)}%`}
                     >
                       {data.clients_by_status.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
