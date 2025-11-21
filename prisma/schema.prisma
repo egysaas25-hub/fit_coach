@@ -309,6 +309,10 @@ model tenants {
   background_jobs  background_jobs[]
   audit_log        audit_log[]
   data_access_log  data_access_log[]
+  uploaded_files   uploaded_files[]
+  approval_workflows approval_workflows[]
+  automation_workflows automation_workflows[]
+  system_settings  system_settings[]
 }
 
 model tenant_branding {
@@ -366,6 +370,7 @@ model customers {
   tickets              tickets[]
   funnel_events        funnel_events[]
   churn_feedback       churn_feedback[]
+  uploaded_files       uploaded_files[]
 
   @@unique([tenant_id, phone_e164], name: "uq_customer_phone")
   @@index([tenant_id, phone_e164], name: "idx_customers_phone")
@@ -414,6 +419,11 @@ model team_members {
   tickets       tickets[]
   audit_log     audit_log[]
   data_access_log data_access_log[]
+  uploaded_files uploaded_files[]
+  approval_workflows_submitted approval_workflows[] @relation("approval_workflows_submitted_by")
+  approval_workflows_reviewed approval_workflows[] @relation("approval_workflows_reviewed_by")
+  automation_workflows automation_workflows[]
+  system_settings system_settings[]
 
   @@unique([tenant_id, email], name: "uq_team_email")
 }
@@ -686,6 +696,7 @@ model nutrition_plans {
   is_active     Boolean   @default(true)
   calories_target Int?      @db.SmallInt
   notes         String?
+  status        String    @default("approved") @db.VarChar(50)
   created_by    BigInt
   created_at    DateTime  @default(now()) @db.Timestamptz
   tenant        tenants   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
@@ -695,6 +706,7 @@ model nutrition_plans {
   nutrition_meals      nutrition_meals[]
 
   @@index([tenant_id, customer_id, created_at], name: "idx_nutrition_customer")
+  @@index([tenant_id, status], name: "idx_nutrition_plans_status")
 }
 
 model nutrition_plan_macros {
@@ -1029,4 +1041,87 @@ model otp_codes {
   created_at  DateTime  @default(now()) @db.Timestamptz
 
   @@index([phone_e164, expires_at], name: "idx_otp_phone_expires")
+}
+
+model uploaded_files {
+  id          BigInt    @id @default(autoincrement())
+  tenant_id   BigInt
+  blob_url    String
+  blob_id     String    @unique
+  filename    String
+  content_type String
+  size        Int
+  category    String
+  entity_type String?
+  entity_id   BigInt?
+  customer_id BigInt?
+  uploaded_by BigInt?
+  created_at  DateTime  @default(now()) @db.Timestamptz
+  tenant      tenants   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  customer    customers? @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  uploaded_by_team_member team_members? @relation(fields: [uploaded_by], references: [id], onDelete: SetNull)
+
+  @@index([tenant_id, customer_id], name: "idx_uploaded_files_tenant_customer")
+  @@index([entity_type, entity_id], name: "idx_uploaded_files_entity")
+  @@index([tenant_id, category], name: "idx_uploaded_files_category")
+}
+
+model approval_workflows {
+  id          BigInt    @id @default(autoincrement())
+  tenant_id   BigInt
+  entity_type String    // 'exercise' | 'nutrition' | 'workout'
+  entity_id   BigInt
+  status      String    @default("pending") // 'pending' | 'approved' | 'rejected'
+  submitted_by BigInt
+  reviewed_by BigInt?
+  reviewed_at DateTime? @db.Timestamptz
+  notes       String?
+  metadata    Json?
+  created_at  DateTime  @default(now()) @db.Timestamptz
+  updated_at  DateTime  @default(now()) @db.Timestamptz
+  tenant      tenants   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  submitted_by_team_member team_members @relation("approval_workflows_submitted_by", fields: [submitted_by], references: [id])
+  reviewed_by_team_member team_members? @relation("approval_workflows_reviewed_by", fields: [reviewed_by], references: [id])
+
+  @@index([tenant_id, status, entity_type], name: "idx_approval_workflows_status")
+  @@index([tenant_id, submitted_by], name: "idx_approval_workflows_submitter")
+}
+
+model automation_workflows {
+  id          BigInt    @id @default(autoincrement())
+  tenant_id   BigInt
+  name        String
+  description String?
+  trigger     String    // Event that triggers the workflow
+  actions     Json      // Array of actions to perform
+  category    String?   // Category for organization
+  is_active   Boolean   @default(true)
+  executions  Int       @default(0)
+  success_rate Float    @default(0)
+  last_run_at DateTime? @db.Timestamptz
+  created_by  BigInt
+  created_at  DateTime  @default(now()) @db.Timestamptz
+  updated_at  DateTime  @default(now()) @db.Timestamptz
+  
+  tenant      tenants   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  creator     team_members @relation(fields: [created_by], references: [id])
+
+  @@index([tenant_id, is_active], name: "idx_automation_workflows_active")
+  @@index([tenant_id, category], name: "idx_automation_workflows_category")
+}
+
+model system_settings {
+  id          BigInt    @id @default(autoincrement())
+  tenant_id   BigInt
+  category    String    // 'email' | 'branding' | 'notifications' | 'general'
+  settings    Json      // Flexible JSON storage for category-specific settings
+  updated_by  BigInt
+  created_at  DateTime  @default(now()) @db.Timestamptz
+  updated_at  DateTime  @default(now()) @db.Timestamptz
+
+  tenant      tenants   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  updater     team_members @relation(fields: [updated_by], references: [id])
+
+  @@unique([tenant_id, category], name: "unique_tenant_category")
+  @@index([tenant_id, category], name: "idx_system_settings_tenant_category")
 }
