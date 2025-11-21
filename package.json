@@ -18,6 +18,10 @@
     "tools:db:test-connection": "node tools/database/test-db-connection.js",
     "tools:db:init": "node tools/database/init-db-simple.js",
     "tools:db:check-tenants": "node tools/database/check-tenants.js",
+    "tools:db:verify-production": "node tools/database/verify-production-db.js",
+    "tools:db:seed-production": "tsx prisma/seed-production.ts",
+    "tools:db:backup": "./scripts/backup-database.sh",
+    "tools:db:restore": "./scripts/restore-database.sh",
     "tools:api:test-login": "node tools/api/test-login.js",
     "tools:api:verify-login": "node tools/api/verify-login.js",
     "cypress:open": "cypress open",
@@ -54,6 +58,7 @@
     "@radix-ui/react-toggle": "1.1.1",
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
+    "@sentry/nextjs": "^10.26.0",
     "@swc/helpers": "0.5.17",
     "@tailwindcss/postcss": "^4.1.13",
     "@tanstack/react-query": "^5.90.6",
@@ -62,6 +67,7 @@
     "@types/bcryptjs": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@vercel/analytics": "latest",
+    "@vercel/blob": "^2.0.0",
     "axios": "^1.13.1",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
@@ -99,11 +105,14 @@
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@vitest/ui": "^4.0.13",
     "cypress": "^15.6.0",
     "jest": "^29.7.0",
+    "jest-environment-jsdom": "^30.2.0",
     "msw": "^2.11.6",
     "postcss": "^8.4.38",
     "ts-jest": "^29.2.5",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.13"
   }
 }
