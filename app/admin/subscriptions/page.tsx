@@ -10,11 +10,73 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table";
 import { useSubscriptions } from '@/lib/hooks/api/useSubscriptions';
 import { Subscription, SubscriptionPlan, BillingCycle } from '@/types/domain/subscription';
+import { toast } from 'sonner';
 
 export default function AdminSubscriptionsPage() {
   const { subscriptions, loading, error } = useSubscriptions();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  
+  // Export subscriptions to CSV
+  const handleExportCSV = () => {
+    try {
+      if (!filteredSubscriptions.length) {
+        toast.error('No subscriptions to export');
+        return;
+      }
+      
+      toast.loading('Preparing export...');
+      
+      // CSV headers
+      const headers = [
+        'Subscription ID',
+        'Client ID',
+        'Plan',
+        'Amount',
+        'Status',
+        'Billing Cycle',
+        'Start Date',
+        'Next Billing',
+      ];
+      
+      // CSV rows
+      const rows = filteredSubscriptions.map(sub => [
+        sub.id,
+        sub.clientId,
+        sub.plan,
+        `$${sub.amount.toFixed(2)}`,
+        sub.status,
+        sub.billingCycle,
+        new Date(sub.startDate).toLocaleDateString(),
+        sub.nextBillingDate ? new Date(sub.nextBillingDate).toLocaleDateString() : 'N/A',
+      ]);
+      
+      // Create CSV content
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+      
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      const timestamp = new Date().toISOString().split('T')[0];
+      link.setAttribute('href', url);
+      link.setAttribute('download', `subscriptions-export-${timestamp}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.dismiss();
+      toast.success(`Exported ${filteredSubscriptions.length} subscriptions to CSV`);
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Failed to export subscriptions');
+      console.error('Export error:', error);
+    }
+  };
   
   // Filter subscriptions based on search term and status
   const filteredSubscriptions = subscriptions.filter(sub => {
@@ -154,7 +216,7 @@ export default function AdminSubscriptionsPage() {
                     <SelectItem value="Past Due">Past Due</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="outline">
+                <Button variant="outline" onClick={handleExportCSV} disabled={loading || !filteredSubscriptions.length}>
                   <Download className="mr-2 h-4 w-4" />
                   Export
                 </Button>

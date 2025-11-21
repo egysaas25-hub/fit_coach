@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils/cn"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useApprovalCount } from "@/lib/hooks/useApprovalCount"
 import {
   LayoutDashboard,
   Users,
@@ -169,6 +170,7 @@ const adminNavItems: NavItem[] = [
     href: "/admin/ai",
     icon: Sparkles,
     children: [
+      { title: "Approvals", href: "/admin/ai/approvals", icon: Shield },
       { title: "Logs", href: "/admin/ai/logs", icon: FileText },
       { title: "Templates", href: "/admin/ai/templates", icon: Table },
     ],
@@ -209,6 +211,7 @@ export function Sidebar({ role, tenantId }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>([])
   const pathname = usePathname()
+  const { data: approvalCount = 0 } = useApprovalCount(tenantId || "1")
 
   const navItems = role === "admin" ? adminNavItems : []
 
@@ -298,7 +301,12 @@ export function Sidebar({ role, tenantId }: SidebarProps) {
                       )}
                     >
                       <child.icon className="h-3 w-3" />
-                      <span>{child.title}</span>
+                      <span className="flex-1">{child.title}</span>
+                      {child.href === "/admin/ai/approvals" && approvalCount > 0 && (
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-yellow-500 text-xs text-white">
+                          {approvalCount}
+                        </span>
+                      )}
                     </Link>
                   ))}
                 </div>

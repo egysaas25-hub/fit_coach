@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useExercises } from '@/lib/hooks/api/useExercises';
 import { Exercise } from '@/types/domain/exercise';
+import { ExerciseFormModal } from '@/components/features/exercises/ExerciseFormModal';
 
 const CATEGORIES = ['All', 'Compound', 'Isolation', 'Cardio', 'Flexibility'];
 const MUSCLE_GROUPS = ['All', 'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core'];
@@ -31,7 +32,7 @@ const EQUIPMENT = ['All', 'Barbell', 'Dumbbell', 'Bodyweight', 'Machine', 'Cable
 const DIFFICULTIES = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
 export default function ExerciseLibrary() {
-  const { data: exercises, isLoading, error } = useExercises();
+  const { data: exercises, isLoading, error, refetch } = useExercises();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
@@ -39,6 +40,7 @@ export default function ExerciseLibrary() {
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [showExerciseForm, setShowExerciseForm] = useState(false);
 
   // Filter exercises
   const filteredExercises = exercises?.filter(exercise => {
@@ -92,7 +94,10 @@ export default function ExerciseLibrary() {
               Browse {isLoading ? '...' : exercises?.length || 0} exercises with detailed instructions and videos
             </p>
           </div>
-          <Button className="bg-[#00C26A] hover:bg-[#00C26A]/90">
+          <Button 
+            className="bg-[#00C26A] hover:bg-[#00C26A]/90"
+            onClick={() => setShowExerciseForm(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Custom Exercise
           </Button>
@@ -291,6 +296,16 @@ export default function ExerciseLibrary() {
             <Button variant="outline">Clear Filters</Button>
           </div>
         )}
+
+        {/* Exercise Form Modal */}
+        <ExerciseFormModal
+          open={showExerciseForm}
+          onOpenChange={setShowExerciseForm}
+          onSuccess={() => {
+            refetch()
+            setShowExerciseForm(false)
+          }}
+        />
 
         {/* Exercise Detail Dialog */}
         <Dialog open={!!selectedExercise} onOpenChange={() => setSelectedExercise(null)}>

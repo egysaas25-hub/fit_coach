@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +9,8 @@ import { Download, Eye, RotateCcw, Search } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shared/data-table/data-table"
+import { downloadCSV, formatCurrency, formatDate } from "@/lib/utils/csv-generator"
+import { PDFExportButton } from "@/components/shared/actions/PDFExportButton"
 
 interface Invoice {
   id: string
@@ -82,6 +84,35 @@ export default function InvoicesPage() {
         inv.client.toLowerCase().includes(searchTerm.toLowerCase())),
   )
 
+  // Export invoices to CSV
+  const handleExportCSV = () => {
+    if (!filteredInvoices.length) {
+      alert('No invoices to export')
+      return
+    }
+
+    const exportData = filteredInvoices.map(inv => ({
+      invoiceId: inv.invoiceId,
+      client: inv.client,
+      amount: formatCurrency(inv.amount),
+      status: inv.status,
+      date: formatDate(inv.date),
+      dueDate: formatDate(inv.dueDate),
+    }))
+
+    downloadCSV(exportData, {
+      filename: 'invoices',
+      columns: [
+        { key: 'invoiceId', header: 'Invoice ID' },
+        { key: 'client', header: 'Client' },
+        { key: 'amount', header: 'Amount' },
+        { key: 'status', header: 'Status' },
+        { key: 'date', header: 'Date' },
+        { key: 'dueDate', header: 'Due Date' },
+      ],
+    })
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 p-8">
@@ -118,7 +149,7 @@ export default function InvoicesPage() {
               </Select>
             </div>
 
-            <Button>
+            <Button onClick={handleExportCSV} disabled={!filteredInvoices.length}>
               <Download className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
@@ -238,10 +269,14 @@ export default function InvoicesPage() {
               <Button variant="secondary" onClick={() => setShowPreview(false)}>
                 Close
               </Button>
-              <Button>
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-              </Button>
+              {selectedInvoice && (
+                <PDFExportButton
+                  endpoint="/api/export/invoice"
+                  payload={{ invoiceId: selectedInvoice.id }}
+                  filename={`invoice-${selectedInvoice.invoiceId}.pdf`}
+                  label="Download PDF"
+                />
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

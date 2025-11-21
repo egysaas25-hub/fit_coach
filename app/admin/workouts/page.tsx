@@ -35,12 +35,58 @@ export default function WorkoutPage() {
     router.push(`/admin/workouts/edit/${programId}`);
   };
 
-  const handleDuplicateProgram = (programName: string) => {
-    toast.success(`Duplicated ${programName}`);
+  const handleDuplicateProgram = async (workoutId: number) => {
+    try {
+      toast.loading('Duplicating program...');
+      
+      // TODO: Implement duplicate API endpoint
+      // const response = await fetch(`/api/workouts/${workoutId}/duplicate`, {
+      //   method: 'POST',
+      //   credentials: 'include',
+      // });
+      
+      // if (!response.ok) throw new Error('Failed to duplicate program');
+      
+      toast.dismiss();
+      toast.success(`Program duplicated successfully`);
+      // Refresh the list
+      // refetch();
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Failed to duplicate program');
+      console.error('Duplicate error:', error);
+    }
   };
 
-  const handleDeleteProgram = (programName: string) => {
-    toast.error(`Deleted ${programName}`);
+  const handleDeleteProgram = async (workoutId: number, workoutName: string) => {
+    // Show confirmation dialog
+    if (!confirm(`Are you sure you want to delete "${workoutName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      toast.loading('Deleting program...');
+      
+      const response = await fetch(`/api/workouts/${workoutId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete program');
+      }
+
+      toast.dismiss();
+      toast.success(`Program deleted successfully`);
+      
+      // Refresh the workouts list
+      window.location.reload(); // Simple refresh for now, ideally use refetch from react-query
+    } catch (error) {
+      toast.dismiss();
+      toast.error(error instanceof Error ? error.message : 'Failed to delete program');
+      console.error('Delete error:', error);
+    }
   };
 
   // Calculate stats from actual data
@@ -152,10 +198,15 @@ export default function WorkoutPage() {
                           <Button size="sm" variant="outline" onClick={() => handleEditProgram(workout.id)}>
                             Edit
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleDuplicateProgram(`Workout #${workout.id}`)}>
+                          <Button size="sm" variant="outline" onClick={() => handleDuplicateProgram(workout.id)}>
                             Duplicate
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleDeleteProgram(`Workout #${workout.id}`)}>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteProgram(workout.id, `Workout #${workout.id}`)}
+                          >
                             Delete
                           </Button>
                         </div>
