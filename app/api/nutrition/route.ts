@@ -38,7 +38,11 @@ const getHandler = async (req: NextRequest) => {
     // Get nutrition plans
     let query: any = {
       where: {
-        tenant_id: tenantId
+        tenant_id: tenantId,
+        // Prevent AI-generated content from being used until approved
+        NOT: {
+          status: 'pending_review'
+        }
       }
     };
 
@@ -56,6 +60,18 @@ const getHandler = async (req: NextRequest) => {
     if (search) {
       query.where.notes = { contains: search, mode: 'insensitive' };
     }
+
+    // Include customer and macros data
+    query.include = {
+      customer: {
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+        },
+      },
+      nutrition_plan_macros: true,
+    };
 
     let nutritionPlans = await prisma.nutrition_plans.findMany(query);
 
@@ -77,16 +93,20 @@ const getHandler = async (req: NextRequest) => {
     // Format response
     const formattedNutritionPlans = paginatedNutritionPlans.map(plan => ({
       id: plan.id.toString(),
-      name: `Nutrition Plan ${plan.id}`, // Nutrition plans don't have a name field
+      name: `Nutrition Plan for ${plan.customer.first_name} ${plan.customer.last_name}`,
       description: plan.notes || '',
+      clientId: plan.customer_id.toString(),
       calories: plan.calories_target || 0,
-      protein: 0,
-      carbs: 0,
-      fats: 0,
-      meals: [],
+      version: plan.version,
+      isActive: plan.is_active,
+      macros: plan.nutrition_plan_macros[0] ? {
+        protein: Number(plan.nutrition_plan_macros[0].protein_g || 0),
+        carbs: Number(plan.nutrition_plan_macros[0].carbs_g || 0),
+        fats: Number(plan.nutrition_plan_macros[0].fat_g || 0),
+      } : null,
       creatorId: plan.created_by.toString(),
       createdAt: plan.created_at,
-      updatedAt: plan.created_at // Nutrition plans don't have updated_at in schema
+      updatedAt: plan.created_at
     }));
 
     return success({ data: formattedNutritionPlans, pagination });

@@ -49,9 +49,12 @@ export async function GET(request: NextRequest) {
       query += ` AND (e.tenant_id = '${tenantId}' OR e.source = 'global')`
     }
 
-    // Status filter
+    // Status filter - prevent AI-generated content from being used until approved
     if (status !== "all") {
       query += ` AND e.status = '${status}'`
+    } else {
+      // When showing all, exclude pending_review AI-generated exercises
+      query += ` AND NOT (e.source = 'ai_generated' AND e.status = 'pending_review')`
     }
 
     // Category filter

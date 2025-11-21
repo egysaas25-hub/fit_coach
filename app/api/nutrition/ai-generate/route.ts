@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { aiNutritionGenerator } from "@/lib/services/ai-nutrition-generator"
+import { prisma } from "@/lib/prisma"
 
 /**
  * POST /api/nutrition/ai-generate
@@ -87,9 +88,61 @@ export async function POST(request: NextRequest) {
     // Optionally save as nutrition plan
     let savedPlan = null
     if (save_to_plan && client_info.client_id) {
-      // TODO: Create nutrition plan in database
-      // This would create a plan with plan_type='nutrition'
-      // and store the meal data in plan_versions.content
+      // Create nutrition plan in database with pending_review status
+      const plan = await prisma.nutrition_plans.create({
+        data: {
+          tenant_id: BigInt(tenant_id),
+          customer_id: BigInt(client_info.client_id),
+          created_by: BigInt(generated_by),
+          calories_target: total_calories,
+          notes: `AI-generated meal plan for ${goal}`,
+          version: 1,
+          is_active: false, // Not active until approved
+          status: 'pending_review',
+        },
+      })
+
+      // Create macros record
+      await prisma.nutrition_plan_macros.create({
+        data: {
+          plan_id: plan.id,
+          protein_g: result.dailyTotals.protein,
+          carbs_g: result.dailyTotals.carbs,
+          fat_g: result.dailyTotals.fat,
+        },
+      })
+
+      savedPlan = {
+        id: plan.id.toString(),
+        customer_id: plan.customer_id.toString(),
+        calories_target: plan.calories_target,
+        status: plan.status,
+      }
+
+      // Create approval workflow record
+      await prisma.approval_workflows.create({
+        data: {
+          tenant_id: BigInt(tenant_id),
+          entity_type: 'nutrition',
+          entity_id: plan.id,
+          status: 'pending',
+          submitted_by: BigInt(generated_by),
+          metadata: {
+            client_id: client_info.client_id,
+            goal,
+            total_calories,
+            macro_split,
+            ai_prompt: {
+              goal,
+              totalCalories: total_calories,
+              macroSplit: macro_split,
+              mealsPerDay: meals_per_day,
+              dietaryType: dietary_type,
+            },
+            generated_at: new Date().toISOString(),
+          },
+        },
+      })
     }
 
     return NextResponse.json({

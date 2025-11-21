@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         const bodyPartId = await findBodyPart(exercise.bodyPart)
         const equipmentId = await findEquipment(exercise.equipment)
 
-        // Save to database
+        // Save to database with pending_review status
         const saved = await prisma.$queryRaw`
           INSERT INTO exercises (
             tenant_id, name, description, instructions,
@@ -116,7 +116,24 @@ export async function POST(request: NextRequest) {
           RETURNING *
         `
 
-        savedExercises.push(saved[0])
+        const savedExercise = saved[0] as any
+        savedExercises.push(savedExercise)
+
+        // Create approval workflow record
+        await prisma.approval_workflows.create({
+          data: {
+            tenant_id: BigInt(tenant_id),
+            entity_type: 'exercise',
+            entity_id: BigInt(savedExercise.exercise_id),
+            status: 'pending',
+            submitted_by: BigInt(generated_by),
+            metadata: {
+              exercise_name: exercise.name,
+              ai_prompt: { goal, body_part, equipment, experience_level },
+              generated_at: new Date().toISOString(),
+            },
+          },
+        })
       }
     }
 
